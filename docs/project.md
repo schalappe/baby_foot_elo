@@ -31,6 +31,7 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 - Tableaux de classement des équipes par ELO
 - Graphiques d'évolution de l'ELO dans le temps
 - Statistiques de compatibilité entre joueurs (taux de victoire par paire)
+- Filtrage des classements par période (année, mois)
 
 ### Exports et data
 - Export des résultats des matchs en JSON
@@ -62,8 +63,9 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 ### Modèle de données
 - **Joueurs**: id, nom, avatar, elo, date_création
 - **Équipes**: id, joueur1_id, joueur2_id, elo, dernier_match
-- **Matchs**: id, équipe_gagnante_id, équipe_perdante_id, score_gagnant, score_perdant, est_fanny, date
-- **Historique_ELO**: id, joueur_id, match_id, ancien_elo, nouvel_elo, différence, date
+- **Matchs**: id, équipe_gagnante_id, équipe_perdante_id, score_gagnant, score_perdant, est_fanny, date, année, mois
+- **Historique_ELO**: id, joueur_id, match_id, ancien_elo, nouvel_elo, différence, date, année, mois
+- **Classements_Périodiques**: id, joueur_id, année, mois, elo, position, matchs_joués, victoires, défaites
 
 ## Pages et interfaces
 
@@ -74,19 +76,25 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 
 **Fonctionnalités:**
 - Header avec navigation principale et switch thème clair/sombre
+- Sélecteur de période pour les classements:
+  - Option "Tous les temps" (vue par défaut)
+  - Sélection par année (ex: 2025)
+  - Sélection par mois (ex: Janvier 2025)
 - Tableau de classement des joueurs par ELO
   - Position
-  - nom du joueur
-  - Score ELO actuel
-  - Évolution récente (7 derniers jours)
-  - Nombre de matchs joués
+  - Avatar et nom du joueur
+  - Score ELO pour la période sélectionnée
+  - Évolution sur la période (ou 7 derniers jours pour "Tous les temps")
+  - Nombre de matchs joués dans la période
 - Tableau de classement des équipes par ELO
   - Position
   - Noms des joueurs de l'équipe
-  - Score ELO de l'équipe
-  - Ratio victoires/défaites
-  - Nombre de matchs joués ensemble
-- Filtres pour affiner les classements (période, nombre minimum de matchs)
+  - Score ELO de l'équipe pour la période sélectionnée
+  - Ratio victoires/défaites dans la période
+  - Nombre de matchs joués ensemble dans la période
+- Filtres additionnels:
+  - Nombre minimum de matchs joués
+  - Options d'affichage personnalisées
 - Accès rapide aux pages joueur via les entrées du tableau
 
 ### Page d'information d'un joueur
@@ -104,7 +112,7 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
   - Visualisation claire de la progression
   - Points représentant les matchs joués
   - Informations détaillées au survol
-  - Options de filtrage par période
+  - Pas de filtrage possible
 - Historique des matchs récents
   - Date et équipes
   - Score
@@ -115,6 +123,9 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
   - Taux de victoire avec chaque partenaire
   - Nombre de matchs joués ensemble
   - ELO moyen de l'équipe formée
+- Historique des classements par période:
+  - Position et ELO par mois
+  - Progression mensuelle visualisée
 
 ### Page des résultats et enregistrement de match
 
@@ -127,8 +138,9 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
   - Saisie des scores
   - Option "fanny" à cocher
   - Calcul en temps réel des points ELO potentiels
+  - Date du match (défaut: actuelle)
 - Historique complet des matchs
-  - Filtrable par joueur, équipe ou période
+  - Filtrable par joueur, équipe ou période (année, mois)
   - Tri par date, importance du match (points ELO échangés)
   - Détails complets accessibles
 - Bouton d'export en JSON
@@ -138,6 +150,7 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
   - Nombre total de matchs
   - Moyenne de points par match
   - Répartition des "fanny"
+  - Statistiques par période (année, mois)
 
 ### Page de gestion des joueurs
 
@@ -236,10 +249,14 @@ baby_foot_elo/
 - `POST /api/players`: Création d'un nouveau joueur
 - `GET /api/teams`: Liste des équipes possibles
 - `GET /api/teams/ranking`: Classement des équipes
+- `GET /api/teams/ranking?year=2025&month=1`: Classement des équipes filtré par période
 - `POST /api/matches`: Enregistrement d'un nouveau match
 - `GET /api/matches`: Liste des matchs avec filtres
+- `GET /api/matches?year=2025&month=1`: Liste des matchs filtré par période
 - `GET /api/stats/{player_id}`: Statistiques d'un joueur
+- `GET /api/stats/{player_id}?year=2025&month=1`: Statistiques d'un joueur filtré par période
 - `GET /api/elo/history/{player_id}`: Historique ELO d'un joueur
+- `GET /api/rankings/periodic`: Liste des classements périodiques (année/mois)
 - `POST /api/export`: Export des données en JSON
 
 ### Considérations d'interface utilisateur
@@ -270,3 +287,10 @@ baby_foot_elo/
   - Options de déploiement flexibles selon le contexte d'utilisation
   - Configuration minimale requise très légère
   - Sauvegarde régulière des données recommandée
+
+### Considérations pour les classements périodiques
+- Chaque match est automatiquement catégorisé par année et mois
+- Le système calcule et maintient des classements distincts pour chaque période
+- Les classements périodiques sont recalculés après chaque match
+- Performance optimisée via l'indexation des champs temporels
+- Possibilité de recalculer l'historique complet si nécessaire
