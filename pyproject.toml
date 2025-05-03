@@ -1,0 +1,24 @@
+[project]
+name = "baby-foot-elo"
+version = "0.1.0"
+description = "IHM de suivi des matchs de Baby Foot"
+authors = [
+    {name = "Kone Abdallah Hakim",email = "71593784+schalappe@users.noreply.github.com"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+]
+
+[tool.poetry]
+
+[tool.poetry.group.dev.dependencies]
+isort = "^6.0.1"
+black = "^25.1.0"
+pylint = "^3.3.6"
+radon = "^6.0.1"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
