@@ -22,7 +22,7 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 
 ### Gestion des matchs
 - Enregistrement des résultats de matchs (vainqueur, perdant, score)
-- Support spécial pour les matchs "fanny" (avec bonus/malus)
+- Support pour les matchs "fanny" (symbolique, sans impact sur l'ELO)
 - Calcul automatique des points ELO gagnés/perdus
 - Historique complet des matchs joués
 
@@ -190,30 +190,31 @@ Le système ELO hybride utilisé par Baby Foot ELO repose sur le principe que le
 
 3. **Facteur K individuel**
    - Varie selon l'ELO du joueur:
-     - ELO < 1200: K = 32 (joueurs débutants, progression rapide)
-     - 1200 ≤ ELO < 1800: K = 24 (joueurs intermédiaires)
-     - ELO ≥ 1800: K = 16 (joueurs expérimentés, stabilité)
+     - ELO < 1200: K = 100 (joueurs débutants, progression rapide)
+     - 1200 ≤ ELO < 1800: K = 50 (joueurs intermédiaires)
+     - ELO ≥ 1800: K = 24 (joueurs expérimentés, stabilité)
 
 4. **Ajustement d'ELO individuel**
-   - Pour une victoire (S = 1):
-     - Delta_ELO_i = K_i * (1 - P(A))
-   - Pour une défaite (S = 0):
-     - Delta_ELO_i = K_i * (0 - P(A))
+   - Pour une victoire:
+     - Delta_ELO_i = K_i * (1 - P(équipe du joueur))
+   - Pour une défaite:
+     - Delta_ELO_i = K_i * (0 - P(équipe du joueur))
 
 5. **Facteurs spéciaux**
-   - Match "fanny" (score 0): multiplicateur de 1.5x pour les perdants
    - Matchs déséquilibrés: facteur d'atténuation pour limiter les pertes/gains excessifs
    - Matchs entre nouveaux joueurs: facteur d'incertitude plus élevé
+   - Note: Les matchs "fanny" (score 0) sont enregistrés à titre symbolique mais n'affectent pas le calcul ELO
 
 ### Exemple concret
 - **Équipe A**: Joueurs A1 (ELO 1200) et A2 (ELO 1000) → ELO équipe = 1100
 - **Équipe B**: Joueurs B1 (ELO 900) et B2 (ELO 900) → ELO équipe = 900
-- Probabilité de victoire pour A: P(A) = 0.71
+- Probabilité de victoire pour A: P(A) = 0.71, pour B: P(B) = 1 - P(A) = 0.29
+- Facteurs K: A1: K=50, A2: K=100, B1: K=100, B2: K=100
 - A bat B 10-5
-- Points gagnés par A1: +7 ELO (K=24 * (1-0.71))
-- Points gagnés par A2: +9 ELO (K=32 * (1-0.71))
-- Points perdus par B1: -23 ELO (K=32 * (0-0.71))
-- Points perdus par B2: -23 ELO (K=32 * (0-0.71))
+- Points gagnés par A1: +14 ELO (K=50 * (1-0.71))
+- Points gagnés par A2: +29 ELO (K=100 * (1-0.71))
+- Points perdus par B1: -29 ELO (K=100 * (0-0.29))
+- Points perdus par B2: -29 ELO (K=100 * (0-0.29))
 
 ## Implémentation et développement
 
