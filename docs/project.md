@@ -76,7 +76,7 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 - Header avec navigation principale et switch thème clair/sombre
 - Tableau de classement des joueurs par ELO
   - Position
-  - Avatar et nom du joueur
+  - nom du joueur
   - Score ELO actuel
   - Évolution récente (7 derniers jours)
   - Nombre de matchs joués
