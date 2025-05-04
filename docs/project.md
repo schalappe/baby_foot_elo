@@ -9,24 +9,28 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 ## Fonctionnalités
 
 ### Gestion des joueurs
+
 - Enregistrement de nouveaux joueurs avec profil personnalisé
 - Attribution d'un ELO initial (par défaut: 1000)
 - Visualisation des statistiques individuelles
 - Suivi de l'évolution de l'ELO au fil du temps
 
 ### Gestion des équipes
+
 - Formation d'équipes de deux joueurs
 - Déduction automatique des paires d'équipes possibles
 - Calcul de l'ELO d'équipe (basé sur les ELO individuels)
 - Classement dynamique des équipes
 
 ### Gestion des matchs
+
 - Enregistrement des résultats de matchs (vainqueur, perdant, score)
 - Support pour les matchs "fanny" (symbolique, sans impact sur l'ELO)
 - Calcul automatique des points ELO gagnés/perdus
 - Historique complet des matchs joués
 
 ### Statistiques et visualisations
+
 - Tableaux de classement des joueurs par ELO
 - Tableaux de classement des équipes par ELO
 - Graphiques d'évolution de l'ELO dans le temps
@@ -34,6 +38,7 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 - Filtrage des classements par période (année, mois)
 
 ### Exports et data
+
 - Export des résultats des matchs en JSON
 - Historique complet consultable
 - Données persistantes pour le suivi à long terme
@@ -41,6 +46,7 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 ## Architecture Technique
 
 ### Frontend
+
 - Framework: **Next.js**
   - Interface réactive et moderne
   - Routage basé sur le système de fichiers
@@ -48,6 +54,7 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
   - Composants réutilisables pour les tableaux et graphiques
 
 ### Backend
+
 - Framework: **FastAPI**
   - API REST performante
   - Validation automatique des données
@@ -55,12 +62,14 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
   - Endpoints dédiés pour joueurs, équipes et matchs
 
 ### Base de données
+
 - Technologie: **DuckDB**
   - Solution légère mais puissante
   - Optimisée pour les requêtes analytiques
   - Facilité de déploiement et maintenance
 
 ### Modèle de données
+
 - **Joueurs**: id, nom, avatar, elo, date_création
 - **Équipes**: id, joueur1_id, joueur2_id, elo, dernier_match
 - **Matchs**: id, équipe_gagnante_id, équipe_perdante_id, score_gagnant, score_perdant, est_fanny, date, année, mois
@@ -75,6 +84,7 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 ![template page d'accueil](./capture/template_homepage.png)
 
 **Fonctionnalités:**
+
 - Header avec navigation principale et switch thème clair/sombre
 - Sélecteur de période pour les classements:
   - Option "Tous les temps" (vue par défaut)
@@ -102,6 +112,7 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 ![page d'information d'un joueur](./capture/template_player.png)
 
 **Fonctionnalités:**
+
 - Informations générales du joueur
   - Avatar et nom
   - ELO actuel
@@ -132,6 +143,7 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 ![page des résultats](./capture/add_match.png)
 
 **Fonctionnalités:**
+
 - Formulaire d'enregistrement de match
   - Sélection des joueurs pour chaque équipe
   - Interface intuitive pour former les équipes
@@ -157,6 +169,7 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 ![page de gestion des joueurs](./capture/add_player.png)
 
 **Fonctionnalités:**
+
 - Formulaire d'ajout de nouveau joueur
   - Champ pour le nom
   - Upload d'avatar (optionnel)
@@ -177,9 +190,11 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 ## Système ELO hybride
 
 ### Principe fondamental
+
 Le système ELO hybride utilisé par Baby Foot ELO repose sur le principe que les joueurs d'une même équipe peuvent avoir des contributions différentes à la victoire ou la défaite. Ainsi, ils ne reçoivent pas nécessairement le même nombre de points après un match.
 
 ### Calcul détaillé
+
 1. **Score ELO d'équipe**
    - Calculé comme la moyenne des ELO individuels des deux joueurs
    - Exemple: Équipe A (Joueur A1: 1200, Joueur A2: 800) = ELO équipe 1000
@@ -206,6 +221,7 @@ Le système ELO hybride utilisé par Baby Foot ELO repose sur le principe que le
    - Note: Les matchs "fanny" (score 0) sont enregistrés à titre symbolique mais n'affectent pas le calcul ELO
 
 ### Exemple concret
+
 - **Équipe A**: Joueurs A1 (ELO 1200) et A2 (ELO 1000) → ELO équipe = 1100
 - **Équipe B**: Joueurs B1 (ELO 900) et B2 (ELO 900) → ELO équipe = 900
 - Probabilité de victoire pour A: P(A) = 0.71, pour B: P(B) = 1 - P(A) = 0.29
@@ -219,6 +235,7 @@ Le système ELO hybride utilisé par Baby Foot ELO repose sur le principe que le
 ## Implémentation et développement
 
 ### Structure du projet
+
 ```
 baby_foot_elo/
 ├── frontend/               # Application Next.js
@@ -245,6 +262,7 @@ baby_foot_elo/
 ```
 
 ### API endpoints principaux
+
 - `GET /api/players`: Liste des joueurs avec leur ELO
 - `GET /api/players/{id}`: Détails d'un joueur spécifique
 - `POST /api/players`: Création d'un nouveau joueur
@@ -261,6 +279,7 @@ baby_foot_elo/
 - `POST /api/export`: Export des données en JSON
 
 ### Considérations d'interface utilisateur
+
 - Interface responsive pour utilisation sur mobile et desktop
 - Système de thèmes clair/sombre avec préférence utilisateur sauvegardée
 - Animations subtiles pour les mises à jour d'ELO
@@ -270,6 +289,7 @@ baby_foot_elo/
 - Graphiques interactifs avec informations au survol
 
 ### Prérequis de développement
+
 - Node.js v16+ pour le frontend
 - Python 3.9+ pour le backend
 - Gestionnaires de paquets:
@@ -281,15 +301,17 @@ baby_foot_elo/
   - Black/isort pour le backend
 
 ### Déploiement
-- **Développement local**: 
+
+- **Développement local**:
   - Frontend: `npm run dev` (port 3000)
   - Backend: `uvicorn app.main:app --reload` (port 8000)
-- **Production**: 
+- **Production**:
   - Options de déploiement flexibles selon le contexte d'utilisation
   - Configuration minimale requise très légère
   - Sauvegarde régulière des données recommandée
 
 ### Considérations pour les classements périodiques
+
 - Chaque match est automatiquement catégorisé par année et mois
 - Le système calcule et maintient des classements distincts pour chaque période
 - Les classements périodiques sont recalculés après chaque match
