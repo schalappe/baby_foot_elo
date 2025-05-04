@@ -8,15 +8,6 @@ from unittest import TestCase, main
 
 from app.db.database_manager import DatabaseManager
 
-# ##: Schema SQL for Joueurs table.
-CREATE_JOUEURS_SQL = '''
-CREATE TABLE IF NOT EXISTS Joueurs (
-    id INTEGER PRIMARY KEY,
-    nom VARCHAR,
-    elo INTEGER,
-    date_creation TIMESTAMP
-);
-'''
 
 class TestDatabase(TestCase):
     def setUp(self):
@@ -24,7 +15,31 @@ class TestDatabase(TestCase):
         Set up the test environment.
         """
         self.db = DatabaseManager(db_path=':memory:')
-        self.db.execute(CREATE_JOUEURS_SQL)
+        self.db.initialize_database()
+
+    def test_initialize_database_creates_all_tables(self):
+        """
+        Test that initialize_database creates all required tables and is idempotent.
+        """
+        expected_tables = {
+            "Players", "Teams", "Matches", "ELO_History", "Periodic_Rankings", "Team_Periodic_Rankings"
+        }
+
+        self.db.initialize_database()
+        tables = set(
+            row[0]
+            for row in self.db.fetchall("SELECT table_name FROM information_schema.tables WHERE table_schema='main'")
+        )
+        for table in expected_tables:
+            self.assertIn(table, tables)
+        
+        self.db.initialize_database()
+        tables2 = set(
+            row[0]
+            for row in self.db.fetchall("SELECT table_name FROM information_schema.tables WHERE table_schema='main'")
+        )
+        for table in expected_tables:
+            self.assertIn(table, tables2)
 
     def tearDown(self):
         """
@@ -43,26 +58,26 @@ class TestDatabase(TestCase):
         """
         Test schema creation.
         """
-        table = self.db.fetchone("SELECT table_name FROM information_schema.tables WHERE table_name='Joueurs'")
+        table = self.db.fetchone("SELECT table_name FROM information_schema.tables WHERE table_name='Players'")
         self.assertIsNotNone(table)
-        self.assertEqual(table[0], 'Joueurs')
+        self.assertEqual(table[0], 'Players')
 
     def test_crud_operations(self):
         """
         Test CRUD operations.
         """
         now = datetime.now()
-        self.db.execute("INSERT INTO Joueurs (id, nom, elo, date_creation) VALUES (?, ?, ?, ?)", (1, 'Alice', 1000, now))
-        joueur = self.db.fetchone("SELECT * FROM Joueurs WHERE id=1")
+        self.db.execute("INSERT INTO Players (player_id, name, created_at) VALUES (?, ?, ?)", (1, 'Alice', now))
+        joueur = self.db.fetchone("SELECT * FROM Players WHERE player_id=1")
         self.assertIsNotNone(joueur)
         self.assertEqual(joueur[1], 'Alice')
         
-        self.db.execute("UPDATE Joueurs SET elo=? WHERE id=?", (1100, 1))
-        updated_elo = self.db.fetchone("SELECT elo FROM Joueurs WHERE id=1")[0]
-        self.assertEqual(updated_elo, 1100)
+        self.db.execute("UPDATE Players SET name=? WHERE player_id=?", ('Bob', 1))
+        updated_name = self.db.fetchone("SELECT name FROM Players WHERE player_id=1")[0]
+        self.assertEqual(updated_name, 'Bob')
         
-        self.db.execute("DELETE FROM Joueurs WHERE id=1")
-        deleted = self.db.fetchone("SELECT * FROM Joueurs WHERE id=1")
+        self.db.execute("DELETE FROM Players WHERE player_id=1")
+        deleted = self.db.fetchone("SELECT * FROM Players WHERE player_id=1")
         self.assertIsNone(deleted)
 
 if __name__ == '__main__':

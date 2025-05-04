@@ -1,12 +1,23 @@
 # -*- coding: utf-8 -*-
 """ """
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.db import DatabaseManager
 from app.routers import health, test_info
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app):
+    db = DatabaseManager()
+    db.initialize_database()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 # ##: Allow CORS from frontend.
 app.add_middleware(

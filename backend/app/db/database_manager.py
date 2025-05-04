@@ -3,11 +3,13 @@
 Database Manager for DuckDB connections.
 """
 
-import logging
 import threading
+from logging import getLogger
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import duckdb
+
+from . import schema_definitions
 
 
 class DatabaseManager:
@@ -46,7 +48,7 @@ class DatabaseManager:
         self.db_path = db_path
         self.conn_params = conn_params
         self.connection = None
-        self.logger = logging.getLogger("DatabaseManager")
+        self.logger = getLogger("DatabaseManager")
         self._initialized = True
         self.connect()
 
@@ -72,6 +74,30 @@ class DatabaseManager:
             return method(self, *args, **kwargs)
 
         return wrapper
+
+    def initialize_database(self):
+        """
+        Initialize the database: create all tables if they do not exist, and handle future migrations.
+        This method is idempotent and can be safely called multiple times.
+        """
+
+        schemas = [
+            schema_definitions.CREATE_PLAYERS_TABLE,
+            schema_definitions.CREATE_TEAMS_TABLE,
+            schema_definitions.CREATE_MATCHES_TABLE,
+            schema_definitions.CREATE_ELO_HISTORY_TABLE,
+            schema_definitions.CREATE_PERIODIC_RANKINGS_TABLE,
+            schema_definitions.CREATE_TEAM_PERIODIC_RANKINGS_TABLE,
+        ]
+        for sql in schemas:
+            try:
+                self.execute(sql)
+                self.logger.info(f"Executed schema statement: {sql.splitlines()[0]}")
+            except Exception as exc:
+                self.logger.error(f"Error executing schema statement: {exc}\nSQL: {sql}")
+                raise
+
+        self.logger.info("Database initialization complete. (No migrations applied)")
 
     @_ensure_connection
     def execute(self, query: str, params: Optional[Union[List, Tuple, Dict]] = None) -> Any:
