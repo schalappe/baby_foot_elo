@@ -5,6 +5,7 @@ Module containing configuration class.
 
 from os import environ
 
+
 class Config:
     def __init__(self):
         """
