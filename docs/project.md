@@ -64,6 +64,10 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
   - Offre du stockage de fichiers (Supabase Storage).
   - Capacités temps réel (Supabase Realtime).
 
+- Key information:
+  - [Projet URL](https://kuahfdqrotzlyhebtizq.supabase.co)
+  - Anon: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1YWhmZHFyb3R6bHloZWJ0aXpxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNTMxOTgsImV4cCI6MjA2MTkyOTE5OH0.fTfX1Bd-SwYchfZAanrmmRCcIqqt1M_DggnQDDs_Bik
+
 ### Modèle de données
 
 - **Joueurs**: `id`, `nom`, `avatar`, `elo`, `date_creation`
