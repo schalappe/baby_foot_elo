@@ -1,7 +1,9 @@
 import Image from "next/image";
+import BackendTestInfo from "../components/BackendTestInfo";
 
 export default function Home() {
   return (
+    <>
     <section className="w-full flex flex-col items-center gap-12 py-12">
       <div className="text-center">
         <h1 className="text-4xl sm:text-5xl font-extrabold mb-4 text-primary dark:text-primary drop-shadow-lg">Classement Baby Foot Elo</h1>
@@ -48,5 +50,7 @@ export default function Home() {
         <a href="#" className="inline-block px-8 py-3 rounded-full bg-primary text-white text-lg font-bold shadow-lg border border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition">Ajouter une partie</a>
       </div>
     </section>
+    <BackendTestInfo />
+    </>
   );
 }
