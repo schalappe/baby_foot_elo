@@ -236,7 +236,7 @@ Le système ELO hybride utilisé par Baby Foot ELO repose sur le principe que le
 
 ### Structure du projet
 
-```
+```markdown
 baby_foot_elo/
 ├── frontend/               # Application Next.js
 │   ├── pages/              # Routes de l'application
