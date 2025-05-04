@@ -15,10 +15,11 @@ class DatabaseManager:
     Manages DuckDB connections, query execution, and transactions.
     Supports configuration for file path and connection parameters.
     """
+
     _instance = None
     _lock = threading.Lock()
 
-    def __new__(cls, db_path: str = ':memory:', **conn_params):
+    def __new__(cls, db_path: str = ":memory:", **conn_params):
         """
         Singleton pattern for connection pooling if desired
         """
@@ -29,7 +30,7 @@ class DatabaseManager:
                     cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self, db_path: str = ':memory:', **conn_params):
+    def __init__(self, db_path: str = ":memory:", **conn_params):
         """
         Initialize a new database connection.
 
@@ -40,12 +41,12 @@ class DatabaseManager:
         conn_params : dict
             Connection parameters for DuckDB.
         """
-        if getattr(self, '_initialized', False):
+        if getattr(self, "_initialized", False):
             return
         self.db_path = db_path
         self.conn_params = conn_params
         self.connection = None
-        self.logger = logging.getLogger('DatabaseManager')
+        self.logger = logging.getLogger("DatabaseManager")
         self._initialized = True
         self.connect()
 
@@ -64,10 +65,12 @@ class DatabaseManager:
         """
         Decorator to ensure a connection exists before executing a method.
         """
+
         def wrapper(self, *args, **kwargs):
             if self.connection is None:
                 self.connect()
             return method(self, *args, **kwargs)
+
         return wrapper
 
     @_ensure_connection

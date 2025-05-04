@@ -24,7 +24,7 @@ class Config:
         -------
         str
             The URL of the DuckDB database to use.
-        
+
         Raises
         ------
         ValueError
@@ -35,5 +35,6 @@ class Config:
         if self.env == "prod":
             return environ.get("DB_URL")
         raise ValueError("Invalid environment")
+
 
 config = Config()

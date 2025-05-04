@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-"""
+""" """
 
-"""
-
-from app.routers import health, test_info
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from app.routers import health, test_info
 
 app = FastAPI()
 
@@ -20,6 +19,7 @@ app.add_middleware(
 
 app.include_router(health.router)
 app.include_router(test_info.router)
+
 
 @app.get("/")
 def read_root():
