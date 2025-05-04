@@ -71,8 +71,6 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 
 ### Modèle de données
 
-*(Note: Le modèle est défini pour être utilisé avec DuckDB via SQLAlchemy ou un ORM similaire dans FastAPI. Les types de données sont indicatifs et peuvent être adaptés.)*
-
 - **Joueurs**: `id` (INTEGER PRIMARY KEY), `nom` (VARCHAR), `elo` (INTEGER), `date_creation` (TIMESTAMP)
 - **Equipes**: `id` (INTEGER PRIMARY KEY), `joueur1_id` (INTEGER REFERENCES Joueurs), `joueur2_id` (INTEGER REFERENCES Joueurs), `dernier_match` (TIMESTAMP) *(Note: Représente une paire unique de joueurs ayant joué ensemble. L'ELO d'équipe est calculé dynamiquement.)*
 - **Matchs**: `id` (INTEGER PRIMARY KEY), `équipe_gagnante_id` (INTEGER REFERENCES Équipes), `équipe_perdante_id` (INTEGER REFERENCES Équipes), `score_gagnant` (INTEGER), `score_perdant` (INTEGER), `est_fanny` (BOOLEAN), `date` (TIMESTAMP), `année` (INTEGER), `mois` (INTEGER)
