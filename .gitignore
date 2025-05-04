@@ -428,6 +428,7 @@ dist
 # -----------------------------------------------------------------------------
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
+.vscode/
 
 # -----------------------------------------------------------------------------
 #                       Other
@@ -436,3 +437,11 @@ dist
 .roo
 memory-bank/
 sequentialthinking-mcp/
+
+# -----------------------------------------------------------------------------
+#                       Claude Task Master
+# -----------------------------------------------------------------------------
+# Specific to Claude Task Master
+dev-debug.log
+tasks.json
+tasks/
