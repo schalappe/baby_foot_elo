@@ -445,3 +445,6 @@ sequentialthinking-mcp/
 dev-debug.log
 tasks.json
 tasks/
+scripts/
+.taskmasterconfig
+.windsurfrules
