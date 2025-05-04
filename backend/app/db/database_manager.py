@@ -97,7 +97,33 @@ class DatabaseManager:
                 self.logger.error(f"Error executing schema statement: {exc}\nSQL: {sql}")
                 raise
 
-        self.logger.info("Database initialization complete. (No migrations applied)")
+        # ##: Create indexes for performance optimization.
+        self.create_indexes_for_optimization()
+        self.logger.info("Database initialization complete. All tables and indexes ensured.")
+
+    def create_indexes_for_optimization(self):
+        """
+        Create all indexes needed for optimal query performance. Safe to call multiple times.
+        """
+        indexes = [
+            schema_definitions.CREATE_INDEX_PLAYERS_NAME,
+            schema_definitions.CREATE_INDEX_MATCHES_TEAM1,
+            schema_definitions.CREATE_INDEX_MATCHES_TEAM2,
+            schema_definitions.CREATE_INDEX_MATCHES_WINNER,
+            schema_definitions.CREATE_INDEX_ELOHIST_PLAYER,
+            schema_definitions.CREATE_INDEX_ELOHIST_MATCH,
+            schema_definitions.CREATE_INDEX_PERIODIC_PLAYER,
+            schema_definitions.CREATE_INDEX_PERIODIC_PERIOD_PLAYER,
+            schema_definitions.CREATE_INDEX_MATCHES_DATE,
+            schema_definitions.CREATE_INDEX_ELOHIST_UPDATED,
+        ]
+        for idx_sql in indexes:
+            try:
+                self.execute(idx_sql)
+                self.logger.info(f"Executed index statement: {idx_sql.splitlines()[0]}")
+            except Exception as exc:
+                self.logger.error(f"Error executing index statement: {exc}\nSQL: {idx_sql}")
+                raise
 
     @_ensure_connection
     def execute(self, query: str, params: Optional[Union[List, Tuple, Dict]] = None) -> Any:
