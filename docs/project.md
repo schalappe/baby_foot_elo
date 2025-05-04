@@ -18,9 +18,9 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 ### Gestion des équipes
 
 - Formation d'équipes de deux joueurs
-- Déduction automatique des paires d'équipes possibles
-- Calcul de l'ELO d'équipe (basé sur les ELO individuels)
-- Classement dynamique des équipes
+- Suggestion automatique des paires d'équipes possibles à partir des joueurs enregistrés
+- Calcul de l'ELO d'équipe (basé sur les ELO individuels, calculé dynamiquement)
+- Classement dynamique des équipes (basé sur l'ELO d'équipe calculé)
 
 ### Gestion des matchs
 
@@ -71,10 +71,10 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 ### Modèle de données
 
 - **Joueurs**: id, nom, avatar, elo, date_création
-- **Équipes**: id, joueur1_id, joueur2_id, elo, dernier_match
+- **Équipes**: id, joueur1_id, joueur2_id, dernier_match  *(Note: L'ELO de l'équipe est calculé dynamiquement à partir des ELOs individuels)*
 - **Matchs**: id, équipe_gagnante_id, équipe_perdante_id, score_gagnant, score_perdant, est_fanny, date, année, mois
 - **Historique_ELO**: id, joueur_id, match_id, ancien_elo, nouvel_elo, différence, date, année, mois
-- **Classements_Périodiques**: id, joueur_id, année, mois, elo, position, matchs_joués, victoires, défaites
+- **Classements_Périodiques**: id, joueur_id, année, mois, elo, position, matchs_joués, victoires, défaites *(Note: Stocke les classements périodiques des *joueurs*. Le classement périodique des équipes, mentionné dans les fonctionnalités, nécessitera un calcul à la volée ou une table dédiée.)*
 
 ## Pages et interfaces
 
@@ -215,11 +215,6 @@ Le système ELO hybride utilisé par Baby Foot ELO repose sur le principe que le
    - Pour une défaite:
      - Delta_ELO_i = K_i * (0 - P(équipe du joueur))
 
-5. **Facteurs spéciaux**
-   - Matchs déséquilibrés: facteur d'atténuation pour limiter les pertes/gains excessifs
-   - Matchs entre nouveaux joueurs: facteur d'incertitude plus élevé
-   - Note: Les matchs "fanny" (score 0) sont enregistrés à titre symbolique mais n'affectent pas le calcul ELO
-
 ### Exemple concret
 
 - **Équipe A**: Joueurs A1 (ELO 1200) et A2 (ELO 1000) → ELO équipe = 1100
@@ -275,7 +270,7 @@ baby_foot_elo/
 - `GET /api/stats/{player_id}`: Statistiques d'un joueur
 - `GET /api/stats/{player_id}?year=2025&month=1`: Statistiques d'un joueur filtré par période
 - `GET /api/elo/history/{player_id}`: Historique ELO d'un joueur
-- `GET /api/rankings/periodic`: Liste des classements périodiques (année/mois)
+- `GET /api/rankings/periodic`: Liste des classements périodiques *des joueurs* (année/mois), basé sur la table `Classements_Périodiques`
 - `POST /api/export`: Export des données en JSON
 
 ### Considérations d'interface utilisateur
