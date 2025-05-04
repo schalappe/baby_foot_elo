@@ -70,11 +70,91 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 
 ### Modèle de données
 
-- **Joueurs**: id, nom, avatar, elo, date_création
-- **Équipes**: id, joueur1_id, joueur2_id, dernier_match  *(Note: L'ELO de l'équipe est calculé dynamiquement à partir des ELOs individuels)*
-- **Matchs**: id, équipe_gagnante_id, équipe_perdante_id, score_gagnant, score_perdant, est_fanny, date, année, mois
-- **Historique_ELO**: id, joueur_id, match_id, ancien_elo, nouvel_elo, différence, date, année, mois
-- **Classements_Périodiques**: id, joueur_id, année, mois, elo, position, matchs_joués, victoires, défaites *(Note: Stocke les classements périodiques des *joueurs*. Le classement périodique des équipes, mentionné dans les fonctionnalités, nécessitera un calcul à la volée ou une table dédiée.)*
+- **Joueurs**: `id`, `nom`, `avatar`, `elo`, `date_creation`
+- **Équipes**: `id`, `joueur1_id` (FK to Joueurs), `joueur2_id` (FK to Joueurs), `dernier_match` *(Note: Represents a unique pair of players who have played together. Team ELO is calculated dynamically.)*
+- **Matchs**: `id`, `équipe_gagnante_id` (FK to Équipes), `équipe_perdante_id` (FK to Équipes), `score_gagnant`, `score_perdant`, `est_fanny`, `date`, `année`, `mois`
+- **Historique_ELO**: `id`, `joueur_id` (FK to Joueurs), `match_id` (FK to Matchs), `ancien_elo`, `nouvel_elo`, `difference`, `date`, `année`, `mois`
+- **Classements_Périodiques**: `id`, `joueur_id` (FK to Joueurs), `année`, `mois`, `elo`, `position`, `matchs_joues`, `victoires`, `défaites` *(Note: Stores periodic PLAYER rankings.)*
+- **Classements_Equipes_Periodiques**: `id`, `equipe_id` (FK to Équipes), `année`, `mois`, `elo_moyen`, `position`, `matchs_joues`, `victoires`, `défaites` *(Note: Stores periodic TEAM rankings.)*
+
+#### Diagramme Entité-Relation
+
+```mermaid
+erDiagram
+    JOUEURS ||--o{ HISTORIQUE_ELO : "tracks changes for"
+    JOUEURS ||--o{ CLASSEMENTS_PERIODIQUES : "ranks"
+    JOUEURS }o--|| EQUIPES : "forms (joueur1)"
+    JOUEURS }o--|| EQUIPES : "forms (joueur2)"
+
+    EQUIPES ||--o{ MATCHS : "wins"
+    EQUIPES ||--o{ MATCHS : "loses"
+    EQUIPES ||--o{ CLASSEMENTS_EQUIPES_PERIODIQUES : "ranks"
+
+    MATCHS ||--|{ HISTORIQUE_ELO : "results in"
+
+    JOUEURS {
+        INT id PK
+        VARCHAR nom
+        VARCHAR avatar
+        INT elo
+        DATETIME date_creation
+    }
+
+    EQUIPES {
+        INT id PK
+        INT joueur1_id FK
+        INT joueur2_id FK
+        DATETIME dernier_match
+    }
+
+    MATCHS {
+        INT id PK
+        INT equipe_gagnante_id FK
+        INT equipe_perdante_id FK
+        INT score_gagnant
+        INT score_perdant
+        BOOLEAN est_fanny
+        DATETIME date
+        INT annee
+        INT mois
+    }
+
+    HISTORIQUE_ELO {
+        INT id PK
+        INT joueur_id FK
+        INT match_id FK
+        INT ancien_elo
+        INT nouvel_elo
+        INT difference
+        DATETIME date
+        INT annee
+        INT mois
+    }
+
+    CLASSEMENTS_PERIODIQUES {
+        INT id PK
+        INT joueur_id FK
+        INT annee
+        INT mois
+        INT elo
+        INT position
+        INT matchs_joues
+        INT victoires
+        INT defaites
+    }
+
+    CLASSEMENTS_EQUIPES_PERIODIQUES {
+        INT id PK
+        INT equipe_id FK
+        INT annee
+        INT mois
+        FLOAT elo_moyen 
+        INT position
+        INT matchs_joues
+        INT victoires
+        INT defaites
+    }
+```
 
 ## Pages et interfaces
 
