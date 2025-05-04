@@ -341,14 +341,14 @@ baby_foot_elo/
 
 L'interaction avec la base de données et les fonctionnalités backend se fera principalement via :
 
--   **Client `supabase-js` dans Next.js:** Pour les opérations CRUD de base sur les tables (joueurs, équipes, matchs), l'authentification et l'écoute des changements en temps réel.
-    -   Exemple: `supabase.from('joueurs').select('*')` pour lister les joueurs.
-    -   Exemple: `supabase.auth.signUp({...})` pour l'inscription.
--   **Supabase Edge Functions:** Pour la logique métier complexe qui doit s'exécuter côté serveur de manière sécurisée et performante.
-    -   **Calcul ELO Hybride:** Une fonction déclenchée après l'insertion d'un match pour calculer et mettre à jour les ELO des joueurs et les classements périodiques.
-    -   **Génération de classements:** Fonctions pour calculer les classements (joueurs, équipes) pour des périodes spécifiques si nécessaire (bien que les tables `Classements_Periodiques` visent à stocker ces snapshots).
-    -   **Export de données:** Une fonction pour générer l'export JSON.
--   **Politiques RLS (Row Level Security) de PostgreSQL:** Pour définir des règles d'accès fines aux données directement dans la base de données.
+- **Client `supabase-js` dans Next.js:** Pour les opérations CRUD de base sur les tables (joueurs, équipes, matchs), l'authentification et l'écoute des changements en temps réel.
+  - Exemple: `supabase.from('joueurs').select('*')` pour lister les joueurs.
+  - Exemple: `supabase.auth.signUp({...})` pour l'inscription.
+- **Supabase Edge Functions:** Pour la logique métier complexe qui doit s'exécuter côté serveur de manière sécurisée et performante.
+  - **Calcul ELO Hybride:** Une fonction déclenchée après l'insertion d'un match pour calculer et mettre à jour les ELO des joueurs et les classements périodiques.
+  - **Génération de classements:** Fonctions pour calculer les classements (joueurs, équipes) pour des périodes spécifiques si nécessaire (bien que les tables `Classements_Periodiques` visent à stocker ces snapshots).
+  - **Export de données:** Une fonction pour générer l'export JSON.
+- **Politiques RLS (Row Level Security) de PostgreSQL:** Pour définir des règles d'accès fines aux données directement dans la base de données.
 
 ### Considérations d'interface utilisateur
 
