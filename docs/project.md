@@ -373,8 +373,8 @@ L'interaction entre le frontend Next.js et le backend FastAPI se fera via des ap
   - npm (ou yarn/pnpm)
 - **Backend:**
   - Python 3.8+
-  - pip (ou autre gestionnaire de paquets Python comme Poetry)
-  - FastAPI, Uvicorn (serveur ASGI), DuckDB Python package, et autres dépendances listées dans `requirements.txt`.
+  - Poetry (pour la gestion des dépendances et de l'environnement virtuel)
+  - FastAPI, Uvicorn (serveur ASGI), DuckDB Python package, et autres dépendances gérées via `pyproject.toml`.
 - **Environnement de développement:**
   - VSCode avec extensions recommandées (ESLint, Prettier, Python, Pylance)
   - Outils de formatage/linting (Prettier pour JS/TS, Black/Flake8/Ruff pour Python)
