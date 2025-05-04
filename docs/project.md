@@ -53,20 +53,16 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
   - Thème sombre/clair avec dominante vert islamique
   - Composants réutilisables pour les tableaux et graphiques
 
-### Backend
+### Backend & Base de Données (BaaS)
 
-- Framework: **FastAPI**
-  - API REST performante
-  - Validation automatique des données
-  - Documentation OpenAPI intégrée
-  - Endpoints dédiés pour joueurs, équipes et matchs
-
-### Base de données
-
-- Technologie: **DuckDB**
-  - Solution légère mais puissante
-  - Optimisée pour les requêtes analytiques
-  - Facilité de déploiement et maintenance
+- Plateforme: **Supabase**
+  - Solution Backend-as-a-Service (BaaS) basée sur PostgreSQL.
+  - Fournit une base de données PostgreSQL managée.
+  - Génère automatiquement une API REST et GraphQL.
+  - Intègre l'authentification (Supabase Auth).
+  - Permet l'exécution de logique backend via Edge Functions (Deno runtime).
+  - Offre du stockage de fichiers (Supabase Storage).
+  - Capacités temps réel (Supabase Realtime).
 
 ### Modèle de données
 
@@ -76,6 +72,8 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 - **Historique_ELO**: `id`, `joueur_id` (FK to Joueurs), `match_id` (FK to Matchs), `ancien_elo`, `nouvel_elo`, `difference`, `date`, `année`, `mois`
 - **Classements_Périodiques**: `id`, `joueur_id` (FK to Joueurs), `année`, `mois`, `elo`, `position`, `matchs_joues`, `victoires`, `défaites` *(Note: Stores periodic PLAYER rankings.)*
 - **Classements_Equipes_Periodiques**: `id`, `equipe_id` (FK to Équipes), `année`, `mois`, `elo_moyen`, `position`, `matchs_joues`, `victoires`, `défaites` *(Note: Stores periodic TEAM rankings.)*
+
+*(Note: Le modèle est défini pour PostgreSQL via Supabase. Les types de données comme `DATETIME` correspondent à `TIMESTAMP WITH TIME ZONE` dans PostgreSQL.)*
 
 #### Diagramme Entité-Relation
 
@@ -307,6 +305,8 @@ Le système ELO hybride utilisé par Baby Foot ELO repose sur le principe que le
 - Points perdus par B1: -29 ELO (K=100 * (0-0.29))
 - Points perdus par B2: -29 ELO (K=100 * (0-0.29))
 
+> *Cette logique de calcul sera implémentée via des Supabase Edge Functions pour s'exécuter côté serveur.*
+
 ## Implémentation et développement
 
 ### Structure du projet
@@ -318,40 +318,33 @@ baby_foot_elo/
 │   ├── components/         # Composants React réutilisables
 │   ├── hooks/              # Hooks personnalisés
 │   ├── styles/             # Styles CSS/Tailwind
-│   ├── utils/              # Utilitaires et fonctions
+│   ├── utils/              # Utilitaires (incluant client Supabase)
 │   └── public/             # Assets statiques
 │
-├── backend/                # API FastAPI
-│   ├── app/                # Application principale
-│   │   ├── api/            # Endpoints API
-│   │   ├── core/           # Configuration
-│   │   ├── models/         # Modèles de données
-│   │   ├── services/       # Logique métier
-│   │   └── utils/          # Utilitaires
-│   ├── database/           # Scripts de base de données
-│   └── tests/              # Tests unitaires et d'intégration
+├── supabase/               # Configuration et fonctions Supabase
+│   ├── functions/          # Edge Functions (ex: calcul ELO)
+│   │   └── ...
+│   ├── migrations/         # Migrations de base de données SQL
+│   │   └── ...
+│   └── config.toml         # Configuration Supabase CLI
 │
 └── docs/                   # Documentation
     ├── capture/            # Captures d'écran et maquettes
     └── project.md          # Ce document
 ```
 
-### API endpoints principaux
+### Interaction avec Supabase (remplace les endpoints API dédiés)
 
-- `GET /api/players`: Liste des joueurs avec leur ELO
-- `GET /api/players/{id}`: Détails d'un joueur spécifique
-- `POST /api/players`: Création d'un nouveau joueur
-- `GET /api/teams`: Liste des équipes possibles
-- `GET /api/teams/ranking`: Classement des équipes
-- `GET /api/teams/ranking?year=2025&month=1`: Classement des équipes filtré par période
-- `POST /api/matches`: Enregistrement d'un nouveau match
-- `GET /api/matches`: Liste des matchs avec filtres
-- `GET /api/matches?year=2025&month=1`: Liste des matchs filtré par période
-- `GET /api/stats/{player_id}`: Statistiques d'un joueur
-- `GET /api/stats/{player_id}?year=2025&month=1`: Statistiques d'un joueur filtré par période
-- `GET /api/elo/history/{player_id}`: Historique ELO d'un joueur
-- `GET /api/rankings/periodic`: Liste des classements périodiques *des joueurs* (année/mois), basé sur la table `Classements_Périodiques`
-- `POST /api/export`: Export des données en JSON
+L'interaction avec la base de données et les fonctionnalités backend se fera principalement via :
+
+-   **Client `supabase-js` dans Next.js:** Pour les opérations CRUD de base sur les tables (joueurs, équipes, matchs), l'authentification et l'écoute des changements en temps réel.
+    -   Exemple: `supabase.from('joueurs').select('*')` pour lister les joueurs.
+    -   Exemple: `supabase.auth.signUp({...})` pour l'inscription.
+-   **Supabase Edge Functions:** Pour la logique métier complexe qui doit s'exécuter côté serveur de manière sécurisée et performante.
+    -   **Calcul ELO Hybride:** Une fonction déclenchée après l'insertion d'un match pour calculer et mettre à jour les ELO des joueurs et les classements périodiques.
+    -   **Génération de classements:** Fonctions pour calculer les classements (joueurs, équipes) pour des périodes spécifiques si nécessaire (bien que les tables `Classements_Periodiques` visent à stocker ces snapshots).
+    -   **Export de données:** Une fonction pour générer l'export JSON.
+-   **Politiques RLS (Row Level Security) de PostgreSQL:** Pour définir des règles d'accès fines aux données directement dans la base de données.
 
 ### Considérations d'interface utilisateur
 
@@ -365,25 +358,23 @@ baby_foot_elo/
 
 ### Prérequis de développement
 
-- Node.js v16+ pour le frontend
-- Python 3.9+ pour le backend
-- Gestionnaires de paquets:
-  - npm pour le frontend
-  - Poetry pour le backend
+- Node.js v16+ pour le frontend (Next.js)
+- npm (ou yarn/pnpm) pour la gestion des dépendances frontend
+- Supabase CLI pour la gestion locale de l'environnement Supabase (migrations, fonctions)
+- Deno (pour le développement et test local des Edge Functions)
 - Environnement de développement:
-  - VSCode avec extensions recommandées
-  - ESLint/Prettier pour le frontend
-  - Black/isort pour le backend
+  - VSCode avec extensions recommandées (ESLint, Prettier, Deno)
+  - ESLint/Prettier pour le frontend et les fonctions Edge (TypeScript/JavaScript)
 
 ### Déploiement
 
 - **Développement local**:
   - Frontend: `npm run dev` (port 3000)
-  - Backend: `uvicorn app.main:app --reload` (port 8000)
+  - Supabase local: `supabase start` (via Supabase CLI) pour émuler l'environnement Supabase (DB, Auth, Functions, Storage).
 - **Production**:
-  - Options de déploiement flexibles selon le contexte d'utilisation
-  - Configuration minimale requise très légère
-  - Sauvegarde régulière des données recommandée
+  - **Frontend (Next.js):** Déploiement sur des plateformes comme Vercel, Netlify, ou autre hébergeur Node.js.
+  - **Backend (Supabase):** Utilisation du projet Supabase Cloud managé. Les Edge Functions sont déployées via `supabase functions deploy`.
+  - La base de données PostgreSQL est gérée par Supabase Cloud, incluant les sauvegardes.
 
 ### Considérations pour les classements périodiques
 
