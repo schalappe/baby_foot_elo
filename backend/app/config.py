@@ -7,6 +7,24 @@ from os import environ
 
 
 class Config:
+    """
+    Configuration class for the application.
+
+    The configuration object is responsible for storing information about the environment in which
+    the application is running. It uses the environment variable ENV to select between the development
+    and production environments. If ENV is not set, the development environment is assumed.
+
+    Attributes
+    ----------
+    env : str
+        The current environment (either "dev" or "prod").
+
+    Methods
+    -------
+    get_db_url() -> str
+        Return the URL of the DuckDB database to use.
+    """
+
     def __init__(self):
         """
         Initialize a new configuration object.
