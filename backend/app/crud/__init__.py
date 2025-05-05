@@ -6,23 +6,34 @@ Re-exports core functionalities, CRUD operations, ELO functions, batch operation
 and query utilities from their respective submodules.
 """
 
-from .batch_operations import (
-    batch_insert_players,
-    batch_insert_teams,
-    batch_record_elo_updates,
-)
+from typing import Any, Dict, List, Optional
+
 from .builders import QueryBuilder
-from .elo_history import get_current_elo, get_player_elo_history, record_elo_update
+from .elo_history import (
+    batch_record_elo_updates,
+    get_current_elo,
+    get_player_elo_history,
+    record_elo_update,
+)
 from .matches import create_match, get_match, get_matches_by_team
 from .players import (
+    batch_insert_players,
     create_player,
     delete_player,
     get_all_players,
+    get_leaderboard,
     get_player,
+    get_player_stats,
+    search_players,
     update_player,
 )
-from .queries import get_leaderboard, get_player_stats, search_players
-from .teams import create_team, delete_team, get_all_teams, get_team
+from .teams import (
+    batch_insert_teams,
+    create_team,
+    delete_team,
+    get_all_teams,
+    get_team,
+)
 
 __all__ = [
     # CRUD - Players
@@ -31,11 +42,16 @@ __all__ = [
     "get_all_players",
     "update_player",
     "delete_player",
+    "batch_insert_players",
+    "search_players",
+    "get_player_stats",
+    "get_leaderboard",
     # CRUD - Teams
     "create_team",
     "get_team",
     "get_all_teams",
     "delete_team",
+    "batch_insert_teams",
     # CRUD - Matches
     "create_match",
     "get_match",
@@ -44,13 +60,7 @@ __all__ = [
     "record_elo_update",
     "get_player_elo_history",
     "get_current_elo",
-    # Batch
-    "batch_insert_players",
-    "batch_insert_teams",
     "batch_record_elo_updates",
-    # Query
+    # Query Builders
     "QueryBuilder",
-    "search_players",
-    "get_player_stats",
-    "get_leaderboard",
 ]

@@ -102,3 +102,31 @@ def get_current_elo(player_id: int) -> Optional[float]:
         [player_id],
     )
     return result[0] if result else None
+
+
+@with_retry()
+def batch_record_elo_updates(elo_updates: List[Dict[str, Any]]) -> List[Optional[int]]:
+    """
+    Record multiple ELO updates in a single transaction.
+
+    Parameters
+    ----------
+    elo_updates : List[Dict[str, Any]]
+        List of ELO update dictionaries, each with 'player_id', 'match_id', and 'elo_score' keys
+
+    Returns
+    -------
+    List[Optional[int]]
+        List of IDs for the newly created ELO history records, or None for failures
+    """
+    history_ids = []
+    with transaction() as db:
+        for update in elo_updates:
+            db.execute(
+                "INSERT INTO ELO_History (player_id, match_id, elo_score) VALUES (?, ?, ?)",
+                [update["player_id"], update["match_id"], update["elo_score"]],
+            )
+            result = db.fetchone("SELECT last_insert_rowid()")
+            history_ids.append(result[0] if result else None)
+
+    return history_ids

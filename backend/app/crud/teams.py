@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-CRUD operations for the Teams table.
+Operations related to the Teams table.
 """
 
 from logging import getLogger
@@ -104,3 +104,32 @@ def delete_team(team_id: int) -> bool:
     with transaction() as db:
         db.execute("DELETE FROM Teams WHERE team_id = ?", [team_id])
         return db.rowcount > 0
+
+
+@with_retry()
+def batch_insert_teams(teams: List[Dict[str, Any]]) -> List[Optional[int]]:
+    """
+    Insert multiple teams in a single transaction.
+
+    Parameters
+    ----------
+    teams : List[Dict[str, Any]]
+        List of team dictionaries, each with 'team_name', 'player1_id', 'player2_id' keys
+
+    Returns
+    -------
+    List[Optional[int]]
+        List of IDs for the newly created teams, or None for failures
+    """
+    team_ids = []
+    with transaction() as db:
+        for team in teams:
+            # ##: Consider adding the same check as in create_team here.
+            db.execute(
+                "INSERT INTO Teams (team_name, player1_id, player2_id) VALUES (?, ?, ?)",
+                [team["team_name"], team["player1_id"], team["player2_id"]],
+            )
+            result = db.fetchone("SELECT last_insert_rowid()")
+            team_ids.append(result[0] if result else None)
+
+    return team_ids
