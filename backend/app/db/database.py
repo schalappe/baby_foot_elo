@@ -9,7 +9,9 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import duckdb
 
-from . import schema_definitions
+from . import schema
+
+logger = getLogger(__name__)
 
 
 class DatabaseManager:
@@ -48,7 +50,6 @@ class DatabaseManager:
         self.db_path = db_path
         self.conn_params = conn_params
         self.connection = None
-        self.logger = getLogger("DatabaseManager")
         self._initialized = True
         self.connect()
 
@@ -58,9 +59,9 @@ class DatabaseManager:
         """
         try:
             self.connection = duckdb.connect(self.db_path, **self.conn_params)
-            self.logger.info(f"Connected to DuckDB at {self.db_path}")
+            logger.info("Connected to DuckDB at %s", self.db_path)
         except Exception as exc:
-            self.logger.error(f"Failed to connect to DuckDB: {exc}")
+            logger.error("Failed to connect to DuckDB: %s", exc)
             raise
 
     def _ensure_connection(method):
@@ -82,47 +83,47 @@ class DatabaseManager:
         """
 
         schemas = [
-            schema_definitions.CREATE_PLAYERS_TABLE,
-            schema_definitions.CREATE_TEAMS_TABLE,
-            schema_definitions.CREATE_MATCHES_TABLE,
-            schema_definitions.CREATE_ELO_HISTORY_TABLE,
-            schema_definitions.CREATE_PERIODIC_RANKINGS_TABLE,
-            schema_definitions.CREATE_TEAM_PERIODIC_RANKINGS_TABLE,
+            schema.CREATE_PLAYERS_TABLE,
+            schema.CREATE_TEAMS_TABLE,
+            schema.CREATE_MATCHES_TABLE,
+            schema.CREATE_ELO_HISTORY_TABLE,
+            schema.CREATE_PERIODIC_RANKINGS_TABLE,
+            schema.CREATE_TEAM_PERIODIC_RANKINGS_TABLE,
         ]
         for sql in schemas:
             try:
                 self.execute(sql)
-                self.logger.info(f"Executed schema statement: {sql.splitlines()[0]}")
+                logger.info("Executed schema statement: %s", sql.splitlines()[0])
             except Exception as exc:
-                self.logger.error(f"Error executing schema statement: {exc}\nSQL: {sql}")
+                logger.error("Error executing schema statement: %s\nSQL: %s", exc, sql)
                 raise
 
         # ##: Create indexes for performance optimization.
         self.create_indexes_for_optimization()
-        self.logger.info("Database initialization complete. All tables and indexes ensured.")
+        logger.info("Database initialization complete. All tables and indexes ensured.")
 
     def create_indexes_for_optimization(self):
         """
         Create all indexes needed for optimal query performance. Safe to call multiple times.
         """
         indexes = [
-            schema_definitions.CREATE_INDEX_PLAYERS_NAME,
-            schema_definitions.CREATE_INDEX_MATCHES_TEAM1,
-            schema_definitions.CREATE_INDEX_MATCHES_TEAM2,
-            schema_definitions.CREATE_INDEX_MATCHES_WINNER,
-            schema_definitions.CREATE_INDEX_ELOHIST_PLAYER,
-            schema_definitions.CREATE_INDEX_ELOHIST_MATCH,
-            schema_definitions.CREATE_INDEX_PERIODIC_PLAYER,
-            schema_definitions.CREATE_INDEX_PERIODIC_PERIOD_PLAYER,
-            schema_definitions.CREATE_INDEX_MATCHES_DATE,
-            schema_definitions.CREATE_INDEX_ELOHIST_UPDATED,
+            schema.CREATE_INDEX_PLAYERS_NAME,
+            schema.CREATE_INDEX_MATCHES_TEAM1,
+            schema.CREATE_INDEX_MATCHES_TEAM2,
+            schema.CREATE_INDEX_MATCHES_WINNER,
+            schema.CREATE_INDEX_ELOHIST_PLAYER,
+            schema.CREATE_INDEX_ELOHIST_MATCH,
+            schema.CREATE_INDEX_PERIODIC_PLAYER,
+            schema.CREATE_INDEX_PERIODIC_PERIOD_PLAYER,
+            schema.CREATE_INDEX_MATCHES_DATE,
+            schema.CREATE_INDEX_ELOHIST_UPDATED,
         ]
         for idx_sql in indexes:
             try:
                 self.execute(idx_sql)
-                self.logger.info(f"Executed index statement: {idx_sql.splitlines()[0]}")
+                logger.info("Executed index statement: %s", idx_sql.splitlines()[0])
             except Exception as exc:
-                self.logger.error(f"Error executing index statement: {exc}\nSQL: {idx_sql}")
+                logger.error("Error executing index statement: %s\nSQL: %s", exc, idx_sql)
                 raise
 
     @_ensure_connection
@@ -147,10 +148,10 @@ class DatabaseManager:
                 result = self.connection.execute(query, params)
             else:
                 result = self.connection.execute(query)
-            self.logger.debug(f"Executed query: {query} | Params: {params}")
+            logger.debug("Executed query: %s | Params: %s", query, params)
             return result
         except Exception as exc:
-            self.logger.error(f"Query execution failed: {exc}\nQuery: {query}\nParams: {params}")
+            logger.error("Query execution failed: %s\nQuery: %s\nParams: %s", exc, query, params)
             raise
 
     @_ensure_connection
@@ -193,34 +194,13 @@ class DatabaseManager:
         cur = self.execute(query, params)
         return cur.fetchone()
 
-    def begin(self):
-        """
-        Begin a transaction.
-        """
-        self.execute("BEGIN;")
-        self.logger.debug("Transaction started.")
-
-    def commit(self):
-        """
-        Commit a transaction.
-        """
-        self.execute("COMMIT;")
-        self.logger.debug("Transaction committed.")
-
-    def rollback(self):
-        """
-        Rollback a transaction.
-        """
-        self.execute("ROLLBACK;")
-        self.logger.debug("Transaction rolled back.")
-
     def close(self):
         """
         Close the database connection.
         """
         if self.connection:
             self.connection.close()
-            self.logger.info("DuckDB connection closed.")
+            logger.info("DuckDB connection closed.")
             self.connection = None
 
     def __del__(self):
