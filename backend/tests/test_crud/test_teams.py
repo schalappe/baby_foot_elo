@@ -1,8 +1,9 @@
+# -*- coding: utf-8 -*-
 """
 Unit tests for team CRUD operations using unittest.
 """
 
-import unittest
+from unittest import TestCase, main
 from app.db import DatabaseManager, initialize_database
 from app.crud.players import create_player
 from app.crud.teams import (
@@ -14,7 +15,7 @@ from app.crud.teams import (
 )
 
 
-class TestTeamCRUD(unittest.TestCase):
+class TestTeamCRUD(TestCase):
     """Test suite for team CRUD operations."""
 
     def setUp(self):
@@ -42,7 +43,6 @@ class TestTeamCRUD(unittest.TestCase):
         self.assertEqual(team["team_id"], team_id)
         self.assertEqual({team["player1_id"], team["player2_id"]}, {p1, p2})
 
-        # Duplicate creation should return None
         self.assertIsNone(create_team(p1, p2))
         self.assertIsNone(create_team(p2, p1))
 
@@ -73,9 +73,9 @@ class TestTeamCRUD(unittest.TestCase):
         p1 = create_player("Frank")
         p2 = create_player("Grace")
         t_id = create_team(p1, p2)
+
         self.assertTrue(delete_team(t_id))
         self.assertIsNone(get_team(t_id))
-        # Deleting non-existent should return False
         self.assertFalse(delete_team(9999))
 
     def test_batch_insert_teams(self):
@@ -96,4 +96,4 @@ class TestTeamCRUD(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    main()
