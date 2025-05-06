@@ -122,8 +122,8 @@ def delete_team(team_id: int) -> bool:
         True if the deletion was successful, False otherwise.
     """
     with transaction() as db:
-        result = db.execute("DELETE FROM Teams WHERE team_id = ?", [team_id])
-        return result.rowcount > 0
+        result = db.fetchone("DELETE FROM Teams WHERE team_id = ? RETURNING team_id", [team_id])
+        return bool(result)
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
