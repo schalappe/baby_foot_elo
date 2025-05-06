@@ -12,7 +12,6 @@ from .builders import QueryBuilder
 from .elo_history import (
     batch_record_elo_updates,
     get_current_elo,
-    get_player_elo_history,
     record_elo_update,
 )
 from .matches import create_match, get_match, get_matches_by_team
@@ -21,12 +20,11 @@ from .players import (
     create_player,
     delete_player,
     get_all_players,
-    get_leaderboard,
     get_player,
-    get_player_stats,
     search_players,
     update_player,
 )
+from .stats import get_leaderboard, get_player_elo_history, get_player_stats
 from .teams import (
     batch_insert_teams,
     create_team,
@@ -44,8 +42,6 @@ __all__ = [
     "delete_player",
     "batch_insert_players",
     "search_players",
-    "get_player_stats",
-    "get_leaderboard",
     # CRUD - Teams
     "create_team",
     "get_team",
@@ -58,9 +54,12 @@ __all__ = [
     "get_matches_by_team",
     # ELO
     "record_elo_update",
-    "get_player_elo_history",
     "get_current_elo",
     "batch_record_elo_updates",
+    # Stats
+    "get_player_stats",
+    "get_leaderboard",
+    "get_player_elo_history",
     # Query Builders
     "QueryBuilder",
 ]

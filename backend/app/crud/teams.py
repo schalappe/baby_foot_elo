@@ -6,20 +6,18 @@ Operations related to the Teams table.
 from logging import getLogger
 from typing import Any, Dict, List, Optional
 
-from app.db import DatabaseManager, transaction, with_retry
+from app.db import transaction, with_retry
 
 logger = getLogger(__name__)
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def create_team(name: str, player1_id: int, player2_id: int) -> Optional[int]:
+def create_team(player1_id: int, player2_id: int) -> Optional[int]:
     """
     Create a new team in the database.
 
     Parameters
     ----------
-    name : str
-        Name of the team
     player1_id : int
         ID of the first player
     player2_id : int
@@ -48,13 +46,13 @@ def create_team(name: str, player1_id: int, player2_id: int) -> Optional[int]:
         # ##: Use RETURNING clause for consistency and reliability across DBs.
         query = "INSERT INTO Teams (player1_id, player2_id) VALUES (?, ?) RETURNING team_id"
         result = db.fetchone(query, [player1_id, player2_id])
-        
+
         if result and result[0]:
-            logger.info(f"Created team '{name}' with ID: {result[0]}")
+            logger.info("Created team with ID: %d", result[0])
             return result[0]
-        else:
-            logger.error(f"Failed to create team '{name}' or retrieve its ID.")
-            return None
+
+        logger.error("Failed to create team or retrieve its ID.")
+        return None
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -72,11 +70,17 @@ def get_team(team_id: int) -> Optional[Dict[str, Any]]:
     Optional[Dict[str, Any]]
         Team data as a dictionary, or None if not found
     """
-    db = DatabaseManager()
-    result = db.fetchone("SELECT team_id, player1_id, player2_id FROM Teams WHERE team_id = ?", [team_id])
-    if result:
-        return {"team_id": result[0], "player1_id": result[1], "player2_id": result[2]}
-    return None
+    try:
+        with transaction() as db_manager:
+            result = db_manager.fetchone(
+                "SELECT team_id, player1_id, player2_id FROM Teams WHERE team_id = ?", [team_id]
+            )
+            if result:
+                return {"team_id": result[0], "player1_id": result[1], "player2_id": result[2]}
+            return None
+    except Exception as e:
+        logger.error("Failed to get team by ID %d: %s", team_id, e)
+        return None
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -89,9 +93,17 @@ def get_all_teams() -> List[Dict[str, Any]]:
     List[Dict[str, Any]]
         List of team dictionaries.
     """
-    db = DatabaseManager()
-    results = db.fetchall("SELECT team_id, player1_id, player2_id FROM Teams ORDER BY player1_id")
-    return [{"team_id": row[0], "player1_id": row[1], "player2_id": row[2]} for row in results]
+    try:
+        with transaction() as db_manager:
+            results = db_manager.fetchall(
+                "SELECT team_id, player1_id, player2_id FROM Teams ORDER BY player1_id"
+            )
+            return [
+                {"team_id": row[0], "player1_id": row[1], "player2_id": row[2]} for row in results
+            ]
+    except Exception as e:
+        logger.error("Failed to get all teams: %s", e)
+        return []
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -110,8 +122,8 @@ def delete_team(team_id: int) -> bool:
         True if the deletion was successful, False otherwise.
     """
     with transaction() as db:
-        db.execute("DELETE FROM Teams WHERE team_id = ?", [team_id])
-        return db.rowcount > 0
+        result = db.execute("DELETE FROM Teams WHERE team_id = ?", [team_id])
+        return result.rowcount > 0
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -137,11 +149,10 @@ def batch_insert_teams(teams: List[Dict[str, Any]]) -> List[Optional[int]]:
             p2_id = team["player2_id"]
             if p1_id > p2_id:
                 p1_id, p2_id = p2_id, p1_id
-            
+
             # ##: Consider adding the same check as in create_team here.
             query = "INSERT INTO Teams (player1_id, player2_id) VALUES (?, ?) RETURNING team_id"
             result = db.fetchone(query, [p1_id, p2_id])
-            
             team_ids.append(result[0] if result else None)
 
     return team_ids

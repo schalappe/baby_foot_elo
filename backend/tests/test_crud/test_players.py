@@ -22,19 +22,14 @@ class TestPlayerCRUD(unittest.TestCase):
 
     def setUp(self):
         """Prepare for each test: Create a fresh in-memory DB and schema."""
-        # Reset the singleton instance to ensure a fresh connection
         DatabaseManager._instance = None
-        # Create a new DatabaseManager instance connected to an in-memory DB
-        # Store it on self to access it in tearDown
         self.db = DatabaseManager(db_path=":memory:")
-        # Initialize the schema (create tables and indexes)
         initialize_database(self.db)
 
     def tearDown(self):
         """Clean up after each test: Close connection and reset singleton."""
         if hasattr(self, 'db') and self.db.connection:
             self.db.close()
-        # Reset the singleton instance again for the next test
         DatabaseManager._instance = None
 
     def test_create_player(self):
@@ -44,7 +39,6 @@ class TestPlayerCRUD(unittest.TestCase):
         self.assertIsNotNone(player_id)
         self.assertIsInstance(player_id, int)
 
-        # Verify the player exists in the DB
         retrieved_player = get_player(player_id)
         self.assertIsNotNone(retrieved_player)
         self.assertEqual(retrieved_player["name"], player_name)
@@ -63,12 +57,11 @@ class TestPlayerCRUD(unittest.TestCase):
 
     def test_get_player_not_exists(self):
         """Test retrieving a non-existent player."""
-        retrieved_player = get_player(99999)  # Assuming this ID doesn't exist
+        retrieved_player = get_player(99999)
         self.assertIsNone(retrieved_player)
 
     def test_get_all_players_empty(self):
         """Test getting all players when the table is empty."""
-        # Ensure the table is empty before this test if setUp doesn't guarantee it
         players = get_all_players()
         self.assertEqual(players, [])
 
@@ -83,7 +76,6 @@ class TestPlayerCRUD(unittest.TestCase):
         self.assertEqual(len(players), 2)
         player_names = {p["name"] for p in players}
         self.assertEqual(player_names, {"Charlie", "David"})
-        # Check sorting by name
         self.assertEqual(players[0]["name"], "Charlie")
         self.assertEqual(players[1]["name"], "David")
 
@@ -145,7 +137,6 @@ class TestPlayerCRUD(unittest.TestCase):
         self.assertEqual(len(results), 2)
         names = {p["name"] for p in results}
         self.assertEqual(names, {"Ivan", "Ivy"})
-        # Check sorting
         self.assertEqual(results[0]["name"], "Ivan")
         self.assertEqual(results[1]["name"], "Ivy")
 
@@ -163,7 +154,6 @@ class TestPlayerCRUD(unittest.TestCase):
 
         results = search_players("Player", limit=2)
         self.assertEqual(len(results), 2)
-        # Check sorting implies A and B are returned
         names = {p["name"] for p in results}
         self.assertEqual(names, {"Player A", "Player B"})
 
