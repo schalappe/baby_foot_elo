@@ -5,11 +5,9 @@ Database Manager for DuckDB connections.
 
 import threading
 from logging import getLogger
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, Callable
 
 import duckdb
-
-from app import schema
 
 logger = getLogger(__name__)
 
@@ -64,7 +62,8 @@ class DatabaseManager:
             logger.error("Failed to connect to DuckDB: %s", exc)
             raise
 
-    def _ensure_connection(method):
+    # pylint: disable=no-self-argument
+    def _ensure_connection(method: Callable):
         """
         Decorator to ensure a connection exists before executing a method.
         """
@@ -75,74 +74,6 @@ class DatabaseManager:
             return method(self, *args, **kwargs)
 
         return wrapper
-
-    def initialize_database(self):
-        """
-        Initialize the database: create sequences and tables if they do not exist.
-        This method is idempotent and can be safely called multiple times.
-        """
-
-        # First, create sequences
-        sequences = [
-            schema.CREATE_SEQ_PLAYERS,
-            schema.CREATE_SEQ_TEAMS,
-            schema.CREATE_SEQ_MATCHES,
-            schema.CREATE_SEQ_ELO_HISTORY,
-            schema.CREATE_SEQ_PERIODIC_RANKINGS,
-            schema.CREATE_SEQ_TEAM_PERIODIC_RANKINGS,
-        ]
-        for sql in sequences:
-            try:
-                self.execute(sql)
-                logger.info("Executed sequence statement: %s", sql.splitlines()[0])
-            except Exception as exc:
-                logger.error("Error executing sequence statement: %s\nSQL: %s", exc, sql)
-                raise
-
-        # Then, create tables
-        tables = [
-            schema.CREATE_PLAYERS_TABLE,
-            schema.CREATE_TEAMS_TABLE,
-            schema.CREATE_MATCHES_TABLE,
-            schema.CREATE_ELO_HISTORY_TABLE,
-            schema.CREATE_PERIODIC_RANKINGS_TABLE,
-            schema.CREATE_TEAM_PERIODIC_RANKINGS_TABLE,
-        ]
-        for sql in tables:
-            try:
-                self.execute(sql)
-                logger.info("Executed table statement: %s", sql.splitlines()[0])
-            except Exception as exc:
-                logger.error("Error executing table statement: %s\nSQL: %s", exc, sql)
-                raise
-
-        # ##: Create indexes for performance optimization.
-        self.create_indexes_for_optimization()
-        logger.info("Database initialization complete. All tables and indexes ensured.")
-
-    def create_indexes_for_optimization(self):
-        """
-        Create all indexes needed for optimal query performance. Safe to call multiple times.
-        """
-        indexes = [
-            schema.CREATE_INDEX_PLAYERS_NAME,
-            schema.CREATE_INDEX_MATCHES_TEAM1,
-            schema.CREATE_INDEX_MATCHES_TEAM2,
-            schema.CREATE_INDEX_MATCHES_WINNER,
-            schema.CREATE_INDEX_ELOHIST_PLAYER,
-            schema.CREATE_INDEX_ELOHIST_MATCH,
-            schema.CREATE_INDEX_PERIODIC_PLAYER,
-            schema.CREATE_INDEX_PERIODIC_PERIOD_PLAYER,
-            schema.CREATE_INDEX_MATCHES_DATE,
-            schema.CREATE_INDEX_ELOHIST_UPDATED,
-        ]
-        for idx_sql in indexes:
-            try:
-                self.execute(idx_sql)
-                logger.info("Executed index statement: %s", idx_sql.splitlines()[0])
-            except Exception as exc:
-                logger.error("Error executing index statement: %s\nSQL: %s", exc, idx_sql)
-                raise
 
     @_ensure_connection
     def execute(self, query: str, params: Optional[Union[List, Tuple, Dict]] = None) -> Any:
@@ -173,7 +104,9 @@ class DatabaseManager:
             raise
 
     @_ensure_connection
-    def fetchall(self, query: str, params: Optional[Union[List, Tuple, Dict]] = None) -> List[Tuple]:
+    def fetchall(
+        self, query: str, params: Optional[Union[List, Tuple, Dict]] = None
+    ) -> List[Tuple]:
         """
         Fetch all rows from a query result.
 
@@ -193,7 +126,9 @@ class DatabaseManager:
         return cur.fetchall()
 
     @_ensure_connection
-    def fetchone(self, query: str, params: Optional[Union[List, Tuple, Dict]] = None) -> Optional[Tuple]:
+    def fetchone(
+        self, query: str, params: Optional[Union[List, Tuple, Dict]] = None
+    ) -> Optional[Tuple]:
         """
         Fetch a single row from a query result.
 

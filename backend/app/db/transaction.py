@@ -15,8 +15,8 @@ class TransactionHandler:
     """
     Handles the execution of transaction commands (BEGIN, COMMIT, ROLLBACK).
 
-    This class is intended to be used with the context manager provided by the transaction() function.
-    It provides methods to begin, commit and rollback transactions.
+    This class is intended to be used with the context manager provided by the transaction()
+    function. It provides methods to begin, commit and rollback transactions.
     """
 
     def begin(self, db: DatabaseManager):
@@ -71,9 +71,9 @@ def transaction():
     Context manager for transaction management.
     Automatically handles begin, commit, and rollback operations.
 
-    This context manager is used to manage database transactions. It ensures that a transaction is started before
-    the block of code is executed, and that the transaction is committed if no exceptions are raised, or rolled back
-    if an exception is raised.
+    This context manager is used to manage database transactions. It ensures that a transaction
+    is started before the block of code is executed, and that the transaction is committed if
+    no exceptions are raised, or rolled back if an exception is raised.
 
     Example
     -------

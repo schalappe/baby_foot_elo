@@ -7,6 +7,7 @@ from datetime import datetime
 from unittest import TestCase, main
 
 from app.db.database import DatabaseManager
+from app.db.initializer import initialize_database
 
 
 class TestDatabase(TestCase):
@@ -15,13 +16,13 @@ class TestDatabase(TestCase):
     def setUp(self):
         """Set up the test environment."""
         self.db = DatabaseManager(db_path=":memory:")
-        self.db.initialize_database()
+        initialize_database(self.db)
 
     def test_initialize_database_creates_all_tables(self):
         """Test that initialize_database creates all required tables and is idempotent."""
         expected_tables = {"Players", "Teams", "Matches", "ELO_History", "Periodic_Rankings", "Team_Periodic_Rankings"}
 
-        self.db.initialize_database()
+        initialize_database(self.db)
         tables = set(
             row[0]
             for row in self.db.fetchall("SELECT table_name FROM information_schema.tables WHERE table_schema='main'")
@@ -29,7 +30,7 @@ class TestDatabase(TestCase):
         for table in expected_tables:
             self.assertIn(table, tables)
 
-        self.db.initialize_database()
+        initialize_database(self.db)
         tables2 = set(
             row[0]
             for row in self.db.fetchall("SELECT table_name FROM information_schema.tables WHERE table_schema='main'")

@@ -4,7 +4,7 @@ Unit tests for player CRUD operations using unittest.
 """
 
 import unittest
-from app.db import DatabaseManager  
+from app.db import DatabaseManager, initialize_database 
 
 from app.crud.players import (
     batch_insert_players,
@@ -28,7 +28,7 @@ class TestPlayerCRUD(unittest.TestCase):
         # Store it on self to access it in tearDown
         self.db = DatabaseManager(db_path=":memory:")
         # Initialize the schema (create tables and indexes)
-        self.db.initialize_database()
+        initialize_database(self.db)
 
     def tearDown(self):
         """Clean up after each test: Close connection and reset singleton."""

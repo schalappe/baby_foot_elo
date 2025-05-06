@@ -6,14 +6,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.db import DatabaseManager
+from app.db import DatabaseManager, initialize_database
 from app.routers import health, test_info
 
 
 @asynccontextmanager
 async def lifespan(app):
     db = DatabaseManager()
-    db.initialize_database()
+    initialize_database(db)
     yield
 
 
