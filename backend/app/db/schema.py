@@ -27,7 +27,6 @@ CREATE SEQUENCE IF NOT EXISTS seq_teams_id;
 CREATE_TEAMS_TABLE = """
 CREATE TABLE IF NOT EXISTS Teams (
     team_id INTEGER PRIMARY KEY DEFAULT nextval('seq_teams_id'),    -- Unique team identifier, auto-incrementing
-    name TEXT NOT NULL,                          -- Team name (can be auto-generated or custom)
     player1_id INTEGER NOT NULL,                 -- Foreign key to Players
     player2_id INTEGER NOT NULL,                 -- Foreign key to Players
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Creation timestamp

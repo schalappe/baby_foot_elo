@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 from app.db import DatabaseManager, transaction, with_retry
 
 
-@with_retry()
+@with_retry(max_retries=3, retry_delay=0.5)
 def record_elo_update(player_id: int, match_id: int, elo_score: float) -> Optional[int]:
     """
     Record an ELO score update after a match.
@@ -36,7 +36,7 @@ def record_elo_update(player_id: int, match_id: int, elo_score: float) -> Option
         return result[0] if result else None
 
 
-@with_retry()
+@with_retry(max_retries=3, retry_delay=0.5)
 def get_player_elo_history(player_id: int) -> List[Dict[str, Any]]:
     """
     Get the ELO history for a specific player.
@@ -75,7 +75,7 @@ def get_player_elo_history(player_id: int) -> List[Dict[str, Any]]:
     ]
 
 
-@with_retry()
+@with_retry(max_retries=3, retry_delay=0.5)
 def get_current_elo(player_id: int) -> Optional[float]:
     """
     Get the current ELO score for a player.
@@ -104,7 +104,7 @@ def get_current_elo(player_id: int) -> Optional[float]:
     return result[0] if result else None
 
 
-@with_retry()
+@with_retry(max_retries=3, retry_delay=0.5)
 def batch_record_elo_updates(elo_updates: List[Dict[str, Any]]) -> List[Optional[int]]:
     """
     Record multiple ELO updates in a single transaction.

@@ -6,9 +6,12 @@ CRUD operations for the Matches table.
 from typing import Any, Dict, List, Optional
 
 from app.db import DatabaseManager, transaction, with_retry
+import logging
+
+logger = logging.getLogger(__name__)
 
 
-@with_retry()
+@with_retry(max_retries=3, retry_delay=0.5)
 def create_match(team1_id: int, team2_id: int, winner_team_id: int, match_date: str) -> Optional[int]:
     """
     Record a new match in the database.
@@ -29,16 +32,26 @@ def create_match(team1_id: int, team2_id: int, winner_team_id: int, match_date: 
     Optional[int]
         ID of the newly created match, or None on failure
     """
-    with transaction() as db:
-        db.execute(
-            "INSERT INTO Matches (team1_id, team2_id, winner_team_id, match_date) VALUES (?, ?, ?, ?)",
-            [team1_id, team2_id, winner_team_id, match_date],
-        )
-        result = db.fetchone("SELECT last_insert_rowid()")
-        return result[0] if result else None
+    db_manager = DatabaseManager()  # Get instance inside
+    try:
+        with transaction():
+            result = db_manager.fetchone(
+                "INSERT INTO Matches (team1_id, team2_id, winner_team_id, match_date) VALUES (?, ?, ?, ?) RETURNING match_id",
+                [team1_id, team2_id, winner_team_id, match_date],
+            )
+            if result:
+                match_id = result[0]
+                logger.info("Match created successfully with ID: %d", match_id)
+                return match_id
+            else:
+                logger.warning("Match creation did not return an ID.")
+                return None
+    except Exception as e:
+        logger.error("Failed to create match: %s", e)
+        return None
 
 
-@with_retry()
+@with_retry(max_retries=3, retry_delay=0.5)
 def get_match(match_id: int) -> Optional[Dict[str, Any]]:
     """
     Get a match by ID.
@@ -68,7 +81,7 @@ def get_match(match_id: int) -> Optional[Dict[str, Any]]:
     return None
 
 
-@with_retry()
+@with_retry(max_retries=3, retry_delay=0.5)
 def get_matches_by_team(team_id: int) -> List[Dict[str, Any]]:
     """
     Get all matches involving a specific team.
@@ -99,7 +112,7 @@ def get_matches_by_team(team_id: int) -> List[Dict[str, Any]]:
     ]
 
 
-@with_retry()
+@with_retry(max_retries=3, retry_delay=0.5)
 def delete_match(match_id: int) -> bool:
     """
     Delete a match from the database.
@@ -114,6 +127,20 @@ def delete_match(match_id: int) -> bool:
     bool
         True if the deletion was successful, False otherwise
     """
-    with transaction() as db:
-        db.execute("DELETE FROM Matches WHERE match_id = ?", [match_id])
-        return db.rowcount > 0
+    db_manager = DatabaseManager()  # Get instance inside
+    try:
+        with transaction():
+            result = db_manager.fetchone(
+                "DELETE FROM Matches WHERE match_id = ? RETURNING match_id",
+                [match_id]
+            )
+            # Return True if fetchone returned a result (a row was deleted)
+            if result:
+                logger.info("Match ID %d deleted successfully.", match_id)
+                return True
+            else:
+                logger.warning("Attempted to delete non-existent Match ID %d.", match_id)
+                return False
+    except Exception as e:
+        logger.error("Failed to delete match ID %d: %s", match_id, e)
+        return False
