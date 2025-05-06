@@ -58,7 +58,7 @@ class TestSchemaDefinitions(TestCase):
     def test_teams_table(self):
         """Test the Teams table."""
         columns = get_table_columns(self.con, "Teams")
-        self.assertSetEqual(set(columns), {"team_id", "name", "player1_id", "player2_id", "created_at"})
+        self.assertSetEqual(set(columns), {"team_id", "player1_id", "player2_id", "created_at"})
 
     def test_matches_table(self):
         """Test the Matches table."""
