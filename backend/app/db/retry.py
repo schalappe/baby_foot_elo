@@ -41,7 +41,9 @@ def with_retry(max_retries: int, retry_delay: float):
                     return func(*args, **kwargs)
                 except Exception as exc:
                     last_exception = exc
-                    logger.warning("Attempt %d/%d failed: %s. Retrying in %fs...", attempt + 1, max_retries, exc, retry_delay)
+                    logger.warning(
+                        "Attempt %d/%d failed: %s. Retrying in %fs...", attempt + 1, max_retries, exc, retry_delay
+                    )
                     if attempt < max_retries - 1:
                         sleep(retry_delay)
 

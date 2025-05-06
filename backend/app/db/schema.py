@@ -4,28 +4,48 @@ SQL schema definitions for all tables required by the Baby Foot ELO project.
 Each schema is defined as a constant string and includes comments for clarity.
 """
 
+# Sequence for Players table
+CREATE_SEQ_PLAYERS = """
+CREATE SEQUENCE IF NOT EXISTS seq_players_id;
+"""
+
 # ##: Players table: Stores player information.
 CREATE_PLAYERS_TABLE = """
 CREATE TABLE IF NOT EXISTS Players (
-    player_id INTEGER PRIMARY KEY,  -- Unique player identifier
+    player_id INTEGER PRIMARY KEY DEFAULT nextval('seq_players_id'),  -- Unique player identifier, auto-incrementing
     name TEXT NOT NULL,                          -- Player's full name
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  -- Creation timestamp
 );
 """
 
+# Sequence for Teams table
+CREATE_SEQ_TEAMS = """
+CREATE SEQUENCE IF NOT EXISTS seq_teams_id;
+"""
+
 # ##: Teams table: Stores team information.
 CREATE_TEAMS_TABLE = """
 CREATE TABLE IF NOT EXISTS Teams (
-    team_id INTEGER PRIMARY KEY,    -- Unique team identifier
-    name TEXT NOT NULL,                          -- Team name
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  -- Creation timestamp
+    team_id INTEGER PRIMARY KEY DEFAULT nextval('seq_teams_id'),    -- Unique team identifier, auto-incrementing
+    name TEXT NOT NULL,                          -- Team name (can be auto-generated or custom)
+    player1_id INTEGER NOT NULL,                 -- Foreign key to Players
+    player2_id INTEGER NOT NULL,                 -- Foreign key to Players
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Creation timestamp
+    FOREIGN KEY (player1_id) REFERENCES Players(player_id),
+    FOREIGN KEY (player2_id) REFERENCES Players(player_id),
+    UNIQUE (player1_id, player2_id) -- Ensure a pair of players forms only one team
 );
+"""
+
+# Sequence for Matches table
+CREATE_SEQ_MATCHES = """
+CREATE SEQUENCE IF NOT EXISTS seq_matches_id;
 """
 
 # ##: Matches table: Stores match results and references teams.
 CREATE_MATCHES_TABLE = """
 CREATE TABLE IF NOT EXISTS Matches (
-    match_id INTEGER PRIMARY KEY,   -- Unique match identifier
+    match_id INTEGER PRIMARY KEY DEFAULT nextval('seq_matches_id'),   -- Unique match identifier, auto-incrementing
     team1_id INTEGER NOT NULL,                   -- Foreign key to Teams
     team2_id INTEGER NOT NULL,                   -- Foreign key to Teams
     winner_team_id INTEGER NOT NULL,             -- Foreign key to Teams
@@ -36,10 +56,15 @@ CREATE TABLE IF NOT EXISTS Matches (
 );
 """
 
+# Sequence for ELO_History table
+CREATE_SEQ_ELO_HISTORY = """
+CREATE SEQUENCE IF NOT EXISTS seq_elo_history_id;
+"""
+
 # ##: ELO_History table: Stores ELO scores after each match.
 CREATE_ELO_HISTORY_TABLE = """
 CREATE TABLE IF NOT EXISTS ELO_History (
-    history_id INTEGER PRIMARY KEY, -- Unique record identifier
+    history_id INTEGER PRIMARY KEY DEFAULT nextval('seq_elo_history_id'), -- Unique record identifier, auto-incrementing
     player_id INTEGER NOT NULL,                   -- Foreign key to Players
     match_id INTEGER NOT NULL,                    -- Foreign key to Matches
     elo_score REAL NOT NULL,                      -- ELO score after match
@@ -49,16 +74,26 @@ CREATE TABLE IF NOT EXISTS ELO_History (
 );
 """
 
+# Sequence for Periodic_Rankings table
+CREATE_SEQ_PERIODIC_RANKINGS = """
+CREATE SEQUENCE IF NOT EXISTS seq_periodic_rankings_id;
+"""
+
 # ##: Periodic_Rankings table: Stores player rankings for each period.
 CREATE_PERIODIC_RANKINGS_TABLE = """
 CREATE TABLE IF NOT EXISTS Periodic_Rankings (
-    ranking_id INTEGER PRIMARY KEY, -- Unique ranking record
+    ranking_id INTEGER PRIMARY KEY DEFAULT nextval('seq_periodic_rankings_id'), -- Unique ranking record, auto-incrementing
     player_id INTEGER NOT NULL,                   -- Foreign key to Players
     period TEXT NOT NULL,                         -- Period (e.g., '2025-W18')
     ranking INTEGER NOT NULL,                     -- Player's rank in this period
     elo_score REAL NOT NULL,                      -- ELO score at period end
     FOREIGN KEY (player_id) REFERENCES Players(player_id)
 );
+"""
+
+# Sequence for Team_Periodic_Rankings table
+CREATE_SEQ_TEAM_PERIODIC_RANKINGS = """
+CREATE SEQUENCE IF NOT EXISTS seq_team_periodic_rankings_id;
 """
 
 # ##: Indexes for performance optimization
@@ -103,7 +138,7 @@ CREATE INDEX IF NOT EXISTS idx_elohist_updated_at ON ELO_History(updated_at);
 # ##: Team_Periodic_Rankings table: Stores team rankings for each period.
 CREATE_TEAM_PERIODIC_RANKINGS_TABLE = """
 CREATE TABLE IF NOT EXISTS Team_Periodic_Rankings (
-    team_ranking_id INTEGER PRIMARY KEY, -- Unique team ranking record
+    team_ranking_id INTEGER PRIMARY KEY DEFAULT nextval('seq_team_periodic_rankings_id'), -- Unique team ranking record, auto-incrementing
     team_id INTEGER NOT NULL,                          -- Foreign key to Teams
     period TEXT NOT NULL,                              -- Period (e.g., '2025-W18')
     ranking INTEGER NOT NULL,                          -- Team's rank in this period

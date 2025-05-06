@@ -78,11 +78,29 @@ class DatabaseManager:
 
     def initialize_database(self):
         """
-        Initialize the database: create all tables if they do not exist, and handle future migrations.
+        Initialize the database: create sequences and tables if they do not exist.
         This method is idempotent and can be safely called multiple times.
         """
 
-        schemas = [
+        # First, create sequences
+        sequences = [
+            schema.CREATE_SEQ_PLAYERS,
+            schema.CREATE_SEQ_TEAMS,
+            schema.CREATE_SEQ_MATCHES,
+            schema.CREATE_SEQ_ELO_HISTORY,
+            schema.CREATE_SEQ_PERIODIC_RANKINGS,
+            schema.CREATE_SEQ_TEAM_PERIODIC_RANKINGS,
+        ]
+        for sql in sequences:
+            try:
+                self.execute(sql)
+                logger.info("Executed sequence statement: %s", sql.splitlines()[0])
+            except Exception as exc:
+                logger.error("Error executing sequence statement: %s\nSQL: %s", exc, sql)
+                raise
+
+        # Then, create tables
+        tables = [
             schema.CREATE_PLAYERS_TABLE,
             schema.CREATE_TEAMS_TABLE,
             schema.CREATE_MATCHES_TABLE,
@@ -90,12 +108,12 @@ class DatabaseManager:
             schema.CREATE_PERIODIC_RANKINGS_TABLE,
             schema.CREATE_TEAM_PERIODIC_RANKINGS_TABLE,
         ]
-        for sql in schemas:
+        for sql in tables:
             try:
                 self.execute(sql)
-                logger.info("Executed schema statement: %s", sql.splitlines()[0])
+                logger.info("Executed table statement: %s", sql.splitlines()[0])
             except Exception as exc:
-                logger.error("Error executing schema statement: %s\nSQL: %s", exc, sql)
+                logger.error("Error executing table statement: %s\nSQL: %s", exc, sql)
                 raise
 
         # ##: Create indexes for performance optimization.

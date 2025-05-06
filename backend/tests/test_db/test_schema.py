@@ -22,6 +22,18 @@ class TestSchemaDefinitions(TestCase):
     def setUpClass(cls):
         """Set up an in-memory DuckDB connection for all tests."""
         cls.con = duckdb.connect(database=":memory:")
+        # First, create sequences for auto-incrementing IDs
+        sequences = [
+            schema.CREATE_SEQ_PLAYERS,
+            schema.CREATE_SEQ_TEAMS,
+            schema.CREATE_SEQ_MATCHES,
+            schema.CREATE_SEQ_ELO_HISTORY,
+            schema.CREATE_SEQ_PERIODIC_RANKINGS,
+            schema.CREATE_SEQ_TEAM_PERIODIC_RANKINGS,
+        ]
+        for sql in sequences:
+            cls.con.execute(sql)
+        # Then, create tables
         schemas = [
             schema.CREATE_PLAYERS_TABLE,
             schema.CREATE_TEAMS_TABLE,
@@ -46,7 +58,7 @@ class TestSchemaDefinitions(TestCase):
     def test_teams_table(self):
         """Test the Teams table."""
         columns = get_table_columns(self.con, "Teams")
-        self.assertSetEqual(set(columns), {"team_id", "name", "created_at"})
+        self.assertSetEqual(set(columns), {"team_id", "name", "player1_id", "player2_id", "created_at"})
 
     def test_matches_table(self):
         """Test the Matches table."""
