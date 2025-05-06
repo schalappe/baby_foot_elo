@@ -33,7 +33,7 @@ class TestELOHistoryCRUD(TestCase):
 
     def test_record_and_get_current_elo(self):
         """Test recording a single ELO update and retrieving current ELO."""
-        # Create players and teams and a match
+        # ##: Create players and teams and a match.
         p1 = create_player("Alice")
         p2 = create_player("Bob")
         p3 = create_player("Charlie")
@@ -43,23 +43,23 @@ class TestELOHistoryCRUD(TestCase):
         match_date = datetime.datetime(2023, 1, 1, 12, 0, 0)
         m_id = create_match(t1, t2, t1, match_date)
 
-        # Record first ELO update
+        # ##: Record first ELO update.
         hist_id = record_elo_update(p1, m_id, 1200.5)
         self.assertIsNotNone(hist_id)
         self.assertIsInstance(hist_id, int)
         self.assertEqual(get_current_elo(p1), 1200.5)
 
-        # Record second ELO update
+        # ##: Record second ELO update.
         hist_id2 = record_elo_update(p1, m_id, 1250.0)
         self.assertIsNotNone(hist_id2)
         self.assertEqual(get_current_elo(p1), 1250.0)
 
-        # No history for player without records
+        # ##: No history for player without records.
         self.assertIsNone(get_current_elo(p2))
 
     def test_batch_record_elo_updates(self):
         """Test batch recording multiple ELO updates."""
-        # Create players, teams, and matches
+        # ##: Create players, teams, and matches.
         p1 = create_player("Eve")
         p2 = create_player("Frank")
         t1 = create_team(p1, p2)
@@ -77,7 +77,7 @@ class TestELOHistoryCRUD(TestCase):
         self.assertEqual(len(hist_ids), 3)
         self.assertTrue(all(isinstance(i, int) for i in hist_ids))
 
-        # Check current ELO for each
+        # ##: Check current ELO for each.
         self.assertEqual(get_current_elo(p1), 1125.5)
         self.assertEqual(get_current_elo(p2), 1150.0)
 
