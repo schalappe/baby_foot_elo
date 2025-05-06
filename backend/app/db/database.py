@@ -5,7 +5,7 @@ Database Manager for DuckDB connections.
 
 import threading
 from logging import getLogger
-from typing import Any, Dict, List, Optional, Tuple, Union, Callable
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import duckdb
 
