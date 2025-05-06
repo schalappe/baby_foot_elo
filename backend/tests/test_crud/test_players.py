@@ -4,7 +4,6 @@ Unit tests for player CRUD operations using unittest.
 """
 
 import unittest
-from app.db import DatabaseManager, initialize_database 
 
 from app.crud.players import (
     batch_insert_players,
@@ -15,6 +14,7 @@ from app.crud.players import (
     search_players,
     update_player,
 )
+from app.db import DatabaseManager, initialize_database
 
 
 class TestPlayerCRUD(unittest.TestCase):
@@ -28,7 +28,7 @@ class TestPlayerCRUD(unittest.TestCase):
 
     def tearDown(self):
         """Clean up after each test: Close connection and reset singleton."""
-        if hasattr(self, 'db') and self.db.connection:
+        if hasattr(self, "db") and self.db.connection:
             self.db.close()
         DatabaseManager._instance = None
 
@@ -158,5 +158,5 @@ class TestPlayerCRUD(unittest.TestCase):
         self.assertEqual(names, {"Player A", "Player B"})
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

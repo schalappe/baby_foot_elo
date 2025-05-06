@@ -31,7 +31,11 @@ class TestWithRetryDecorator(TestCase):
     def test_retry_success_after_failure(self, mock_sleep):
         """Test that the function succeeds after a few retries."""
         mock_func = MagicMock()
-        mock_func.side_effect = [ValueError("Temporary Error"), ValueError("Another Error"), "Success"]
+        mock_func.side_effect = [
+            ValueError("Temporary Error"),
+            ValueError("Another Error"),
+            "Success",
+        ]
 
         @with_retry(max_retries=4, retry_delay=0.2)
         def decorated_func(arg1, kwarg1="default"):

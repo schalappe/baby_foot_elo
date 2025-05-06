@@ -3,17 +3,18 @@
 Unit tests for ELO history CRUD operations using unittest.
 """
 
-from unittest import TestCase, main
 import datetime
-from app.db import DatabaseManager, initialize_database
+from unittest import TestCase, main
+
+from app.crud.elo_history import (
+    batch_record_elo_updates,
+    get_current_elo,
+    record_elo_update,
+)
+from app.crud.matches import create_match
 from app.crud.players import create_player
 from app.crud.teams import create_team
-from app.crud.matches import create_match
-from app.crud.elo_history import (
-    record_elo_update,
-    get_current_elo,
-    batch_record_elo_updates,
-)
+from app.db import DatabaseManager, initialize_database
 
 
 class TestELOHistoryCRUD(TestCase):
@@ -27,7 +28,7 @@ class TestELOHistoryCRUD(TestCase):
 
     def tearDown(self):
         """Clean up DB connection."""
-        if hasattr(self, 'db') and self.db.connection:
+        if hasattr(self, "db") and self.db.connection:
             self.db.close()
         DatabaseManager._instance = None
 
@@ -86,5 +87,5 @@ class TestELOHistoryCRUD(TestCase):
         self.assertEqual(batch_record_elo_updates([]), [])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

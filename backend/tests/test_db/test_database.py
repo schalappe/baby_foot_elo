@@ -20,12 +20,21 @@ class TestDatabase(TestCase):
 
     def test_initialize_database_creates_all_tables(self):
         """Test that initialize_database creates all required tables and is idempotent."""
-        expected_tables = {"Players", "Teams", "Matches", "ELO_History", "Periodic_Rankings", "Team_Periodic_Rankings"}
+        expected_tables = {
+            "Players",
+            "Teams",
+            "Matches",
+            "ELO_History",
+            "Periodic_Rankings",
+            "Team_Periodic_Rankings",
+        }
 
         initialize_database(self.db)
         tables = set(
             row[0]
-            for row in self.db.fetchall("SELECT table_name FROM information_schema.tables WHERE table_schema='main'")
+            for row in self.db.fetchall(
+                "SELECT table_name FROM information_schema.tables WHERE table_schema='main'"
+            )
         )
         for table in expected_tables:
             self.assertIn(table, tables)
@@ -33,7 +42,9 @@ class TestDatabase(TestCase):
         initialize_database(self.db)
         tables2 = set(
             row[0]
-            for row in self.db.fetchall("SELECT table_name FROM information_schema.tables WHERE table_schema='main'")
+            for row in self.db.fetchall(
+                "SELECT table_name FROM information_schema.tables WHERE table_schema='main'"
+            )
         )
         for table in expected_tables:
             self.assertIn(table, tables2)
@@ -49,7 +60,9 @@ class TestDatabase(TestCase):
 
     def test_schema_creation(self):
         """Test schema creation."""
-        table = self.db.fetchone("SELECT table_name FROM information_schema.tables WHERE table_name='Players'")
+        table = self.db.fetchone(
+            "SELECT table_name FROM information_schema.tables WHERE table_name='Players'"
+        )
         self.assertIsNotNone(table)
         self.assertEqual(table[0], "Players")
 
@@ -57,7 +70,9 @@ class TestDatabase(TestCase):
         """Test CRUD operations."""
         now = datetime.now()
 
-        self.db.execute("INSERT INTO Players (player_id, name, created_at) VALUES (?, ?, ?)", (1, "Alice", now))
+        self.db.execute(
+            "INSERT INTO Players (player_id, name, created_at) VALUES (?, ?, ?)", (1, "Alice", now)
+        )
         joueur = self.db.fetchone("SELECT * FROM Players WHERE player_id=1")
         self.assertIsNotNone(joueur)
         self.assertEqual(joueur[1], "Alice")

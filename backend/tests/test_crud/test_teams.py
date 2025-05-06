@@ -4,15 +4,16 @@ Unit tests for team CRUD operations using unittest.
 """
 
 from unittest import TestCase, main
-from app.db import DatabaseManager, initialize_database
+
 from app.crud.players import create_player
 from app.crud.teams import (
-    create_team,
-    get_team,
-    get_all_teams,
-    delete_team,
     batch_insert_teams,
+    create_team,
+    delete_team,
+    get_all_teams,
+    get_team,
 )
+from app.db import DatabaseManager, initialize_database
 
 
 class TestTeamCRUD(TestCase):
@@ -26,7 +27,7 @@ class TestTeamCRUD(TestCase):
 
     def tearDown(self):
         """Clean up DB connection."""
-        if hasattr(self, 'db') and self.db.connection:
+        if hasattr(self, "db") and self.db.connection:
             self.db.close()
         DatabaseManager._instance = None
 
@@ -95,5 +96,5 @@ class TestTeamCRUD(TestCase):
         self.assertEqual(pairs, expected)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

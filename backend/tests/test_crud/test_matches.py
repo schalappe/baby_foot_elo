@@ -3,17 +3,18 @@
 Unit tests for match CRUD operations using unittest.
 """
 
-from unittest import TestCase, main
 import datetime
-from app.db import DatabaseManager, initialize_database
-from app.crud.players import create_player
-from app.crud.teams import create_team
+from unittest import TestCase, main
+
 from app.crud.matches import (
     create_match,
+    delete_match,
     get_match,
     get_matches_by_team,
-    delete_match,
 )
+from app.crud.players import create_player
+from app.crud.teams import create_team
+from app.db import DatabaseManager, initialize_database
 
 
 class TestMatchCRUD(TestCase):
@@ -27,7 +28,7 @@ class TestMatchCRUD(TestCase):
 
     def tearDown(self):
         """Clean up DB connection."""
-        if hasattr(self, 'db') and self.db.connection:
+        if hasattr(self, "db") and self.db.connection:
             self.db.close()
         DatabaseManager._instance = None
 
@@ -114,5 +115,5 @@ class TestMatchCRUD(TestCase):
         self.assertFalse(delete_match(9999))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
