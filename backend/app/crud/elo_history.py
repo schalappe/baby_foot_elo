@@ -31,12 +31,13 @@ def record_elo_update(player_id: int, match_id: int, elo_score: float) -> Option
         ID of the newly created ELO history record, or None on failure
     """
     with transaction() as db:
-        db.execute(
-            "INSERT INTO ELO_History (player_id, match_id, elo_score) VALUES (?, ?, ?)",
+        result = db.fetchone(
+            "INSERT INTO ELO_History (player_id, match_id, elo_score) VALUES (?, ?, ?) RETURNING history_id",
             [player_id, match_id, elo_score],
         )
-        result = db.fetchone("SELECT last_insert_rowid()")
-        return result[0] if result else None
+        if result and result[0]:
+            return result[0]
+        return None
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -61,7 +62,7 @@ def get_current_elo(player_id: int) -> Optional[float]:
                 SELECT elo_score
                 FROM ELO_History
                 WHERE player_id = ?
-                ORDER BY updated_at DESC
+                ORDER BY history_id DESC
                 LIMIT 1
                 """,
                 [player_id],
@@ -90,11 +91,10 @@ def batch_record_elo_updates(elo_updates: List[Dict[str, Any]]) -> List[Optional
     history_ids = []
     with transaction() as db:
         for update in elo_updates:
-            db.execute(
-                "INSERT INTO ELO_History (player_id, match_id, elo_score) VALUES (?, ?, ?)",
+            result = db.fetchone(
+                "INSERT INTO ELO_History (player_id, match_id, elo_score) VALUES (?, ?, ?) RETURNING history_id",
                 [update["player_id"], update["match_id"], update["elo_score"]],
             )
-            result = db.fetchone("SELECT last_insert_rowid()")
             history_ids.append(result[0] if result else None)
 
     return history_ids
