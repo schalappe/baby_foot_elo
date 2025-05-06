@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import duckdb
 
-from . import schema
+from app import schema
 
 logger = getLogger(__name__)
 

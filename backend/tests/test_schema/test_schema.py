@@ -7,7 +7,7 @@ from unittest import TestCase, main
 
 import duckdb
 
-from app.db import schema
+from app import schema
 
 
 def get_table_columns(con, table_name):
@@ -33,6 +33,7 @@ class TestSchemaDefinitions(TestCase):
         ]
         for sql in sequences:
             cls.con.execute(sql)
+        
         # Then, create tables
         schemas = [
             schema.CREATE_PLAYERS_TABLE,

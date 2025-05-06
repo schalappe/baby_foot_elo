@@ -12,4 +12,4 @@ from .database import DatabaseManager
 from .retry import with_retry
 from .transaction import transaction
 
-__all__ = ["DatabaseManager", "transaction", "with_retry", "schema"]
+__all__ = ["DatabaseManager", "transaction", "with_retry"]
