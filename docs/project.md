@@ -331,7 +331,7 @@ baby_foot_elo/
 │   │   ├── schemas/        # Schémas de base de données (si ORM utilisé)
 │   │   ├── crud/           # Fonctions d'accès aux données (CRUD)
 │   │   ├── core/           # Configuration, logique métier centrale
-│   │   └── db/             # Gestion de la connexion DuckDB
+│   │   └── db/             # Gestion de la base de données DuckDB
 │   ├── tests/              # Tests unitaires/intégration
 │   └── .env                # Variables d'environnement (ex: chemin DB)
 │
