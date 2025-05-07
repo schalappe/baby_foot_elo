@@ -8,6 +8,8 @@ from typing import Any, Dict, List, Optional
 
 from app.db import transaction, with_retry
 
+from .builders import QueryBuilder
+
 logger = getLogger(__name__)
 
 
@@ -71,13 +73,15 @@ def get_team(team_id: int) -> Optional[Dict[str, Any]]:
         Team data as a dictionary, or None if not found
     """
     try:
-        with transaction() as db_manager:
-            result = db_manager.fetchone(
-                "SELECT team_id, player1_id, player2_id FROM Teams WHERE team_id = ?", [team_id]
-            )
-            if result:
-                return {"team_id": result[0], "player1_id": result[1], "player2_id": result[2]}
-            return None
+        result = (
+            QueryBuilder("Teams")
+            .select("team_id", "player1_id", "player2_id")
+            .where("team_id = ?", team_id)
+            .execute(fetch_all=False)
+        )
+        if result:
+            return {"team_id": result[0], "player1_id": result[1], "player2_id": result[2]}
+        return None
     except Exception as e:
         logger.error("Failed to get team by ID %d: %s", team_id, e)
         return None
@@ -94,13 +98,17 @@ def get_all_teams() -> List[Dict[str, Any]]:
         List of team dictionaries.
     """
     try:
-        with transaction() as db_manager:
-            results = db_manager.fetchall(
-                "SELECT team_id, player1_id, player2_id FROM Teams ORDER BY player1_id"
-            )
-            return [
-                {"team_id": row[0], "player1_id": row[1], "player2_id": row[2]} for row in results
-            ]
+        rows = (
+            QueryBuilder("Teams")
+            .select("team_id", "player1_id", "player2_id")
+            .order_by_clause("player1_id")
+            .execute()
+        )
+        return (
+            [{"team_id": row[0], "player1_id": row[1], "player2_id": row[2]} for row in rows]
+            if rows
+            else []
+        )
     except Exception as e:
         logger.error("Failed to get all teams: %s", e)
         return []

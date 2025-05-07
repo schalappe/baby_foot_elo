@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 from app.db import DatabaseManager
 from app.db.retry import with_retry
 
+from .builders import QueryBuilder
 from .elo_history import get_current_elo
 from .players import get_player
 
@@ -40,26 +41,32 @@ def get_player_stats(player_id: int) -> Optional[Dict[str, Any]]:
         # ##: Get current ELO.
         current_elo = get_current_elo(player_id)
 
-        # ##: Get match count.
-        match_count_query = """
-        SELECT COUNT(DISTINCT m.match_id) FROM Matches m
-        JOIN Teams t1 ON m.team1_id = t1.team_id
-        JOIN Teams t2 ON m.team2_id = t2.team_id
-        WHERE t1.player1_id = ? OR t1.player2_id = ? OR t2.player1_id = ? OR t2.player2_id = ?
-        """
-        match_count_result = db_manager.fetchone(
-            match_count_query, [player_id, player_id, player_id, player_id]
+        # ##: Get match count via QueryBuilder
+        mc_result = (
+            QueryBuilder("Matches m")
+            .select("COUNT(DISTINCT m.match_id)")
+            .join("Teams t1", "m.team1_id = t1.team_id")
+            .join("Teams t2", "m.team2_id = t2.team_id")
+            .where(
+                "t1.player1_id = ? OR t1.player2_id = ? OR t2.player1_id = ? OR t2.player2_id = ?",
+                player_id,
+                player_id,
+                player_id,
+                player_id,
+            )
+            .execute(fetch_all=False)
         )
-        match_count = match_count_result[0] if match_count_result else 0
+        match_count = mc_result[0] if mc_result else 0
 
-        # ##: Get win count.
-        win_count_query = """
-        SELECT COUNT(*) FROM Matches m
-        JOIN Teams t ON m.winner_team_id = t.team_id
-        WHERE t.player1_id = ? OR t.player2_id = ?
-        """
-        win_count_result = db_manager.fetchone(win_count_query, [player_id, player_id])
-        win_count = win_count_result[0] if win_count_result else 0
+        # ##: Get win count via QueryBuilder
+        wc_result = (
+            QueryBuilder("Matches m")
+            .select("COUNT(*)")
+            .join("Teams t", "m.winner_team_id = t.team_id")
+            .where("t.player1_id = ? OR t.player2_id = ?", player_id, player_id)
+            .execute(fetch_all=False)
+        )
+        win_count = wc_result[0] if wc_result else 0
 
         # ##: Calculate win rate.
         win_rate = (win_count / match_count * 100) if match_count > 0 else 0
@@ -145,28 +152,37 @@ def get_player_elo_history(player_id: int) -> List[Dict[str, Any]]:
         List of ELO history records
     """
     try:
-        db_manager = DatabaseManager()
-        results = db_manager.fetchall(
-            """
-            SELECT h.history_id, h.player_id, h.match_id, h.elo_score, h.updated_at, m.match_date
-            FROM ELO_History h
-            JOIN Matches m ON h.match_id = m.match_id
-            WHERE h.player_id = ?
-            ORDER BY m.match_date DESC
-            """,
-            [player_id],
+        # ##: Fetch ELO history via QueryBuilder
+        rows = (
+            QueryBuilder("ELO_History h")
+            .select(
+                "h.history_id",
+                "h.player_id",
+                "h.match_id",
+                "h.elo_score",
+                "h.updated_at",
+                "m.match_date",
+            )
+            .join("Matches m", "h.match_id = m.match_id")
+            .where("h.player_id = ?", player_id)
+            .order_by_clause("m.match_date DESC")
+            .execute()
         )
-        return [
-            {
-                "history_id": row[0],
-                "player_id": row[1],
-                "match_id": row[2],
-                "elo_score": row[3],
-                "updated_at": row[4],
-                "match_date": row[5],
-            }
-            for row in results
-        ]
+        return (
+            [
+                {
+                    "history_id": r[0],
+                    "player_id": r[1],
+                    "match_id": r[2],
+                    "elo_score": r[3],
+                    "updated_at": r[4],
+                    "match_date": r[5],
+                }
+                for r in rows
+            ]
+            if rows
+            else []
+        )
     except Exception as e:
         logger.error("Failed to get player ELO history for ID %d: %s", player_id, e)
         return []

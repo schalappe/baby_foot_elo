@@ -8,6 +8,8 @@ from typing import Any, Dict, List, Optional
 
 from app.db import transaction, with_retry
 
+from .builders import QueryBuilder
+
 logger = logging.getLogger(__name__)
 
 
@@ -66,24 +68,21 @@ def get_match(match_id: int) -> Optional[Dict[str, Any]]:
     Optional[Dict[str, Any]]
         Match data as a dictionary, or None if not found
     """
-    try:
-        with transaction() as db_manager:
-            result = db_manager.fetchone(
-                "SELECT match_id, team1_id, team2_id, winner_team_id, match_date FROM Matches WHERE match_id = ?",
-                [match_id],
-            )
-            if result:
-                return {
-                    "match_id": result[0],
-                    "team1_id": result[1],
-                    "team2_id": result[2],
-                    "winner_team_id": result[3],
-                    "match_date": result[4],
-                }
-            return None
-    except Exception as e:
-        logger.error("Failed to get match by ID %d: %s", match_id, e)
-        return None
+    result = (
+        QueryBuilder("Matches")
+        .select("match_id", "team1_id", "team2_id", "winner_team_id", "match_date")
+        .where("match_id = ?", match_id)
+        .execute(fetch_all=False)
+    )
+    if result:
+        return {
+            "match_id": result[0],
+            "team1_id": result[1],
+            "team2_id": result[2],
+            "winner_team_id": result[3],
+            "match_date": result[4],
+        }
+    return None
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -101,32 +100,27 @@ def get_matches_by_team(team_id: int) -> List[Dict[str, Any]]:
     List[Dict[str, Any]]
         List of match dictionaries
     """
-    try:
-        with transaction() as db_manager:
-            results = db_manager.fetchall(
-                """
-                SELECT match_id, team1_id, team2_id, winner_team_id, match_date 
-                FROM Matches 
-                WHERE team1_id = ? OR team2_id = ?
-                ORDER BY match_date DESC
-                """,
-                [team_id, team_id],
-            )
-            if results:
-                return [
-                    {
-                        "match_id": row[0],
-                        "team1_id": row[1],
-                        "team2_id": row[2],
-                        "winner_team_id": row[3],
-                        "match_date": row[4],
-                    }
-                    for row in results
-                ]
-            return []
-    except Exception as e:
-        logger.error("Failed to get matches by team ID %d: %s", team_id, e)
-        return []
+    rows = (
+        QueryBuilder("Matches")
+        .select("match_id", "team1_id", "team2_id", "winner_team_id", "match_date")
+        .where("team1_id = ? OR team2_id = ?", team_id, team_id)
+        .order_by_clause("match_date DESC")
+        .execute()
+    )
+    return (
+        [
+            {
+                "match_id": r[0],
+                "team1_id": r[1],
+                "team2_id": r[2],
+                "winner_team_id": r[3],
+                "match_date": r[4],
+            }
+            for r in rows
+        ]
+        if rows
+        else []
+    )
 
 
 @with_retry(max_retries=3, retry_delay=0.5)

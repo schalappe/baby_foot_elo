@@ -9,6 +9,8 @@ from typing import Any, Dict, List, Optional
 from app.db.retry import with_retry
 from app.db.transaction import transaction
 
+from .builders import QueryBuilder
+
 logger = logging.getLogger(__name__)
 
 
@@ -54,11 +56,11 @@ def get_player(player_id: int) -> Optional[Dict[str, Any]]:
         Player data as a dictionary, or None if not found
     """
     try:
-        with transaction() as db_manager:
-            result = db_manager.fetchone("SELECT * FROM Players WHERE player_id = ?", [player_id])
-            if result:
-                return {"player_id": result[0], "name": result[1], "created_at": result[2]}
-            return None
+        # Use QueryBuilder for SELECT
+        result = QueryBuilder("Players").where("player_id = ?", player_id).execute(fetch_all=False)
+        if result:
+            return {"player_id": result[0], "name": result[1], "created_at": result[2]}
+        return None
     except Exception as e:
         logger.error("Failed to get player by ID %d: %s", player_id, e)
         return None
@@ -75,13 +77,12 @@ def get_all_players() -> List[Dict[str, Any]]:
         List of player dictionaries
     """
     try:
-        with transaction() as db_manager:
-            results = db_manager.fetchall("SELECT * FROM Players ORDER BY name")
-            return (
-                [{"player_id": row[0], "name": row[1], "created_at": row[2]} for row in results]
-                if results
-                else []
-            )
+        rows = QueryBuilder("Players").order_by_clause("name").execute()
+        return (
+            [{"player_id": row[0], "name": row[1], "created_at": row[2]} for row in rows]
+            if rows
+            else []
+        )
     except Exception as e:
         logger.error("Failed to get all players: %s", e)
         return []
@@ -190,20 +191,18 @@ def search_players(name_pattern: str, limit: int = 10) -> List[Dict[str, Any]]:
         List of matching player dictionaries
     """
     try:
-        with transaction() as db_manager:
-            query = """
-            SELECT *
-            FROM Players
-            WHERE name LIKE ?
-            ORDER BY name
-            LIMIT ?
-            """
-            results = db_manager.fetchall(query, [f"%{name_pattern}%", limit])
-            return (
-                [{"player_id": row[0], "name": row[1], "created_at": row[2]} for row in results]
-                if results
-                else []
-            )
+        rows = (
+            QueryBuilder("Players")
+            .where("name LIKE ?", f"%{name_pattern}%")
+            .order_by_clause("name")
+            .limit(limit)
+            .execute()
+        )
+        return (
+            [{"player_id": row[0], "name": row[1], "created_at": row[2]} for row in rows]
+            if rows
+            else []
+        )
     except Exception as e:
         logger.error("Failed to search players with pattern '%s': %s", name_pattern, e)
         return []

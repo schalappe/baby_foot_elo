@@ -8,6 +8,8 @@ from typing import Any, Dict, List, Optional
 
 from app.db import transaction, with_retry
 
+from .builders import QueryBuilder
+
 logger = getLogger(__name__)
 
 
@@ -56,18 +58,15 @@ def get_current_elo(player_id: int) -> Optional[float]:
         Current ELO score, or None if no history exists
     """
     try:
-        with transaction() as db_manager:
-            result = db_manager.fetchone(
-                """
-                SELECT elo_score
-                FROM ELO_History
-                WHERE player_id = ?
-                ORDER BY history_id DESC
-                LIMIT 1
-                """,
-                [player_id],
-            )
-            return result[0] if result else None
+        result = (
+            QueryBuilder("ELO_History")
+            .select("elo_score")
+            .where("player_id = ?", player_id)
+            .order_by_clause("history_id DESC")
+            .limit(1)
+            .execute(fetch_all=False)
+        )
+        return result[0] if result else None
     except Exception as e:
         logger.error("Failed to get current ELO for player ID %d: %s", player_id, e)
         return None

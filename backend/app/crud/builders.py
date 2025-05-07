@@ -5,7 +5,7 @@ QueryBuilder class for constructing SQL queries.
 
 from typing import Any, List, Optional, Tuple, Union
 
-from app.db import transaction
+from app.db import DatabaseManager
 
 
 class QueryBuilder:
@@ -222,7 +222,8 @@ class QueryBuilder:
         """
         query, params = self.build()
 
-        with transaction() as db_manager:
-            if fetch_all:
-                return db_manager.fetchall(query, params)
-            return db_manager.fetchone(query, params)
+        # Execute built query using DatabaseManager to avoid nested transactions
+        db_manager = DatabaseManager()
+        if fetch_all:
+            return db_manager.fetchall(query, params)
+        return db_manager.fetchone(query, params)
