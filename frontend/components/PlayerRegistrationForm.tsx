@@ -1,88 +1,76 @@
-import React, { useState, FormEvent } from "react";
-import { useRouter } from 'next/navigation';
-import { Input } from "@/components/ui/input";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Terminal, Loader2 } from "lucide-react"; 
-import { createPlayer } from '@/services/playerService'; 
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { createPlayer } from "@/services/playerService";
+import { Loader2 } from "lucide-react";
 
-const PlayerRegistrationForm: React.FC = () => {
-  const router = useRouter();
-  const [name, setName] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false); 
+const formSchema = z.object({
+  name: z.string().min(2, {
+    message: "Le nom doit contenir au moins 2 caractères.",
+  }),
+});
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(false);
-    setLoading(true); 
+interface PlayerRegistrationFormProps {
+  onPlayerRegistered: () => void;
+}
 
-    if (!name.trim()) {
-      setError("Le nom est requis.");
-      setLoading(false);
-      return;
-    }
+export function PlayerRegistrationForm({ onPlayerRegistered }: PlayerRegistrationFormProps) {
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+    },
+  });
 
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      await createPlayer(name.trim());
-      setName("");
-      setSuccess(true);
-      setTimeout(() => {
-        router.push('/players');
-      }, 1500);
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.detail || err.message || "Une erreur est survenue lors de l'enregistrement du joueur.";
-      setError(errorMessage);
-    } finally {
-      setLoading(false); 
+      await createPlayer(values.name);
+      toast.success("Création du joueur effectuée", {
+        description: `Création du joueur ${values.name} effectuée.`,
+      });
+      form.reset();
+      onPlayerRegistered();
+    } catch (error) {
+      toast.error("Création du joueur echouée", {
+        description: error instanceof Error ? error.message : "Une erreur inconnue est survenue.",
+      });
+      console.error("Création du joueur echouée:", error);
     }
-  };
+  }
 
   return (
-    <Card className="max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>Enregistrer un Nouveau Joueur</CardTitle>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="flex flex-col gap-4">
-          {error && (
-            <Alert variant="destructive">
-              <Terminal className="h-4 w-4" />
-              <AlertTitle>Erreur</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-2">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nom du joueur</FormLabel>
+              <FormControl>
+                <Input placeholder="Nom du joueur" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-          {success && (
-            <Alert variant="default"> 
-              <Terminal className="h-4 w-4" /> 
-              <AlertTitle>Succès</AlertTitle>
-              <AlertDescription>Joueur enregistré avec succès!</AlertDescription>
-            </Alert>
-          )}
-          <div className="flex flex-col space-y-1.5">
-            <Label htmlFor="name">Nom</Label>
-            <Input
-              id="name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Nom du joueur"
-            />
-          </div>
-        </CardContent>
-        <CardFooter className="mt-4">
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {loading ? 'Enregistrement...' : 'Enregistrer le joueur'}
-          </Button>
-        </CardFooter>
+        />
+        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+          {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {form.formState.isSubmitting ? 'Création...' : 'Créer le joueur'}
+        </Button>
       </form>
-    </Card>
+    </Form>
   );
-};
-
-export default PlayerRegistrationForm;
+}

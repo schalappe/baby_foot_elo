@@ -7,6 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowUpDown, ArrowDown, ArrowUp, AlertCircle, Loader2 } from 'lucide-react';
 import { getPlayers, Player } from '@/services/playerService';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { PlayerRegistrationForm } from "./PlayerRegistrationForm";
 
 type SortKey = keyof Pick<Player, 'name' | 'elo' | 'matches_played'>;
 
@@ -18,24 +27,31 @@ const PlayersList: React.FC = () => {
   const [sortKey, setSortKey] = useState<SortKey>('elo');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState<boolean>(false);
   const itemsPerPage = 10;
 
-  useEffect(() => {
-    const fetchPlayers = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await getPlayers();
-        setPlayers(Array.isArray(data) ? data : []);
-      } catch (err: any) {
-        const errorMessage = err.response?.data?.detail || err.message || 'Failed to fetch players.';
-        setError(errorMessage);
-        setPlayers([]);
-      }
-      setLoading(false);
-    };
-    fetchPlayers();
+  const fetchPlayers = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getPlayers();
+      setPlayers(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.detail || err.message || 'Erreur lors de la récupération des joueurs.';
+      setError(errorMessage);
+      setPlayers([]);
+    }
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchPlayers();
+  }, [fetchPlayers]);
+
+  const handlePlayerRegistered = () => {
+    setIsRegisterDialogOpen(false);
+    fetchPlayers(); // Refresh the list
+  };
 
   const filteredPlayers = useMemo(() => {
     return players.filter(player =>
@@ -102,12 +118,23 @@ const PlayersList: React.FC = () => {
   return (
     <Card className="container mx-auto p-4">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
-        <CardTitle className="text-2xl font-semibold">Liste des Joueurs</CardTitle>
-        <Link href="/players/register" passHref legacyBehavior>
-          <Button asChild>
-            <a>Enregistrer un Joueur</a>
-          </Button>
-        </Link>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Liste des Joueurs</h1>
+          <Dialog open={isRegisterDialogOpen} onOpenChange={setIsRegisterDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>Ajouter un Joueur</Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Nouveau Joueur</DialogTitle>
+                <DialogDescription>
+                  Entrez le nom du nouveau joueur.
+                </DialogDescription>
+              </DialogHeader>
+              <PlayerRegistrationForm onPlayerRegistered={handlePlayerRegistered} />
+            </DialogContent>
+          </Dialog>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="mb-4">
