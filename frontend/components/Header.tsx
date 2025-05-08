@@ -12,8 +12,8 @@ export default function Header() {
   return (
     <header className="w-full px-6 py-4 flex items-center justify-between border-b bg-background dark:bg-zinc-900 dark:text-foreground-dark shadow-md">
       <div className="flex items-center gap-2">
-        <Link href="/" legacyBehavior passHref>
-          <a className="font-bold text-xl tracking-tight">Baby Foot Elo</a>
+        <Link href="/">
+          <h1 className="font-bold text-xl tracking-tight">Baby Foot Elo</h1>
         </Link>
       </div>
       <NavigationMenu>
@@ -26,9 +26,9 @@ export default function Header() {
             </Link>
           </NavigationMenuItem>
           <NavigationMenuItem>
-            <Link href="/players" legacyBehavior passHref> 
+            <Link href="/players" legacyBehavior passHref>
               <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                Classement
+                Joueurs
               </NavigationMenuLink>
             </Link>
           </NavigationMenuItem>

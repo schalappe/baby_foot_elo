@@ -1,18 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import Link from 'next/link';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowUpDown, ArrowDown, ArrowUp } from 'lucide-react';
-
-interface Player {
-  id: number;
-  name: string;
-  elo: number;
-  matches_played: number;
-  wins: number;
-  losses: number;
-}
+import { ArrowUpDown, ArrowDown, ArrowUp, AlertCircle, Loader2 } from 'lucide-react';
+import { getPlayers, Player } from '@/services/playerService';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type SortKey = keyof Pick<Player, 'name' | 'elo' | 'matches_played'>;
 
@@ -21,8 +15,8 @@ const PlayersList: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [sortKey, setSortKey] = useState<SortKey>('elo'); // Default sort by ELO
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc'); // Default ELO descending
+  const [sortKey, setSortKey] = useState<SortKey>('elo');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 10;
 
@@ -31,14 +25,12 @@ const PlayersList: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch('http://localhost:8000/api/players/');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data: Player[] = await response.json();
-        setPlayers(data);
+        const data = await getPlayers();
+        setPlayers(Array.isArray(data) ? data : []);
       } catch (err: any) {
-        setError(err.message || 'Failed to fetch players.');
+        const errorMessage = err.response?.data?.detail || err.message || 'Failed to fetch players.';
+        setError(errorMessage);
+        setPlayers([]);
       }
       setLoading(false);
     };
@@ -75,7 +67,7 @@ const PlayersList: React.FC = () => {
       setSortKey(key);
       setSortOrder('asc');
     }
-    setCurrentPage(1); // Reset to first page on sort
+    setCurrentPage(1);
   }, [sortKey]);
 
   const getSortIcon = (key: SortKey) => {
@@ -85,13 +77,37 @@ const PlayersList: React.FC = () => {
     return <ArrowUpDown className="ml-2 h-4 w-4 inline opacity-50" />;
   };
 
-  if (loading) return <div className="text-center p-4">Chargement des joueurs...</div>;
-  if (error) return <div className="text-center p-4 text-red-500">Erreur: {error}</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center p-10">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <span className="ml-2">Chargement des joueurs...</span>
+    </div>
+  );
 
-  return (
+  if (error) return (
     <Card className="container mx-auto p-4">
       <CardHeader>
         <CardTitle className="text-2xl font-semibold mb-4">Liste des Joueurs</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Erreur</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <Card className="container mx-auto p-4">
+      <CardHeader className="flex flex-row items-center justify-between pb-4">
+        <CardTitle className="text-2xl font-semibold">Liste des Joueurs</CardTitle>
+        <Link href="/players/register" passHref legacyBehavior>
+          <Button asChild>
+            <a>Enregistrer un Joueur</a>
+          </Button>
+        </Link>
       </CardHeader>
       <CardContent>
         <div className="mb-4">
@@ -101,7 +117,7 @@ const PlayersList: React.FC = () => {
             value={searchTerm}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
               setSearchTerm(e.target.value);
-              setCurrentPage(1); // Reset to first page on search
+              setCurrentPage(1);
             }}
             className="w-full"
           />
@@ -129,7 +145,11 @@ const PlayersList: React.FC = () => {
             <TableBody>
               {paginatedPlayers.map((player) => (
                 <TableRow key={player.id}>
-                  <TableCell className="font-medium">{player.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <Link href={`/players/${player.id}`} className="hover:underline text-blue-600 dark:text-blue-400">
+                      {player.name}
+                    </Link>
+                  </TableCell>
                   <TableCell>{player.elo}</TableCell>
                   <TableCell>{player.matches_played}</TableCell>
                   <TableCell className="text-green-500 dark:text-green-400">{player.wins}</TableCell>

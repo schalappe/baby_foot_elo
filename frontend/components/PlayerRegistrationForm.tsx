@@ -1,50 +1,53 @@
 import React, { useState, FormEvent } from "react";
+import { useRouter } from 'next/navigation';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Terminal } from "lucide-react"; // For Alert icon
+import { Terminal, Loader2 } from "lucide-react"; 
+import { registerPlayer } from '@/services/playerService'; 
 
 const PlayerRegistrationForm: React.FC = () => {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [initialElo, setInitialElo] = useState<number | string>("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false); 
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(false);
+    setLoading(true); 
+
     if (!name.trim()) {
       setError("Le nom est requis.");
+      setLoading(false);
       return;
     }
 
-    if (initialElo !== "" && isNaN(Number(initialElo))) {
+    const eloValue = initialElo === "" ? undefined : Number(initialElo);
+    if (initialElo !== "" && isNaN(eloValue!)) {
       setError("L'ELO initial doit être un nombre valide.");
+      setLoading(false);
       return;
     }
-
-    const payload: any = { name: name.trim() };
-    if (initialElo !== "") payload.initial_elo = Number(initialElo);
 
     try {
-      const res = await fetch("http://localhost:8000/api/players/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.detail || "Une erreur est survenue lors de l'enregistrement du joueur.");
-      } else {
-        setName("");
-        setInitialElo("");
-        setSuccess(true);
-      }
-    } catch {
-      setError("Une erreur réseau est survenue lors de l'enregistrement du joueur.");
+      await registerPlayer(name.trim(), eloValue);
+      setName("");
+      setInitialElo("");
+      setSuccess(true);
+      setTimeout(() => {
+        router.push('/players');
+      }, 1500);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.detail || err.message || "Une erreur est survenue lors de l'enregistrement du joueur.";
+      setError(errorMessage);
+    } finally {
+      setLoading(false); 
     }
   };
 
@@ -63,8 +66,8 @@ const PlayerRegistrationForm: React.FC = () => {
             </Alert>
           )}
           {success && (
-            <Alert variant="default"> {/* Or a 'success' variant if you define one */}
-              <Terminal className="h-4 w-4" /> {/* Consider a success icon */}
+            <Alert variant="default"> 
+              <Terminal className="h-4 w-4" /> 
               <AlertTitle>Succès</AlertTitle>
               <AlertDescription>Joueur enregistré avec succès!</AlertDescription>
             </Alert>
@@ -90,9 +93,10 @@ const PlayerRegistrationForm: React.FC = () => {
             />
           </div>
         </CardContent>
-        <CardFooter>
-          <Button type="submit" className="w-full">
-            Enregistrer le joueur
+        <CardFooter className="mt-4">
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {loading ? 'Enregistrement...' : 'Enregistrer le joueur'}
           </Button>
         </CardFooter>
       </form>
