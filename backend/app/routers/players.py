@@ -3,11 +3,11 @@ This module defines FastAPI endpoints for managing players in the Baby Foot Elo 
 It supports creating, listing, retrieving, updating, and deleting player records, as well as fetching player statistics.
 
 Endpoints:
-    - POST /api/players/: Create a new player
-    - GET /api/players/: List all players
-    - GET /api/players/{player_id}: Retrieve a player's details
-    - PUT /api/players/{player_id}: Update a player's information
-    - DELETE /api/players/{player_id}: Delete a player
+    - POST /api/v1/players/: Create a new player
+    - GET /api/v1/players/: List all players
+    - GET /api/v1/players/{player_id}: Retrieve a player's details
+    - PUT /api/v1/players/{player_id}: Update a player's information
+    - DELETE /api/v1/players/{player_id}: Delete a player
 
 Notes
 -----
@@ -22,7 +22,7 @@ from app.models.player import PlayerCreate, PlayerResponse, PlayerUpdate
 from app.crud.players import create_player, get_all_players, update_player, delete_player
 from app.crud.stats import get_player_stats
 
-router = APIRouter(prefix="/api/players",tags=["players"])
+router = APIRouter(prefix="/api/v1/players",tags=["players"])
 
 @router.post("/", response_model=PlayerResponse, status_code=status.HTTP_201_CREATED)
 def create_player_endpoint(player: PlayerCreate):
