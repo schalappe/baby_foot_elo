@@ -118,23 +118,21 @@ const PlayersList: React.FC = () => {
   return (
     <Card className="container mx-auto p-4">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Liste des Joueurs</h1>
-          <Dialog open={isRegisterDialogOpen} onOpenChange={setIsRegisterDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>Ajouter un Joueur</Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Nouveau Joueur</DialogTitle>
-                <DialogDescription>
-                  Entrez le nom du nouveau joueur.
-                </DialogDescription>
-              </DialogHeader>
-              <PlayerRegistrationForm onPlayerRegistered={handlePlayerRegistered} />
-            </DialogContent>
-          </Dialog>
-        </div>
+        <CardTitle className="text-3xl font-bold">Liste des Joueurs</CardTitle>
+        <Dialog open={isRegisterDialogOpen} onOpenChange={setIsRegisterDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>Ajouter un Joueur</Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Nouveau Joueur</DialogTitle>
+              <DialogDescription>
+                Entrez le nom du nouveau joueur.
+              </DialogDescription>
+            </DialogHeader>
+            <PlayerRegistrationForm onPlayerRegistered={handlePlayerRegistered} />
+          </DialogContent>
+        </Dialog>
       </CardHeader>
       <CardContent>
         <div className="mb-4">
