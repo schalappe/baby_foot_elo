@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.db import DatabaseManager, initialize_database
-from app.routers import health, test_info
+from app.routers import health, test_info, players
 
 
 @asynccontextmanager
@@ -30,6 +30,7 @@ app.add_middleware(
 
 app.include_router(health.router)
 app.include_router(test_info.router)
+app.include_router(players.router)
 
 
 @app.get("/")
