@@ -1,26 +1,58 @@
+"use client"; 
 import React from "react";
-import { useTheme } from "./ThemeProvider";
+import Link from "next/link"; 
+import { useTheme } from "next-themes"; 
+import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, navigationMenuTriggerStyle } from "@/components/ui/navigation-menu";
+import { Button } from "@/components/ui/button";
+import { Moon, Sun } from "lucide-react";
 
 export default function Header() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme(); 
+
   return (
-    <header className="w-full px-6 py-4 flex items-center justify-between bg-primary text-white dark:bg-background-dark dark:text-foreground-dark shadow-md">
+    <header className="w-full px-6 py-4 flex items-center justify-between border-b bg-background dark:bg-zinc-900 dark:text-foreground-dark shadow-md">
       <div className="flex items-center gap-2">
-        {/* Logo or Icon */}
-        <span className="font-bold text-xl tracking-tight">Baby Foot Elo</span>
+        <Link href="/" legacyBehavior passHref>
+          <a className="font-bold text-xl tracking-tight">Baby Foot Elo</a>
+        </Link>
       </div>
-      <nav className="flex gap-4">
-        <a href="#" className="hover:underline">Accueil</a>
-        <a href="#" className="hover:underline">Classement</a>
-        <a href="#" className="hover:underline">À propos</a>
-      </nav>
-      <button
-        onClick={toggleTheme}
-        className="ml-4 px-3 py-1 rounded bg-foreground-light text-primary dark:bg-foreground-dark dark:text-primary border border-primary hover:bg-primary hover:text-white dark:hover:bg-primary dark:hover:text-white transition"
+      <NavigationMenu>
+        <NavigationMenuList>
+          <NavigationMenuItem>
+            <Link href="/" legacyBehavior passHref>
+              <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                Accueil
+              </NavigationMenuLink>
+            </Link>
+          </NavigationMenuItem>
+          <NavigationMenuItem>
+            <Link href="/players" legacyBehavior passHref> 
+              <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                Classement
+              </NavigationMenuLink>
+            </Link>
+          </NavigationMenuItem>
+          <NavigationMenuItem>
+            <Link href="/about" legacyBehavior passHref> 
+              <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                À propos
+              </NavigationMenuLink>
+            </Link>
+          </NavigationMenuItem>
+        </NavigationMenuList>
+      </NavigationMenu>
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
         aria-label="Toggle theme"
       >
-        {theme === "light" ? "🌙" : "☀️"}
-      </button>
+        {theme === "light" ? (
+          <Moon className="h-[1.2rem] w-[1.2rem]" />
+        ) : (
+          <Sun className="h-[1.2rem] w-[1.2rem]" />
+        )}
+      </Button>
     </header>
   );
 }

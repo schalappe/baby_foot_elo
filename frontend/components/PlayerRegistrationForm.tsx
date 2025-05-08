@@ -1,4 +1,10 @@
 import React, { useState, FormEvent } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Terminal } from "lucide-react"; // For Alert icon
 
 const PlayerRegistrationForm: React.FC = () => {
   const [name, setName] = useState("");
@@ -43,36 +49,54 @@ const PlayerRegistrationForm: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-md mx-auto bg-white dark:bg-zinc-800 p-6 rounded shadow flex flex-col gap-4">
-      {error && <div className="text-red-500">{error}</div>}
-      {success && <div className="text-green-500">Joueur enregistré avec succès!</div>}
-      <div className="flex flex-col">
-        <label htmlFor="name" className="mb-1 font-medium">Nom</label>
-        <input
-          id="name"
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full border border-gray-300 dark:border-zinc-600 p-2 rounded bg-white dark:bg-zinc-700 text-black dark:text-white"
-        />
-      </div>
-      <div className="flex flex-col">
-        <label htmlFor="initialElo" className="mb-1 font-medium">ELO initial (optionnel)</label>
-        <input
-          id="initialElo"
-          type="number"
-          value={initialElo}
-          onChange={(e) => setInitialElo(e.target.value === "" ? "" : Number(e.target.value))}
-          className="w-full border border-gray-300 dark:border-zinc-600 p-2 rounded bg-white dark:bg-zinc-700 text-black dark:text-white"
-        />
-      </div>
-      <button
-        type="submit"
-        className="bg-primary text-white py-2 px-4 rounded font-semibold hover:bg-primary-dark transition"
-      >
-        Enregistrer le joueur
-      </button>
-    </form>
+    <Card className="max-w-md mx-auto">
+      <CardHeader>
+        <CardTitle>Enregistrer un Nouveau Joueur</CardTitle>
+      </CardHeader>
+      <form onSubmit={handleSubmit}>
+        <CardContent className="flex flex-col gap-4">
+          {error && (
+            <Alert variant="destructive">
+              <Terminal className="h-4 w-4" />
+              <AlertTitle>Erreur</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          {success && (
+            <Alert variant="default"> {/* Or a 'success' variant if you define one */}
+              <Terminal className="h-4 w-4" /> {/* Consider a success icon */}
+              <AlertTitle>Succès</AlertTitle>
+              <AlertDescription>Joueur enregistré avec succès!</AlertDescription>
+            </Alert>
+          )}
+          <div className="flex flex-col space-y-1.5">
+            <Label htmlFor="name">Nom</Label>
+            <Input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Nom du joueur"
+            />
+          </div>
+          <div className="flex flex-col space-y-1.5">
+            <Label htmlFor="initialElo">ELO initial (optionnel)</Label>
+            <Input
+              id="initialElo"
+              type="number"
+              value={initialElo}
+              onChange={(e) => setInitialElo(e.target.value === "" ? "" : Number(e.target.value))}
+              placeholder="ex: 1200"
+            />
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button type="submit" className="w-full">
+            Enregistrer le joueur
+          </Button>
+        </CardFooter>
+      </form>
+    </Card>
   );
 };
 
