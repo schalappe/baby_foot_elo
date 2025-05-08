@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.db import DatabaseManager, initialize_database
-from app.routers import health, test_info, players
+from app.routers import health, players, test_info
 
 
 @asynccontextmanager

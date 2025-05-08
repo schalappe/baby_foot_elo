@@ -15,14 +15,21 @@ Notes
 - ELO updates are not supported via the update endpoint.
 """
 
-from fastapi import APIRouter, HTTPException, status
 from typing import List
 
-from app.models.player import PlayerCreate, PlayerResponse, PlayerUpdate
-from app.crud.players import create_player, get_all_players, update_player, delete_player
-from app.crud.stats import get_player_stats
+from fastapi import APIRouter, HTTPException, status
 
-router = APIRouter(prefix="/api/v1/players",tags=["players"])
+from app.crud.players import (
+    create_player,
+    delete_player,
+    get_all_players,
+    update_player,
+)
+from app.crud.stats import get_player_stats
+from app.models.player import PlayerCreate, PlayerResponse, PlayerUpdate
+
+router = APIRouter(prefix="/api/v1/players", tags=["players"])
+
 
 @router.post("/", response_model=PlayerResponse, status_code=status.HTTP_201_CREATED)
 def create_player_endpoint(player: PlayerCreate):
@@ -47,11 +54,11 @@ def create_player_endpoint(player: PlayerCreate):
     player_id = create_player(player.name)
     if not player_id:
         raise HTTPException(status_code=500, detail="Failed to create player")
-    
+
     stats = get_player_stats(player_id)
     if not stats:
         raise HTTPException(status_code=500, detail="Failed to fetch player after creation")
-    
+
     losses = stats["matches_played"] - stats["wins"]
     return PlayerResponse(
         id=stats["player_id"],
@@ -60,8 +67,9 @@ def create_player_endpoint(player: PlayerCreate):
         creation_date=stats.get("created_at"),
         matches_played=stats["matches_played"],
         wins=stats["wins"],
-        losses=losses
+        losses=losses,
     )
+
 
 @router.get("/", response_model=List[PlayerResponse])
 def list_players_endpoint():
@@ -82,16 +90,19 @@ def list_players_endpoint():
             continue
 
         losses = stats["matches_played"] - stats["wins"]
-        response.append(PlayerResponse(
-            id=pid,
-            name=stats["name"],
-            elo=int(stats.get("current_elo", 1000)),
-            creation_date=stats.get("created_at"),
-            matches_played=stats["matches_played"],
-            wins=stats["wins"],
-            losses=losses
-        ))
+        response.append(
+            PlayerResponse(
+                id=pid,
+                name=stats["name"],
+                elo=int(stats.get("current_elo", 1000)),
+                creation_date=stats.get("created_at"),
+                matches_played=stats["matches_played"],
+                wins=stats["wins"],
+                losses=losses,
+            )
+        )
     return response
+
 
 @router.get("/{player_id}", response_model=PlayerResponse)
 def get_player_endpoint(player_id: int):
@@ -125,8 +136,9 @@ def get_player_endpoint(player_id: int):
         creation_date=stats.get("created_at"),
         matches_played=stats["matches_played"],
         wins=stats["wins"],
-        losses=losses
+        losses=losses,
     )
+
 
 @router.put("/{player_id}", response_model=PlayerResponse)
 def update_player_endpoint(player_id: int, player: PlayerUpdate):
@@ -174,8 +186,9 @@ def update_player_endpoint(player_id: int, player: PlayerUpdate):
         creation_date=stats.get("created_at"),
         matches_played=stats["matches_played"],
         wins=stats["wins"],
-        losses=losses
+        losses=losses,
     )
+
 
 @router.delete("/{player_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_player_endpoint(player_id: int):
