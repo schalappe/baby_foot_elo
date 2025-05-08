@@ -23,7 +23,7 @@ const PlayerDetailPage: React.FC = () => {
       <div className="container mx-auto p-4">
         <Alert variant="destructive">
           <AlertTitle>Error</AlertTitle>
-          <AlertDescription>Invalid player ID specified in the URL. Ensure it is a number.</AlertDescription>
+          <AlertDescription>Identifiant invalide.</AlertDescription>
         </Alert>
       </div>
     );

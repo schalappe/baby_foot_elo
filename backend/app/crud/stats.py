@@ -32,7 +32,6 @@ def get_player_stats(player_id: int) -> Optional[Dict[str, Any]]:
         Player statistics, or None if player not found
     """
     try:
-        db_manager = DatabaseManager()
         # ##: Get player details.
         player = get_player(player_id)
         if not player:

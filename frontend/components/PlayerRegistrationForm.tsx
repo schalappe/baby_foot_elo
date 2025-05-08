@@ -6,12 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal, Loader2 } from "lucide-react"; 
-import { registerPlayer } from '@/services/playerService'; 
+import { createPlayer } from '@/services/playerService'; 
 
 const PlayerRegistrationForm: React.FC = () => {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [initialElo, setInitialElo] = useState<number | string>("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false); 
@@ -28,17 +27,9 @@ const PlayerRegistrationForm: React.FC = () => {
       return;
     }
 
-    const eloValue = initialElo === "" ? undefined : Number(initialElo);
-    if (initialElo !== "" && isNaN(eloValue!)) {
-      setError("L'ELO initial doit être un nombre valide.");
-      setLoading(false);
-      return;
-    }
-
     try {
-      await registerPlayer(name.trim(), eloValue);
+      await createPlayer(name.trim());
       setName("");
-      setInitialElo("");
       setSuccess(true);
       setTimeout(() => {
         router.push('/players');
@@ -80,16 +71,6 @@ const PlayerRegistrationForm: React.FC = () => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Nom du joueur"
-            />
-          </div>
-          <div className="flex flex-col space-y-1.5">
-            <Label htmlFor="initialElo">ELO initial (optionnel)</Label>
-            <Input
-              id="initialElo"
-              type="number"
-              value={initialElo}
-              onChange={(e) => setInitialElo(e.target.value === "" ? "" : Number(e.target.value))}
-              placeholder="ex: 1200"
             />
           </div>
         </CardContent>

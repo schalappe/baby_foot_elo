@@ -1,21 +1,16 @@
 // frontend/services/playerService.ts
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export interface Player {
   id: number;
   name: string;
-  elo: number; // From PlayersList
-  matches_played: number; // From PlayersList
-  wins: number; // From PlayersList
-  losses: number; // From PlayersList
-  creation_date: string; // Added to match backend model
-  // Add other player attributes here as defined by the backend
-  // For example:
-  // games_played: number; // This seems to be an older name for matches_played
-  // created_at: string;
-  // updated_at: string;
+  elo: number;
+  matches_played: number;
+  wins: number;
+  losses: number;
+  creation_date: string;
 }
 
 export const getPlayers = async (): Promise<Player[]> => {
@@ -38,17 +33,12 @@ export const getPlayerById = async (playerId: number): Promise<Player> => {
   }
 };
 
-export const registerPlayer = async (playerName: string, initialElo?: number): Promise<Player> => {
+export const createPlayer = async (name: string): Promise<Player> => {
   try {
-    const payload: { name: string; initial_elo?: number } = { name: playerName };
-    if (initialElo !== undefined) {
-      payload.initial_elo = initialElo;
-    }
-    console.log(payload);
-    const response = await axios.post(`${API_URL}/players`, payload);
+    const response = await axios.post(`${API_URL}/players`, { name });
     return response.data;
   } catch (error) {
-    console.error('Error registering player:', error);
+    console.error('Error creating player:', error);
     throw error;
   }
 };
