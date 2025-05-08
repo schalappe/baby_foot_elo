@@ -7,6 +7,7 @@ This module provides functions to calculate team ELO, win probabilities, K facto
 
 from statistics import mean
 from math import pow
+from .validation import validate_match_result
 
 def calculate_team_elo(player1_elo: int, player2_elo: int) -> int:
     """
@@ -132,3 +133,48 @@ def calculate_elo_change(player_elo: int, win_probability: float, match_result: 
 
     k = determine_k_factor(player_elo)
     return int(k * (match_result - win_probability))
+
+
+def process_match_result(winning_team: list, losing_team: list, winner_score: int, loser_score: int) -> dict:
+    """
+    Process match results and calculate updated ELO values for each player.
+
+    Parameters
+    ----------
+    winning_team : list
+        List of player objects with 'elo' attribute and 'id'.
+    losing_team : list
+        List of player objects with 'elo' attribute and 'id'.
+    winner_score : int
+        Score of winning team.
+    loser_score : int
+        Score of losing team.
+
+    Returns
+    -------
+    dict
+        Mapping player IDs to a dict with 'old_elo', 'new_elo', and 'change'.
+    """
+    validate_match_result(winning_team, losing_team, winner_score, loser_score)
+
+    # ##: Calculate team ELOs by averaging individual ratings.
+    elo_winner = calculate_team_elo(winning_team[0].elo, winning_team[1].elo)
+    elo_loser = calculate_team_elo(losing_team[0].elo, losing_team[1].elo)
+
+    results = {}
+
+    # ##: Calculate ELO changes for winning team.
+    for player in winning_team:
+        win_prob = calculate_win_probability(elo_winner, elo_loser)
+        change = calculate_elo_change(player.elo, win_prob, 1)
+        new_elo = player.elo + change
+        results[player.id] = {'old_elo': player.elo, 'new_elo': new_elo, 'change': change}
+
+    # ##: Calculate ELO changes for losing team.
+    for player in losing_team:
+        win_prob = calculate_win_probability(elo_loser, elo_winner)
+        change = calculate_elo_change(player.elo, win_prob, 0)
+        new_elo = player.elo + change
+        results[player.id] = {'old_elo': player.elo, 'new_elo': new_elo, 'change': change}
+
+    return results
