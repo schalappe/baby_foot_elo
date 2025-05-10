@@ -259,7 +259,7 @@ class TestSchemaDefinitions(TestCase):
         self.assertColumn(table_info, "ranking", "INTEGER", True)
         self.assertColumn(table_info, "matches_played", "INTEGER", True)
         self.assertColumn(table_info, "wins", "INTEGER", True)
-        self.assertColumn(table_info, "loses", "INTEGER", True)
+        self.assertColumn(table_info, "losses", "INTEGER", True)
 
         fks = get_foreign_key_constraints(self.con, "Periodic_Rankings")
         self.assertTrue(
@@ -278,14 +278,14 @@ class TestSchemaDefinitions(TestCase):
             "SELECT player_id FROM Players WHERE name = 'Test Player for Rankings' LIMIT 1"
         ).fetchone()[0]
         self.con.execute(
-            "INSERT INTO Periodic_Rankings (player_id, year, month, day, initial_elo, final_elo, ranking, matches_played, wins, loses) VALUES (?, 2024, 1, 1, 1000, 1010, 1, 1, 1, 0)",
+            "INSERT INTO Periodic_Rankings (player_id, year, month, day, initial_elo, final_elo, ranking, matches_played, wins, losses) VALUES (?, 2024, 1, 1, 1000, 1010, 1, 1, 1, 0)",
             (p_id,),
         )
         with self.assertRaises(
             duckdb.ConstraintException, msg="UNIQUE constraint on Periodic_Rankings failed"
         ):
             self.con.execute(
-                "INSERT INTO Periodic_Rankings (player_id, year, month, day, initial_elo, final_elo, ranking, matches_played, wins, loses) VALUES (?, 2024, 1, 1, 1000, 1010, 1, 1, 1, 0)",
+                "INSERT INTO Periodic_Rankings (player_id, year, month, day, initial_elo, final_elo, ranking, matches_played, wins, losses) VALUES (?, 2024, 1, 1, 1000, 1010, 1, 1, 1, 0)",
                 (p_id,),
             )
 
@@ -308,7 +308,7 @@ class TestSchemaDefinitions(TestCase):
         self.assertColumn(table_info, "ranking", "INTEGER", True)
         self.assertColumn(table_info, "matches_played", "INTEGER", True)
         self.assertColumn(table_info, "wins", "INTEGER", True)
-        self.assertColumn(table_info, "loses", "INTEGER", True)
+        self.assertColumn(table_info, "losses", "INTEGER", True)
 
         fks = get_foreign_key_constraints(self.con, "Team_Periodic_Rankings")
         self.assertTrue(any("FOREIGN KEY (team_id) REFERENCES Teams(team_id)" in fk for fk in fks))
@@ -333,14 +333,14 @@ class TestSchemaDefinitions(TestCase):
             (tpr_p1_id, tpr_p2_id),
         ).fetchone()[0]
         self.con.execute(
-            "INSERT INTO Team_Periodic_Rankings (team_id, year, month, day, initial_elo, final_elo, ranking, matches_played, wins, loses) VALUES (?, 2024, 1, 1, 1000.0, 1010.0, 1, 1, 1, 0)",
+            "INSERT INTO Team_Periodic_Rankings (team_id, year, month, day, initial_elo, final_elo, ranking, matches_played, wins, losses) VALUES (?, 2024, 1, 1, 1000.0, 1010.0, 1, 1, 1, 0)",
             (t_id,),
         )
         with self.assertRaises(
             duckdb.ConstraintException, msg="UNIQUE constraint on Team_Periodic_Rankings failed"
         ):
             self.con.execute(
-                "INSERT INTO Team_Periodic_Rankings (team_id, year, month, day, initial_elo, final_elo, ranking, matches_played, wins, loses) VALUES (?, 2024, 1, 1, 1000.0, 1010.0, 1, 1, 1, 0)",
+                "INSERT INTO Team_Periodic_Rankings (team_id, year, month, day, initial_elo, final_elo, ranking, matches_played, wins, losses) VALUES (?, 2024, 1, 1, 1000.0, 1010.0, 1, 1, 1, 0)",
                 (t_id,),
             )
 
