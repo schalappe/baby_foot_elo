@@ -9,9 +9,11 @@ CREATE SEQUENCE IF NOT EXISTS seq_players_id;
 
 CREATE_PLAYERS_TABLE = """
 CREATE TABLE IF NOT EXISTS Players (
-    player_id INTEGER PRIMARY KEY DEFAULT nextval('seq_players_id'),  -- Unique player identifier, auto-incrementing
-    name TEXT NOT NULL,                          -- Player's full name
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  -- Creation timestamp
+    player_id INTEGER PRIMARY KEY DEFAULT nextval('seq_players_id'),
+    name VARCHAR NOT NULL,
+    global_elo INTEGER NOT NULL DEFAULT 1000,
+    current_month_elo INTEGER NOT NULL DEFAULT 1000,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 """
 
