@@ -3,12 +3,12 @@
 Core database utilities like transaction management and retry logic.
 """
 
+import uuid
 from contextlib import contextmanager
-from logging import getLogger
+
+from loguru import logger
 
 from .database import DatabaseManager
-
-logger = getLogger(__name__)
 
 
 class TransactionHandler:
@@ -19,7 +19,7 @@ class TransactionHandler:
     function. It provides methods to begin, commit and rollback transactions.
     """
 
-    def begin(self, db: DatabaseManager):
+    def begin(self, db: DatabaseManager, transaction_id: uuid.UUID):
         """
         Begin a transaction.
 
@@ -30,11 +30,14 @@ class TransactionHandler:
         ----------
         db : DatabaseManager
             The database manager instance to use for the transaction.
+        transaction_id : uuid.UUID
+            The unique ID for this transaction for logging.
         """
         db.execute("BEGIN;")
-        logger.debug("Transaction started.")
+        logger.info("Transaction started.")
+        logger.info(f"Transaction {transaction_id} started.")
 
-    def commit(self, db: DatabaseManager):
+    def commit(self, db: DatabaseManager, transaction_id: uuid.UUID):
         """
         Commit a transaction.
 
@@ -45,11 +48,14 @@ class TransactionHandler:
         ----------
         db : DatabaseManager
             The database manager instance to use for the transaction.
+        transaction_id : uuid.UUID
+            The unique ID for this transaction for logging.
         """
         db.execute("COMMIT;")
-        logger.debug("Transaction committed.")
+        logger.info("Transaction committed.")
+        logger.info(f"Transaction {transaction_id} committed.")
 
-    def rollback(self, db: DatabaseManager):
+    def rollback(self, db: DatabaseManager, transaction_id: uuid.UUID):
         """
         Rollback a transaction.
 
@@ -60,9 +66,12 @@ class TransactionHandler:
         ----------
         db : DatabaseManager
             The database manager instance to use for the transaction.
+        transaction_id : uuid.UUID
+            The unique ID for this transaction for logging.
         """
         db.execute("ROLLBACK;")
-        logger.debug("Transaction rolled back.")
+        logger.warning("Transaction rolled back.")
+        logger.warning(f"Transaction {transaction_id} rolled back.")
 
 
 @contextmanager
@@ -85,11 +94,14 @@ def transaction():
     # ##: Get the singleton instance of DatabaseManager.
     db = DatabaseManager()
     handler = TransactionHandler()
+    transaction_id = uuid.uuid4()
+    logger.debug(f"Starting transaction {transaction_id}.")
     try:
-        handler.begin(db)
+        handler.begin(db, transaction_id)
         yield db
-        handler.commit(db)
+        handler.commit(db, transaction_id)
+        logger.info(f"Transaction {transaction_id} committed successfully.")
     except Exception as exc:
-        handler.rollback(db)
-        logger.error("Transaction failed: %s", exc)
+        handler.rollback(db, transaction_id)
+        logger.error(f"Transaction {transaction_id} failed and rolled back. Error: {exc}", exc_info=True)
         raise
