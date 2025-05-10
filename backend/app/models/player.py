@@ -8,23 +8,39 @@ This module defines data models for creating, updating, and returning player inf
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
-class PlayerCreate(BaseModel):
+# Shared properties
+class PlayerBase(BaseModel):
+    """
+    Base model for player properties.
+
+    Attributes
+    ----------
+    name : str
+        The name of the player.
+    """
+
+    name: str = Field(..., min_length=1, max_length=100, description="Player's name")
+
+
+class PlayerCreate(PlayerBase):
     """
     Data model for creating a new player.
 
     Attributes
     ----------
     name : str
-        The name of the player.
-    initial_elo : int, optional
-        The initial ELO rating for the player (default is 1000).
+        The name of the player (inherited from PlayerBase).
+    global_elo : int, optional
+        The initial global ELO rating for the player (default is 1000).
+    current_month_elo : int, optional
+        The initial ELO rating for the current month (default is 1000).
     """
 
-    name: str
-    initial_elo: int = 1000
+    global_elo: int = Field(default=1000, ge=0, description="Initial global ELO rating for the player")
+    current_month_elo: int = Field(default=1000, ge=0, description="Initial ELO rating for the current month")
 
 
 class PlayerUpdate(BaseModel):
@@ -35,15 +51,12 @@ class PlayerUpdate(BaseModel):
     ----------
     name : str, optional
         The updated name of the player.
-    initial_elo : int, optional
-        The updated initial ELO rating for the player.
     """
 
-    name: Optional[str] = None
-    initial_elo: Optional[int] = None
+    name: Optional[str] = Field(default=None, min_length=1, max_length=100, description="Player's updated name")
 
 
-class PlayerResponse(BaseModel):
+class PlayerResponse(PlayerBase):
     """
     Data model for returning player information in API responses.
 
@@ -52,9 +65,11 @@ class PlayerResponse(BaseModel):
     id : int
         Unique identifier for the player.
     name : str
-        The name of the player.
-    elo : int
-        The current ELO rating of the player.
+        The name of the player (inherited from PlayerBase).
+    global_elo : int
+        The current global ELO rating of the player.
+    current_month_elo : int
+        The current ELO rating of the player for the month.
     creation_date : datetime
         The date and time when the player was created.
     matches_played : int, optional
@@ -65,13 +80,12 @@ class PlayerResponse(BaseModel):
         The number of matches the player has lost (default is 0).
     """
 
-    id: int
-    name: str
-    elo: int
-    creation_date: datetime
-    matches_played: int = 0
-    wins: int = 0
-    losses: int = 0
+    id: int = Field(..., gt=0, description="Unique identifier for the player")
+    global_elo: int = Field(..., ge=0, description="Current global ELO rating of the player")
+    current_month_elo: int = Field(..., ge=0, description="Current ELO rating of the player for the month")
+    creation_date: datetime = Field(..., description="Timestamp of player creation")
+    matches_played: int = Field(default=0, ge=0, description="Total matches played by the player")
+    wins: int = Field(default=0, ge=0, description="Total matches won by the player")
+    losses: int = Field(default=0, ge=0, description="Total matches lost by the player")
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}

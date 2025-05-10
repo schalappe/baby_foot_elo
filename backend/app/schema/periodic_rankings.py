@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS Periodic_Rankings (
     ranking INTEGER NOT NULL,
     matches_played INTEGER NOT NULL,
     wins INTEGER NOT NULL,
-    loses INTEGER NOT NULL,
+    losses INTEGER NOT NULL,
     FOREIGN KEY (player_id) REFERENCES Players(player_id),
     UNIQUE (player_id, year, month, day)
 );

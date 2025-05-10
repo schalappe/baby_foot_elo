@@ -1,109 +1,113 @@
 # -*- coding: utf-8 -*-
 """
-Pydantic models for match-related operations in the Baby Foot Elo backend.
-
-This module defines data models for creating and returning match information.
+Pydantic models for match-related operations, mirroring the Matches database schema.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import List
+from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
 
-from .player import PlayerResponse
+from .team import TeamResponse
 
 
-class MatchCreate(BaseModel):
+class MatchBase(BaseModel):
     """
-    Data model for creating a new match.
+    Base model for match properties directly corresponding to schema.
 
     Attributes
     ----------
-    winning_team_players : List[int]
-        Player IDs for the winning team.
-    losing_team_players : List[int]
-        Player IDs for the losing team.
-    winner_score : int
-        Score of the winning team.
-    loser_score : int
-        Score of the losing team.
-    is_fanny : bool
-        Whether the match is a 'fanny' match (default False).
+    winner_team_id : int
+        ID of the winning team.
+    loser_team_id : int
+        ID of the losing team.
+    is_fanny : bool, optional
+        Whether the match was a 'fanny' (default is False).
+    played_at : datetime
+        Timestamp when the match was played.
     """
-    winning_team_players: List[int]
-    losing_team_players: List[int]
-    winner_score: int
-    loser_score: int
-    is_fanny: bool = False
+
+    winner_team_id: int = Field(..., gt=0, description="ID of the winning team")
+    loser_team_id: int = Field(..., gt=0, description="ID of the losing team")
+    is_fanny: bool = Field(default=False, description="Whether the match was a 'fanny'")
+    played_at: datetime = Field(..., description="Timestamp when the match was played")
 
 
-class EloChangeResponse(BaseModel):
+class MatchCreate(MatchBase):
     """
-    Data model for individual ELO changes resulting from a match.
-
-    Attributes
-    ----------
-    player_id : int
-        ID of the player whose elo changed.
-    old_elo : int
-        ELO rating before the match.
-    new_elo : int
-        ELO rating after the match.
-    change : int
-        Difference between new and old ELO (new_elo - old_elo).
+    Data model for creating a new match record.
+    Year, month, and day are derived from played_at.
     """
-    player_id: int
-    old_elo: int
-    new_elo: int
-    change: int
+
+    year: Optional[int] = Field(
+        default=None,
+        ge=1900,
+        le=2200,
+        description="Year the match was played (derived from played_at)",
+    )
+    month: Optional[int] = Field(
+        default=None, ge=1, le=12, description="Month the match was played (derived from played_at)"
+    )
+    day: Optional[int] = Field(
+        default=None, ge=1, le=31, description="Day the match was played (derived from played_at)"
+    )
+
+    @model_validator(mode="after")
+    def validate_teams_and_derive_date_parts(cls, data: MatchCreate) -> MatchCreate:
+        """
+        Validate that winner_team_id and loser_team_id are different.
+        Derive year, month, and day from played_at.
+        """
+        if data.winner_team_id == data.loser_team_id:
+            raise ValueError("Winner and loser team IDs cannot be the same.")
+
+        if data.played_at:
+            data.year = data.played_at.year
+            data.month = data.played_at.month
+            data.day = data.played_at.day
+        else:
+            raise ValueError("played_at must be provided to derive date parts.")
+        return data
 
 
-class TeamResponse(BaseModel):
+class MatchUpdate(BaseModel):
     """
-    Data model for returning a team's data in match responses.
-
-    Attributes
-    ----------
-    players : List[PlayerResponse]
-        List of players on the team.
-    team_elo : int
-        Combined ELO rating for the team.
+    Data model for updating an existing match's information.
+    Matches are typically immutable once recorded. Placeholder for future needs.
     """
-    players: List[PlayerResponse]
-    team_elo: int
+
+    pass
 
 
-class MatchResponse(BaseModel):
+class MatchResponse(MatchBase):
     """
     Data model for returning match information in API responses.
 
     Attributes
     ----------
-    id : int
+    match_id : int
         Unique identifier for the match.
-    winning_team : TeamResponse
-        Data for the winning team.
-    losing_team : TeamResponse
-        Data for the losing team.
-    winner_score : int
-        Score of the winning team.
-    loser_score : int
-        Score of the losing team.
-    is_fanny : bool
-        Whether the match is a 'fanny' match.
-    date : datetime
-        Date and time when the match was played.
-    elo_changes : List[EloChangeResponse]
-        List of ELO changes for all involved players.
+    year : int
+        Year the match was played.
+    month : int
+        Month the match was played.
+    day : int
+        Day the match was played.
+    winner_team : Optional[TeamResponse]
+        Detailed information for the winning team (populated by service layer).
+    loser_team : Optional[TeamResponse]
+        Detailed information for the losing team (populated by service layer).
     """
-    id: int
-    winning_team: TeamResponse
-    losing_team: TeamResponse
-    winner_score: int
-    loser_score: int
-    is_fanny: bool
-    date: datetime
-    elo_changes: List[EloChangeResponse]
+
+    match_id: int = Field(..., gt=0, description="Unique identifier for the match")
+    year: int = Field(..., ge=1900, le=2200, description="Year the match was played")
+    month: int = Field(..., ge=1, le=12, description="Month the match was played")
+    day: int = Field(..., ge=1, le=31, description="Day the match was played")
+
+    winner_team: Optional[TeamResponse] = Field(default=None, description="Details for the winning team")
+    loser_team: Optional[TeamResponse] = Field(default=None, description="Details for the losing team")
 
     class Config:
         from_attributes = True
