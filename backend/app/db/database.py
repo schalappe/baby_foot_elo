@@ -104,9 +104,7 @@ class DatabaseManager:
             raise
 
     @_ensure_connection
-    def fetchall(
-        self, query: str, params: Optional[Union[List, Tuple, Dict]] = None
-    ) -> List[Tuple]:
+    def fetchall(self, query: str, params: Optional[Union[List, Tuple, Dict]] = None) -> List[Tuple]:
         """
         Fetch all rows from a query result.
 
@@ -126,9 +124,7 @@ class DatabaseManager:
         return cur.fetchall()
 
     @_ensure_connection
-    def fetchone(
-        self, query: str, params: Optional[Union[List, Tuple, Dict]] = None
-    ) -> Optional[Tuple]:
+    def fetchone(self, query: str, params: Optional[Union[List, Tuple, Dict]] = None) -> Optional[Tuple]:
         """
         Fetch a single row from a query result.
 
