@@ -32,15 +32,11 @@ def validate_scores(winner_score: int, loser_score: int) -> None:
     if winner_score < 0 or loser_score < 0:
         raise ValueError("Scores must be non-negative")
     if winner_score <= loser_score:
-        logger.error(
-            f"Invalid scores: Winner {winner_score}, Loser {loser_score}. Winner score must be greater."
-        )
+        logger.error(f"Invalid scores: Winner {winner_score}, Loser {loser_score}. Winner score must be greater.")
         raise ValueError("Winner score must be greater than loser score")
 
 
-def validate_match_result(
-    winning_team: list, losing_team: list, winner_score: int, loser_score: int
-) -> None:
+def validate_match_result(winning_team: list, losing_team: list, winner_score: int, loser_score: int) -> None:
     """
     Comprehensive validation before processing a match result.
     Calls validate_teams and validate_scores.

@@ -14,6 +14,12 @@ from .validation import validate_match_result
 logger = getLogger(__name__)
 
 
+# ##: K-factors for established players.
+K_TIER1 = 100  # ELO < 1200
+K_TIER2 = 50  # 1200 <= ELO < 1800
+K_TIER3 = 24  # ELO >= 1800
+
+
 def calculate_team_elo(player1_elo: int, player2_elo: int) -> int:
     """
     Calculate team ELO as the average of two player ELO ratings.
@@ -38,6 +44,7 @@ def calculate_team_elo(player1_elo: int, player2_elo: int) -> int:
     if player1_elo < 0 or player2_elo < 0:
         raise ValueError("ELO ratings must be non-negative")
     team_elo = int(mean([player1_elo, player2_elo]))
+
     logger.debug(f"Calculated team ELO: {team_elo} from player ELOs {player1_elo}, {player2_elo}")
     return team_elo
 
@@ -67,8 +74,10 @@ def calculate_win_probability(team_a_elo: int, team_b_elo: int) -> float:
     """
     if team_a_elo < 0 or team_b_elo < 0:
         raise ValueError("ELO ratings must be non-negative")
+
     exponent = (team_b_elo - team_a_elo) / 400
     probability = 1 / (1 + pow(10, exponent))
+
     logger.debug(
         f"Calculated win probability: {probability:.4f} for team A ELO {team_a_elo} vs team B ELO {team_b_elo}"
     )
@@ -101,14 +110,14 @@ def determine_k_factor(player_elo: int) -> int:
     """
     if player_elo < 0:
         raise ValueError("ELO rating must be non-negative")
+
     if player_elo < 1200:
-        k_factor = 100
-    elif player_elo < 1800:
-        k_factor = 50
-    else:
-        k_factor = 24
-    logger.debug(f"Determined K-factor: {k_factor} for player ELO {player_elo}")
-    return k_factor
+        return K_TIER1
+
+    if player_elo < 1800:
+        return K_TIER2
+
+    return K_TIER3
 
 
 def calculate_elo_change(player_elo: int, win_probability: float, match_result: int) -> int:
@@ -153,18 +162,16 @@ def calculate_elo_change(player_elo: int, win_probability: float, match_result: 
     return change
 
 
-def process_match_result(
-    winning_team: list, losing_team: list, winner_score: int, loser_score: int
-) -> dict:
+def process_match_result(winning_team: list, losing_team: list, winner_score: int, loser_score: int) -> dict:
     """
     Process match results and calculate updated ELO values for each player.
 
     Parameters
     ----------
     winning_team : list
-        List of player objects with 'elo' attribute and 'id'.
+        List of player objects for the winning team.
     losing_team : list
-        List of player objects with 'elo' attribute and 'id'.
+        List of player objects for the losing team.
     winner_score : int
         Score of winning team.
     loser_score : int
@@ -193,9 +200,7 @@ def process_match_result(
         win_prob = calculate_win_probability(elo_winner, elo_loser)
         change = calculate_elo_change(player.elo, win_prob, 1)
         new_elo = player.elo + change
-        logger.info(
-            f"Player {player.id} (Winner): ELO {player.elo} -> {new_elo} (Change: {change})"
-        )
+        logger.info(f"Player {player.id} (Winner): ELO {player.elo} -> {new_elo} (Change: {change})")
         results[player.id] = {"old_elo": player.elo, "new_elo": new_elo, "change": change}
 
     # ##: Calculate ELO changes for losing team.

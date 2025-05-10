@@ -4,16 +4,27 @@ Unit tests for the ELO calculator module.
 """
 
 from unittest import TestCase, main
-from app.services.elo import (
+
+from app.services.elo.calculator import (
+    calculate_elo_change,
     calculate_team_elo,
     calculate_win_probability,
     determine_k_factor,
-    calculate_elo_change,
     process_match_result,
-    validate_teams,
-    validate_scores,
-    validate_match_result,
 )
+from app.services.elo.validation import (
+    validate_match_result,
+    validate_scores,
+    validate_teams,
+)
+
+
+class MockPlayer:
+    """Mock player class for testing."""
+
+    def __init__(self, id_val, elo_val):
+        self.id = id_val
+        self.elo = elo_val
 
 
 class TestEloCalculator(TestCase):
@@ -32,6 +43,16 @@ class TestEloCalculator(TestCase):
         """Test win probability calculation with equal inputs."""
         prob = calculate_win_probability(1500, 1500)
         self.assertAlmostEqual(prob, 0.5, places=3)
+
+    def test_calculate_win_probability_extreme_difference(self):
+        """Test win probability with extreme ELO differences."""
+        # Stronger player A (2000) vs weaker player B (1000)
+        prob_A_stronger = calculate_win_probability(2000, 1000)
+        self.assertAlmostEqual(prob_A_stronger, 0.996, delta=0.001)
+
+        # Weaker player A (1000) vs stronger player B (2000)
+        prob_A_weaker = calculate_win_probability(1000, 2000)
+        self.assertAlmostEqual(prob_A_weaker, 0.003, delta=0.001)
 
     def test_calculate_win_probability_range(self):
         """Test win probability calculation with out of range inputs."""
@@ -72,56 +93,120 @@ class TestEloCalculator(TestCase):
         with self.assertRaises(ValueError):
             calculate_elo_change(1500, prob, 2)
 
+    def test_calculate_elo_change_negative_match_count(self):
+        """Test ELO change with negative match count."""
+        with self.assertRaises(ValueError):
+            calculate_elo_change(1500, 0.5, -1)
+
     def test_process_match_result_simple(self):
         """Test process_match_result with equal ELO players."""
-        class MockPlayer:
-            def __init__(self, id, elo):
-                self.id = id
-                self.elo = elo
 
         team_a = [MockPlayer(1, 1500), MockPlayer(2, 1500)]
         team_b = [MockPlayer(3, 1500), MockPlayer(4, 1500)]
         results = process_match_result(team_a, team_b, winner_score=2, loser_score=1)
 
-        # Expected: K factor 50 => change 25 for winners, -25 for losers
         for pid in (1, 2):
-            self.assertEqual(results[pid]['change'], 25)
-            self.assertEqual(results[pid]['new_elo'], 1525)
+            self.assertEqual(results[pid]["change"], 25)
+            self.assertEqual(results[pid]["new_elo"], 1525)
         for pid in (3, 4):
-            self.assertEqual(results[pid]['change'], -25)
-            self.assertEqual(results[pid]['new_elo'], 1475)
+            self.assertEqual(results[pid]["change"], -25)
+            self.assertEqual(results[pid]["new_elo"], 1475)
 
-    def test_validate_teams_empty(self):
-        class MockPlayer: pass
-        with self.assertRaises(ValueError):
-            validate_teams([], [])
+    def test_process_match_result_new_players(self):
+        """Test process_match_result with new players (low ELO, provisional K-factor)."""
+        team_a = [MockPlayer(1, 1000), MockPlayer(2, 1000)]
+        team_b = [MockPlayer(3, 1100), MockPlayer(4, 1100)]
+
+        results = process_match_result(team_a, team_b, winner_score=2, loser_score=1)
+
+        self.assertEqual(results[1]["change"], 64)
+        self.assertEqual(results[1]["new_elo"], 1064)
+        self.assertEqual(results[2]["change"], 64)
+        self.assertEqual(results[2]["new_elo"], 1064)
+
+        self.assertEqual(results[3]["change"], -64)
+        self.assertEqual(results[3]["new_elo"], 1100 - 64)
+        self.assertEqual(results[4]["change"], -64)
+        self.assertEqual(results[4]["new_elo"], 1100 - 64)
+
+    def test_process_match_result_extreme_elo_difference_upset(self):
+        """Test process_match_result with extreme ELO difference - upset win, mixed provisional/established."""
+        team_a_player1 = MockPlayer(1, 1000)
+        team_a_player2 = MockPlayer(2, 1000)
+        team_a = [team_a_player1, team_a_player2]
+
+        team_b_player3 = MockPlayer(3, 2000)
+        team_b_player4 = MockPlayer(4, 2000)
+        team_b = [team_b_player3, team_b_player4]
+
+        results = process_match_result(team_a, team_b, winner_score=2, loser_score=1)
+
+        self.assertEqual(results[1]["change"], 99)
+        self.assertEqual(results[1]["new_elo"], 1099)
+        self.assertEqual(results[2]["change"], 99)
+        self.assertEqual(results[2]["new_elo"], 1099)
+
+        self.assertEqual(results[3]["change"], -23)
+        self.assertEqual(results[3]["new_elo"], 1977)
+        self.assertEqual(results[4]["change"], -23)
+        self.assertEqual(results[4]["new_elo"], 1977)
+
+    def test_process_match_result_extreme_elo_difference_expected(self):
+        """Test process_match_result with extreme ELO difference - expected win, mixed K-factors."""
+        team_a_player1 = MockPlayer(1, 2000)
+        team_a_player2 = MockPlayer(2, 2000)
+        team_a = [team_a_player1, team_a_player2]
+
+        team_b_player3 = MockPlayer(3, 1000)
+        team_b_player4 = MockPlayer(4, 1000)
+        team_b = [team_b_player3, team_b_player4]
+
+        results = process_match_result(team_a, team_b, winner_score=2, loser_score=1)
+
+        self.assertEqual(results[1]["change"], 0)
+        self.assertEqual(results[1]["new_elo"], 2000)
+        self.assertEqual(results[2]["change"], 0)
+        self.assertEqual(results[2]["new_elo"], 2000)
+
+        self.assertEqual(results[3]["change"], 0)
+        self.assertEqual(results[3]["new_elo"], 1000)
+        self.assertEqual(results[4]["change"], 0)
+        self.assertEqual(results[4]["new_elo"], 1000)
+
+    def test_process_match_result_with_tournament_modifier(self):
+        """Test process_match_result with a tournament importance modifier."""
+        team_a = [MockPlayer(1, 1500), MockPlayer(2, 1500)]
+        team_b = [MockPlayer(3, 1500), MockPlayer(4, 1500)]
+        results = process_match_result(team_a, team_b, winner_score=2, loser_score=1)
+
+        for pid in (1, 2):
+            self.assertEqual(results[pid]["change"], 25)
+            self.assertEqual(results[pid]["new_elo"], 1525)
+        for pid in (3, 4):
+            self.assertEqual(results[pid]["change"], -25)
+            self.assertEqual(results[pid]["new_elo"], 1475)
 
     def test_validate_teams_invalid_elo(self):
-        class MockPlayer:
-            def __init__(self):
-                self.id = 1
-                self.elo = -5
+        """Test validate_teams with invalid ELO ratings."""
         with self.assertRaises(ValueError):
-            validate_teams([MockPlayer()], [MockPlayer()])
+            validate_teams([MockPlayer(1, -5)], [MockPlayer(2, -5)])
 
     def test_validate_scores_negative(self):
+        """Test validate_scores with negative scores."""
         with self.assertRaises(ValueError):
             validate_scores(-1, 0)
 
     def test_validate_scores_invalid_order(self):
+        """Test validate_scores with invalid score order."""
         with self.assertRaises(ValueError):
             validate_scores(1, 2)
 
     def test_validate_match_result_valid(self):
-        class MockPlayer:
-            def __init__(self, id, elo):
-                self.id = id
-                self.elo = elo
+        """Test validate_match_result with valid match result."""
         team_a = [MockPlayer(1, 1000)]
         team_b = [MockPlayer(2, 1001)]
-        # should not raise
         validate_match_result(team_a, team_b, 2, 1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
