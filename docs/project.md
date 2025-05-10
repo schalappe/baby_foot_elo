@@ -71,12 +71,70 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 
 ### Modèle de données
 
-- **Players**: `player_id` (INTEGER PRIMARY KEY), `name` (VARCHAR), `elo` (INTEGER), `created_at` (TIMESTAMP)
-- **Teams**: `team_id` (INTEGER PRIMARY KEY), `player1_id` (INTEGER REFERENCES Joueurs), `player2_id` (INTEGER REFERENCES Joueurs), `created_at` (TIMESTAMP), `last_match` (TIMESTAMP) *(Note: Représente une paire unique de joueurs ayant joué ensemble. L'ELO d'équipe est calculé dynamiquement.)*
-- **Matches**: `match_id` (INTEGER PRIMARY KEY), `winner_team_id` (INTEGER REFERENCES Équipes), `loser_team_id` (INTEGER REFERENCES Équipes), `is_fanny` (BOOLEAN), `date` (TIMESTAMP), `year` (INTEGER), `month` (INTEGER)
-- **ELO_History**: `history_id` (INTEGER PRIMARY KEY), `player_id` (INTEGER REFERENCES Joueurs), `match_id` (INTEGER REFERENCES Matchs), `old_elo` (INTEGER), `new_elo` (INTEGER), `difference` (INTEGER), `date` (TIMESTAMP), `year` (INTEGER), `month` (INTEGER)
-- **Periodic_Rankings**: `ranking_id` (INTEGER PRIMARY KEY), `player_id` (INTEGER REFERENCES Joueurs), `year` (INTEGER), `month` (INTEGER), `elo` (INTEGER), `ranking` (INTEGER), `matches_played` (INTEGER), `wins` (INTEGER), `loses` (INTEGER) *(Note: Stocke les classements périodiques des JOUEURS.)*
-- **Team_Periodic_Rankings**: `team_ranking_id` (INTEGER PRIMARY KEY), `team_id` (INTEGER REFERENCES Équipes), `year` (INTEGER), `month` (INTEGER), `elo_score` (FLOAT), `ranking` (INTEGER), `matchs_played` (INTEGER), `wins` (INTEGER), `loses` (INTEGER) *(Note: Stocke les classements périodiques des ÉQUIPES.)*
+- **Players**:
+  - `player_id` (INTEGER PRIMARY KEY)
+  - `name` (VARCHAR)
+  - `global_elo` (INTEGER) *(Note: ELO basé sur tous les matchs)*
+  - `current_month_elo` (INTEGER) *(Note: ELO basé sur les matchs du mois en cours)*
+  - `created_at` (TIMESTAMP)
+
+- **Teams**:
+  - `team_id` (INTEGER PRIMARY KEY)
+  - `player1_id` (INTEGER REFERENCES Players)
+  - `player2_id` (INTEGER REFERENCES Players)
+  - `global_elo` (FLOAT) *(Note: ELO basé sur tous les matchs)*
+  - `current_month_elo` (FLOAT) *(Note: ELO basé sur les matchs du mois en cours)*
+  - `created_at` (TIMESTAMP)
+  - `last_match` (TIMESTAMP)
+
+- **Matches**:
+  - `match_id` (INTEGER PRIMARY KEY)
+  - `winner_team_id` (INTEGER REFERENCES Teams)
+  - `loser_team_id` (INTEGER REFERENCES Teams)
+  - `is_fanny` (BOOLEAN)
+  - `date` (TIMESTAMP)
+  - `year` (INTEGER)
+  - `month` (INTEGER)
+  - `day` (INTEGER)
+
+- **ELO_History**:
+  - `history_id` (INTEGER PRIMARY KEY)
+  - `player_id` (INTEGER REFERENCES Players)
+  - `match_id` (INTEGER REFERENCES Matches)
+  - `type` (VARCHAR) *(Note: 'global' ou 'monthly' pour distinguer le type de calcul)*
+  - `old_elo` (INTEGER)
+  - `new_elo` (INTEGER)
+  - `difference` (INTEGER)
+  - `date` (TIMESTAMP)
+  - `year` (INTEGER)
+  - `month` (INTEGER)
+  - `day` (INTEGER)
+
+- **Periodic_Rankings**:
+  - `ranking_id` (INTEGER PRIMARY KEY)
+  - `player_id` (INTEGER REFERENCES Players)
+  - `year` (INTEGER)
+  - `month` (INTEGER)
+  - `day` (INTEGER)
+  - `initial_elo` (INTEGER) *(Note: ELO de départ, typiquement 1000)*
+  - `final_elo` (INTEGER) *(Note: ELO final pour la période)*
+  - `ranking` (INTEGER)
+  - `matches_played` (INTEGER)
+  - `wins` (INTEGER)
+  - `loses` (INTEGER)
+
+- **Team_Periodic_Rankings**:
+  - `team_ranking_id` (INTEGER PRIMARY KEY)
+  - `team_id` (INTEGER REFERENCES Teams)
+  - `year` (INTEGER)
+  - `month` (INTEGER)
+  - `day` (INTEGER)
+  - `initial_elo` (FLOAT) *(Note: ELO de départ, typiquement 1000)*
+  - `final_elo` (FLOAT) *(Note: ELO final pour la période)*
+  - `ranking` (INTEGER)
+  - `matches_played` (INTEGER)
+  - `wins` (INTEGER)
+  - `loses` (INTEGER)
 
 #### Diagramme Entité-Relation (Conceptuel)
 
@@ -96,7 +154,8 @@ erDiagram
     Players {
         INTEGER player_id PK
         VARCHAR name
-        INTEGER elo
+        INTEGER global_elo
+        INTEGER current_month_elo
         TIMESTAMP created_at
     }
 
@@ -104,6 +163,8 @@ erDiagram
         INTEGER team_id PK
         INTEGER player1_id FK
         INTEGER player2_id FK
+        FLOAT global_elo
+        FLOAT current_month_elo
         TIMESTAMP created_at
         TIMESTAMP last_match
     }
@@ -116,18 +177,21 @@ erDiagram
         TIMESTAMP date
         INTEGER year
         INTEGER month
+        INTEGER day
     }
 
     ELO_History {
         INTEGER history_id PK
         INTEGER player_id FK
         INTEGER match_id FK
+        VARCHAR type
         INTEGER old_elo
         INTEGER new_elo
         INTEGER difference
         TIMESTAMP date
         INTEGER year
         INTEGER month
+        INTEGER day
     }
 
     Periodic_Rankings {
@@ -135,9 +199,11 @@ erDiagram
         INTEGER player_id FK
         INTEGER year
         INTEGER month
-        INTEGER elo
+        INTEGER day
+        INTEGER initial_elo
+        INTEGER final_elo
         INTEGER ranking
-        INTEGER matchs_played
+        INTEGER matches_played
         INTEGER wins
         INTEGER loses
     }
@@ -147,9 +213,11 @@ erDiagram
         INTEGER team_id FK
         INTEGER year
         INTEGER month
-        FLOAT elo_score
+        INTEGER day
+        FLOAT initial_elo
+        FLOAT final_elo
         INTEGER ranking
-        INTEGER matchs_played
+        INTEGER matches_played
         INTEGER wins
         INTEGER loses
     }
@@ -157,7 +225,7 @@ erDiagram
 
 ## Pages et interfaces
 
-### Page d'accueil
+### Page d'accueil (Classement en temps réel)
 
 ![page d'accueil](./capture/home_page.png)
 ![template page d'accueil](./capture/template_homepage.png)
@@ -165,26 +233,47 @@ erDiagram
 **Fonctionnalités:**
 
 - Header avec navigation principale et switch thème clair/sombre
-- Sélecteur de période pour les classements:
-  - Option "Tous les temps" (vue par défaut)
-  - Sélection par année (ex: 2025)
-  - Sélection par mois (ex: Janvier 2025)
-- Tableau de classement des joueurs par ELO
+- Deux vues de classement en temps réel :
+  - Global (basé sur tous les matchs)
+  - Mois en cours (basé uniquement sur les matchs du mois)
+- Tableau de classement des joueurs
   - Position
   - Nom du joueur
-  - Score ELO pour la période sélectionnée
-  - Évolution sur la période (ou 7 derniers jours pour "Tous les temps")
-  - Nombre de matchs joués dans la période
-- Tableau de classement des équipes par ELO
+  - Score ELO (global ou mensuel selon la vue)
+  - Évolution sur les 7 derniers jours
+  - Nombre total de matchs joués
+- Tableau de classement des équipes
   - Position
   - Noms des joueurs de l'équipe
-  - Score ELO de l'équipe pour la période sélectionnée
-  - Ratio victoires/défaites dans la période
-  - Nombre de matchs joués ensemble dans la période
+  - Score ELO de l'équipe (global ou mensuel selon la vue)
+  - Ratio victoires/défaites
+  - Nombre de matchs joués ensemble
 - Filtres additionnels:
   - Nombre minimum de matchs joués
   - Options d'affichage personnalisées
 - Accès rapide aux pages joueur via les entrées du tableau
+
+### Page des classements périodiques
+
+**Fonctionnalités:**
+
+- Sélecteur de période :
+  - Par année (ex: 2025)
+  - Par mois (ex: Janvier 2025)
+- Tableau de classement des joueurs
+  - Position finale pour la période
+  - Nom du joueur
+  - ELO initial (1000) et ELO final
+  - Progression sur la période
+  - Nombre de matchs joués
+  - Ratio victoires/défaites
+- Tableau de classement des équipes
+  - Position finale pour la période
+  - Noms des joueurs
+  - ELO initial (1000) et ELO final
+  - Progression sur la période
+  - Matchs joués ensemble
+  - Ratio victoires/défaites
 
 ### Page d'information d'un joueur
 
@@ -194,28 +283,28 @@ erDiagram
 
 - Informations générales du joueur
   - Nom
-  - ELO actuel
-  - Date d'inscription
+  - ELO global actuel
+  - ELO du mois en cours
   - Nombre total de matchs
   - Ratio victoires/défaites
-- Graphique d'évolution de l'ELO dans le temps
-  - Visualisation claire de la progression
-  - Points représentant les matchs joués
+- Graphiques d'évolution
+  - ELO global dans le temps
+  - ELO mensuel (réinitialisé chaque mois)
+  - Points représentant les matchs
   - Informations détaillées au survol
-  - Pas de filtrage possible
 - Historique des matchs récents
   - Date et équipes
   - Score
-  - Points ELO gagnés/perdus
+  - Points ELO gagnés/perdus (global et mensuel)
   - Indication des "fanny"
 - Statistiques de compatibilité
   - Tableau des partenaires préférentiels
   - Taux de victoire avec chaque partenaire
   - Nombre de matchs joués ensemble
   - ELO moyen de l'équipe formée
-- Historique des classements par période:
-  - Position et ELO par mois
-  - Progression mensuelle visualisée
+- Historique des classements périodiques:
+  - Position et ELO final par période
+  - Progression visualisée
 
 ### Page des résultats et enregistrement de match
 
@@ -226,7 +315,7 @@ erDiagram
 - Formulaire d'enregistrement de match
   - Sélection des joueurs pour chaque équipe
   - Interface intuitive pour former les équipes
-  - Saisie des scores
+  - Saisie du résultat du match
   - Option "fanny" à cocher
   - Calcul en temps réel des points ELO potentiels (via appel API au backend)
   - Date du match (défaut: actuelle)
@@ -347,10 +436,10 @@ baby_foot_elo/
 L'interaction entre le frontend Next.js et le backend FastAPI se fera via des appels API RESTful:
 
 - **Client HTTP dans Next.js:** Utilisation de `fetch` ou d'une librairie comme `axios` pour envoyer des requêtes aux endpoints définis dans FastAPI.
-  - Exemple: `fetch('/api/v1/joueurs')` pour lister les joueurs.
-  - Exemple: `POST /api/v1/matchs` avec les données du match pour enregistrer un résultat.
+  - Exemple: `fetch('/api/v1/players')` pour lister les joueurs.
+  - Exemple: `POST /api/v1/matches` avec les données du match pour enregistrer un résultat.
 - **Endpoints FastAPI:** Le backend expose des endpoints pour chaque fonctionnalité (CRUD joueurs, équipes, matchs, calcul ELO, classements, etc.).
-  - `/joueurs`, `/matchs`, `/equipes`, `/classements`, etc.
+  - `/players`, `/matches`, `/teams`, `/periodic-rankings`, etc.
 - **Authentification:** Une stratégie d'authentification devra être mise en place (ex: JWT tokens) si des fonctionnalités nécessitent une protection. FastAPI offre des outils pour cela.
 
 ### Considérations d'interface utilisateur
