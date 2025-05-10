@@ -31,9 +31,7 @@ def create_player(name: str) -> Optional[int]:
     """
     try:
         with transaction() as db_manager:
-            result = db_manager.fetchone(
-                "INSERT INTO Players (name) VALUES (?) RETURNING player_id", [name]
-            )
+            result = db_manager.fetchone("INSERT INTO Players (name) VALUES (?) RETURNING player_id", [name])
         return result[0] if result else None
     except Exception as e:
         logger.error("Failed to create player '%s': %s", name, e)
@@ -74,12 +72,25 @@ def get_all_players() -> List[Dict[str, Any]]:
     Returns
     -------
     List[Dict[str, Any]]
-        List of player dictionaries
+        List of player dictionaries, each including 'player_id', 'name', 'global_elo', 'created_at'
     """
     try:
-        rows = QueryBuilder("Players").order_by_clause("name").execute()
+        rows = (
+            QueryBuilder("Players")
+            .select("player_id", "name", "global_elo", "created_at")
+            .order_by_clause("name")
+            .execute()
+        )
         return (
-            [{"player_id": row[0], "name": row[1], "created_at": row[2]} for row in rows]
+            [
+                {
+                    "player_id": row[0],
+                    "name": row[1],
+                    "global_elo": row[2],
+                    "created_at": row[3],
+                }
+                for row in rows
+            ]
             if rows
             else []
         )
@@ -134,9 +145,7 @@ def delete_player(player_id: int) -> bool:
     """
     try:
         with transaction() as db_manager:
-            result = db_manager.fetchone(
-                "DELETE FROM Players WHERE player_id = ? RETURNING player_id", [player_id]
-            )
+            result = db_manager.fetchone("DELETE FROM Players WHERE player_id = ? RETURNING player_id", [player_id])
             return result is not None
     except Exception as e:
         logger.error("Failed to delete player ID %d: %s", player_id, e)
@@ -198,11 +207,7 @@ def search_players(name_pattern: str, limit: int = 10) -> List[Dict[str, Any]]:
             .limit(limit)
             .execute()
         )
-        return (
-            [{"player_id": row[0], "name": row[1], "created_at": row[2]} for row in rows]
-            if rows
-            else []
-        )
+        return [{"player_id": row[0], "name": row[1], "created_at": row[2]} for row in rows] if rows else []
     except Exception as e:
         logger.error("Failed to search players with pattern '%s': %s", name_pattern, e)
         return []

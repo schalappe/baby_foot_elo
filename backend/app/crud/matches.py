@@ -14,9 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def create_match(
-    team1_id: int, team2_id: int, winner_team_id: int, match_date: str
-) -> Optional[int]:
+def create_match(team1_id: int, team2_id: int, winner_team_id: int, match_date: str) -> Optional[int]:
     """
     Record a new match in the database.
 
@@ -140,9 +138,7 @@ def delete_match(match_id: int) -> bool:
     """
     try:
         with transaction() as db_manager:
-            result = db_manager.fetchone(
-                "DELETE FROM Matches WHERE match_id = ? RETURNING match_id", [match_id]
-            )
+            result = db_manager.fetchone("DELETE FROM Matches WHERE match_id = ? RETURNING match_id", [match_id])
             if result:
                 logger.info("Match ID %d deleted successfully.", match_id)
                 return True
@@ -151,3 +147,54 @@ def delete_match(match_id: int) -> bool:
     except Exception as e:
         logger.error("Failed to delete match ID %d: %s", match_id, e)
         return False
+
+
+def get_all_matches_for_recalculation() -> List[Dict[str, Any]]:
+    """
+    Get all matches chronologically, including player IDs for winning and losing teams.
+
+    Returns
+    -------
+    List[Dict[str, Any]]
+        List of match data, each dictionary containing:
+        'match_id', 'played_at', 'winner_p1_id', 'winner_p2_id',
+        'loser_p1_id', 'loser_p2_id'.
+    """
+    try:
+        query = (
+            QueryBuilder("Matches m")
+            .select(
+                "m.match_id",
+                "m.played_at",
+                "wt.player1_id AS winner_p1_id",
+                "wt.player2_id AS winner_p2_id",
+                "lt.player1_id AS loser_p1_id",
+                "lt.player2_id AS loser_p2_id",
+            )
+            .join("Teams wt ON m.winner_team_id = wt.team_id")
+            .join("Teams lt ON m.loser_team_id = lt.team_id")
+            .order_by_clause("m.played_at ASC")
+        )
+        rows = query.execute()
+
+        if not rows:
+            logger.info("No matches found for recalculation.")
+            return []
+
+        matches_data = [
+            {
+                "match_id": row[0],
+                "played_at": row[1],
+                "winner_p1_id": row[2],
+                "winner_p2_id": row[3],
+                "loser_p1_id": row[4],
+                "loser_p2_id": row[5],
+            }
+            for row in rows
+        ]
+        logger.info(f"Successfully fetched {len(matches_data)} matches for ELO recalculation.")
+        return matches_data
+
+    except Exception as e:
+        logger.error(f"Failed to get all matches for recalculation: {e}")
+        return []

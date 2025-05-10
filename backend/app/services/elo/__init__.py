@@ -11,6 +11,7 @@ from .calculator import (
     determine_k_factor,
     process_match_result,
 )
+from .recalculator import recalculate_all_elos
 from .validation import (
     validate_match_result,
     validate_scores,
@@ -26,4 +27,5 @@ __all__ = [
     "validate_teams",
     "validate_scores",
     "validate_match_result",
+    "recalculate_all_elos",
 ]

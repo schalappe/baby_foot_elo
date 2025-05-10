@@ -99,16 +99,9 @@ def get_all_teams() -> List[Dict[str, Any]]:
     """
     try:
         rows = (
-            QueryBuilder("Teams")
-            .select("team_id", "player1_id", "player2_id")
-            .order_by_clause("player1_id")
-            .execute()
+            QueryBuilder("Teams").select("team_id", "player1_id", "player2_id").order_by_clause("player1_id").execute()
         )
-        return (
-            [{"team_id": row[0], "player1_id": row[1], "player2_id": row[2]} for row in rows]
-            if rows
-            else []
-        )
+        return [{"team_id": row[0], "player1_id": row[1], "player2_id": row[2]} for row in rows] if rows else []
     except Exception as e:
         logger.error("Failed to get all teams: %s", e)
         return []

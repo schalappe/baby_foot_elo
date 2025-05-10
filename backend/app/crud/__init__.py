@@ -6,15 +6,18 @@ Re-exports core functionalities, CRUD operations, ELO functions, batch operation
 and query utilities from their respective submodules.
 """
 
-from typing import Any, Dict, List, Optional
-
 from .builders import QueryBuilder
 from .elo_history import (
     batch_record_elo_updates,
     get_current_elo,
     record_elo_update,
 )
-from .matches import create_match, get_match, get_matches_by_team
+from .matches import (
+    create_match,
+    get_all_matches_for_recalculation,
+    get_match,
+    get_matches_by_team,
+)
 from .players import (
     batch_insert_players,
     create_player,
@@ -52,6 +55,7 @@ __all__ = [
     "create_match",
     "get_match",
     "get_matches_by_team",
+    "get_all_matches_for_recalculation",
     # ELO
     "record_elo_update",
     "get_current_elo",
