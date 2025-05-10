@@ -71,88 +71,87 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 
 ### Modèle de données
 
-- **Joueurs**: `id` (INTEGER PRIMARY KEY), `nom` (VARCHAR), `elo` (INTEGER), `date_creation` (TIMESTAMP)
-- **Equipes**: `id` (INTEGER PRIMARY KEY), `joueur1_id` (INTEGER REFERENCES Joueurs), `joueur2_id` (INTEGER REFERENCES Joueurs), `dernier_match` (TIMESTAMP) *(Note: Représente une paire unique de joueurs ayant joué ensemble. L'ELO d'équipe est calculé dynamiquement.)*
-- **Matchs**: `id` (INTEGER PRIMARY KEY), `équipe_gagnante_id` (INTEGER REFERENCES Équipes), `équipe_perdante_id` (INTEGER REFERENCES Équipes), `score_gagnant` (INTEGER), `score_perdant` (INTEGER), `est_fanny` (BOOLEAN), `date` (TIMESTAMP), `année` (INTEGER), `mois` (INTEGER)
-- **Historique_ELO**: `id` (INTEGER PRIMARY KEY), `joueur_id` (INTEGER REFERENCES Joueurs), `match_id` (INTEGER REFERENCES Matchs), `ancien_elo` (INTEGER), `nouvel_elo` (INTEGER), `difference` (INTEGER), `date` (TIMESTAMP), `année` (INTEGER), `mois` (INTEGER)
-- **Classements_Périodiques**: `id` (INTEGER PRIMARY KEY), `joueur_id` (INTEGER REFERENCES Joueurs), `année` (INTEGER), `mois` (INTEGER), `elo` (INTEGER), `position` (INTEGER), `matchs_joues` (INTEGER), `victoires` (INTEGER), `défaites` (INTEGER) *(Note: Stocke les classements périodiques des JOUEURS.)*
-- **Classements_Equipes_Periodiques**: `id` (INTEGER PRIMARY KEY), `equipe_id` (INTEGER REFERENCES Équipes), `année` (INTEGER), `mois` (INTEGER), `elo_moyen` (FLOAT), `position` (INTEGER), `matchs_joues` (INTEGER), `victoires` (INTEGER), `défaites` (INTEGER) *(Note: Stocke les classements périodiques des ÉQUIPES.)*
+- **Players**: `player_id` (INTEGER PRIMARY KEY), `name` (VARCHAR), `elo` (INTEGER), `created_at` (TIMESTAMP)
+- **Teams**: `team_id` (INTEGER PRIMARY KEY), `player1_id` (INTEGER REFERENCES Joueurs), `player2_id` (INTEGER REFERENCES Joueurs), `created_at` (TIMESTAMP), `last_match` (TIMESTAMP) *(Note: Représente une paire unique de joueurs ayant joué ensemble. L'ELO d'équipe est calculé dynamiquement.)*
+- **Matches**: `match_id` (INTEGER PRIMARY KEY), `winner_team_id` (INTEGER REFERENCES Équipes), `loser_team_id` (INTEGER REFERENCES Équipes), `is_fanny` (BOOLEAN), `date` (TIMESTAMP), `year` (INTEGER), `month` (INTEGER)
+- **ELO_History**: `history_id` (INTEGER PRIMARY KEY), `player_id` (INTEGER REFERENCES Joueurs), `match_id` (INTEGER REFERENCES Matchs), `old_elo` (INTEGER), `new_elo` (INTEGER), `difference` (INTEGER), `date` (TIMESTAMP), `year` (INTEGER), `month` (INTEGER)
+- **Periodic_Rankings**: `ranking_id` (INTEGER PRIMARY KEY), `player_id` (INTEGER REFERENCES Joueurs), `year` (INTEGER), `month` (INTEGER), `elo` (INTEGER), `ranking` (INTEGER), `matches_played` (INTEGER), `wins` (INTEGER), `loses` (INTEGER) *(Note: Stocke les classements périodiques des JOUEURS.)*
+- **Team_Periodic_Rankings**: `team_ranking_id` (INTEGER PRIMARY KEY), `team_id` (INTEGER REFERENCES Équipes), `year` (INTEGER), `month` (INTEGER), `elo_score` (FLOAT), `ranking` (INTEGER), `matchs_played` (INTEGER), `wins` (INTEGER), `loses` (INTEGER) *(Note: Stocke les classements périodiques des ÉQUIPES.)*
 
 #### Diagramme Entité-Relation (Conceptuel)
 
 ```mermaid
 erDiagram
-    JOUEURS ||--o{ HISTORIQUE_ELO : "tracks changes for"
-    JOUEURS ||--o{ CLASSEMENTS_PERIODIQUES : "ranks"
-    JOUEURS }o--|| EQUIPES : "forms (joueur1)"
-    JOUEURS }o--|| EQUIPES : "forms (joueur2)"
+    Players ||--o{ ELO_History : "tracks changes for"
+    Players ||--o{ Periodic_Rankings : "ranks"
+    Players }o--|| Teams : "forms (joueur1)"
+    Players }o--|| Teams : "forms (joueur2)"
 
-    EQUIPES ||--o{ MATCHS : "wins"
-    EQUIPES ||--o{ MATCHS : "loses"
-    EQUIPES ||--o{ CLASSEMENTS_EQUIPES_PERIODIQUES : "ranks"
+    Teams ||--o{ Matches : "wins"
+    Teams ||--o{ Matches : "loses"
+    Teams ||--o{ Team_Periodic_Rankings : "ranks"
 
-    MATCHS ||--|{ HISTORIQUE_ELO : "results in"
+    Matches ||--|{ ELO_History : "results in"
 
-    JOUEURS {
-        INTEGER id PK
-        VARCHAR nom
+    Players {
+        INTEGER player_id PK
+        VARCHAR name
         INTEGER elo
-        TIMESTAMP date_creation
+        TIMESTAMP created_at
     }
 
-    EQUIPES {
-        INTEGER id PK
-        INTEGER joueur1_id FK
-        INTEGER joueur2_id FK
-        TIMESTAMP dernier_match
+    Teams {
+        INTEGER team_id PK
+        INTEGER player1_id FK
+        INTEGER player2_id FK
+        TIMESTAMP created_at
+        TIMESTAMP last_match
     }
 
-    MATCHS {
-        INTEGER id PK
-        INTEGER equipe_gagnante_id FK
-        INTEGER equipe_perdante_id FK
-        INTEGER score_gagnant
-        INTEGER score_perdant
-        BOOLEAN est_fanny
+    Matches {
+        INTEGER match_id PK
+        INTEGER winner_team_id FK
+        INTEGER loser_team_id FK
+        BOOLEAN is_fanny
         TIMESTAMP date
-        INTEGER annee
-        INTEGER mois
+        INTEGER year
+        INTEGER month
     }
 
-    HISTORIQUE_ELO {
-        INTEGER id PK
-        INTEGER joueur_id FK
+    ELO_History {
+        INTEGER history_id PK
+        INTEGER player_id FK
         INTEGER match_id FK
-        INTEGER ancien_elo
-        INTEGER nouvel_elo
+        INTEGER old_elo
+        INTEGER new_elo
         INTEGER difference
         TIMESTAMP date
-        INTEGER annee
-        INTEGER mois
+        INTEGER year
+        INTEGER month
     }
 
-    CLASSEMENTS_PERIODIQUES {
-        INTEGER id PK
-        INTEGER joueur_id FK
-        INTEGER annee
-        INTEGER mois
+    Periodic_Rankings {
+        INTEGER ranking_id PK
+        INTEGER player_id FK
+        INTEGER year
+        INTEGER month
         INTEGER elo
-        INTEGER position
-        INTEGER matchs_joues
-        INTEGER victoires
-        INTEGER defaites
+        INTEGER ranking
+        INTEGER matchs_played
+        INTEGER wins
+        INTEGER loses
     }
 
-    CLASSEMENTS_EQUIPES_PERIODIQUES {
-        INTEGER id PK
-        INTEGER equipe_id FK
-        INTEGER annee
-        INTEGER mois
-        FLOAT elo_moyen
-        INTEGER position
-        INTEGER matchs_joues
-        INTEGER victoires
-        INTEGER defaites
+    Team_Periodic_Rankings {
+        INTEGER team_ranking_id PK
+        INTEGER team_id FK
+        INTEGER year
+        INTEGER month
+        FLOAT elo_score
+        INTEGER ranking
+        INTEGER matchs_played
+        INTEGER wins
+        INTEGER loses
     }
 ```
 
