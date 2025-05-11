@@ -141,6 +141,28 @@ def update_team(
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
+def delete_team(team_id: int) -> bool:
+    """
+    Delete a team from the database.
+
+    Parameters
+    ----------
+    team_id : int
+        ID of the team to delete.
+
+    Returns
+    -------
+    bool
+        True if the deletion was successful, False otherwise.
+    """
+    query, params = DeleteQueryBuilder("Teams").where("team_id = ?", team_id).build()
+    query += " RETURNING team_id"
+    with transaction() as db_manager:
+        result = db_manager.fetchone(query, params)
+        return result is not None
+
+
+@with_retry(max_retries=3, retry_delay=0.5)
 def get_team(team_id: int) -> Optional[Dict[str, Any]]:
     """
     Get a team by ID.
@@ -230,28 +252,6 @@ def get_all_teams() -> List[Dict[str, Any]]:
     except Exception as exc:
         logger.error("Failed to get all teams: %s", exc)
         return []
-
-
-@with_retry(max_retries=3, retry_delay=0.5)
-def delete_team(team_id: int) -> bool:
-    """
-    Delete a team from the database.
-
-    Parameters
-    ----------
-    team_id : int
-        ID of the team to delete.
-
-    Returns
-    -------
-    bool
-        True if the deletion was successful, False otherwise.
-    """
-    query, params = DeleteQueryBuilder("Teams").where("team_id = ?", team_id).build()
-    query += " RETURNING team_id"
-    with transaction() as db_manager:
-        result = db_manager.fetchone(query, params)
-        return result is not None
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
