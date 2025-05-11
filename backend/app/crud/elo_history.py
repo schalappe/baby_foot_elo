@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 
 from app.db import transaction, with_retry
 
-from .builders import QueryBuilder
+from .builders import SelectQueryBuilder
 
 logger = getLogger(__name__)
 
@@ -59,7 +59,7 @@ def get_current_elo(player_id: int) -> Optional[float]:
     """
     try:
         result = (
-            QueryBuilder("ELO_History")
+            SelectQueryBuilder("ELO_History")
             .select("elo_score")
             .where("player_id = ?", player_id)
             .order_by_clause("history_id DESC")

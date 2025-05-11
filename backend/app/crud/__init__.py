@@ -6,7 +6,12 @@ Re-exports core functionalities, CRUD operations, ELO functions, batch operation
 and query utilities from their respective submodules.
 """
 
-from .builders import QueryBuilder
+from .builders import (
+    SelectQueryBuilder,
+    InsertQueryBuilder,
+    UpdateQueryBuilder,
+    DeleteQueryBuilder,
+)
 from .elo_history import (
     batch_record_elo_updates,
     get_current_elo,
@@ -65,5 +70,8 @@ __all__ = [
     "get_leaderboard",
     "get_player_elo_history",
     # Query Builders
-    "QueryBuilder",
+    "SelectQueryBuilder",
+    "InsertQueryBuilder",
+    "UpdateQueryBuilder",
+    "DeleteQueryBuilder",
 ]

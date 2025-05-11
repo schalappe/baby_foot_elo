@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 
 from app.db import transaction, with_retry
 
-from .builders import QueryBuilder
+from .builders import SelectQueryBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ def get_match(match_id: int) -> Optional[Dict[str, Any]]:
         Match data as a dictionary, or None if not found
     """
     result = (
-        QueryBuilder("Matches")
+        SelectQueryBuilder("Matches")
         .select("match_id", "team1_id", "team2_id", "winner_team_id", "match_date")
         .where("match_id = ?", match_id)
         .execute(fetch_all=False)
@@ -99,7 +99,7 @@ def get_matches_by_team(team_id: int) -> List[Dict[str, Any]]:
         List of match dictionaries
     """
     rows = (
-        QueryBuilder("Matches")
+        SelectQueryBuilder("Matches")
         .select("match_id", "team1_id", "team2_id", "winner_team_id", "match_date")
         .where("team1_id = ? OR team2_id = ?", team_id, team_id)
         .order_by_clause("match_date DESC")
@@ -162,7 +162,7 @@ def get_all_matches_for_recalculation() -> List[Dict[str, Any]]:
     """
     try:
         query = (
-            QueryBuilder("Matches m")
+            SelectQueryBuilder("Matches m")
             .select(
                 "m.match_id",
                 "m.played_at",

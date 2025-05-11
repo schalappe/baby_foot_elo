@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 
 from app.db import transaction, with_retry
 
-from .builders import QueryBuilder
+from .builders import SelectQueryBuilder
 
 logger = getLogger(__name__)
 
@@ -74,7 +74,7 @@ def get_team(team_id: int) -> Optional[Dict[str, Any]]:
     """
     try:
         result = (
-            QueryBuilder("Teams")
+            SelectQueryBuilder("Teams")
             .select("team_id", "player1_id", "player2_id")
             .where("team_id = ?", team_id)
             .execute(fetch_all=False)
@@ -99,7 +99,7 @@ def get_all_teams() -> List[Dict[str, Any]]:
     """
     try:
         rows = (
-            QueryBuilder("Teams").select("team_id", "player1_id", "player2_id").order_by_clause("player1_id").execute()
+            SelectQueryBuilder("Teams").select("team_id", "player1_id", "player2_id").order_by_clause("player1_id").execute()
         )
         return [{"team_id": row[0], "player1_id": row[1], "player2_id": row[2]} for row in rows] if rows else []
     except Exception as e:

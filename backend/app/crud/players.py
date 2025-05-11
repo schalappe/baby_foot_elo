@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 from app.db.retry import with_retry
 from app.db.transaction import transaction
 
-from .builders import QueryBuilder
+from .builders import SelectQueryBuilder
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ def get_player(player_id: int) -> Optional[Dict[str, Any]]:
     """
     try:
         result = (
-            QueryBuilder("Players")
+            SelectQueryBuilder("Players")
             .select(
                 "player_id",
                 "name",
@@ -206,7 +206,7 @@ def get_all_players() -> List[Dict[str, Any]]:
     """
     try:
         rows = (
-            QueryBuilder("Players")
+            SelectQueryBuilder("Players")
             .select("player_id", "name", "global_elo", "current_month_elo", "created_at")
             .order_by_clause("name")
             .execute()
@@ -249,7 +249,7 @@ def search_players(name_pattern: str, limit: int = 10) -> List[Dict[str, Any]]:
     """
     try:
         rows = (
-            QueryBuilder("Players")
+            SelectQueryBuilder("Players")
             .select("player_id", "name", "global_elo", "current_month_elo", "created_at")
             .where("name LIKE ?", f"%{name_pattern}%")
             .order_by_clause("name")

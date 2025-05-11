@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 from app.db import DatabaseManager
 from app.db.retry import with_retry
 
-from .builders import QueryBuilder
+from .builders import SelectQueryBuilder
 from .elo_history import get_current_elo
 from .players import get_player
 
@@ -42,7 +42,7 @@ def get_player_stats(player_id: int) -> Optional[Dict[str, Any]]:
 
         # ##: Get match count via QueryBuilder
         mc_result = (
-            QueryBuilder("Matches m")
+            SelectQueryBuilder("Matches m")
             .select("COUNT(DISTINCT m.match_id)")
             .join("Teams t1", "m.team1_id = t1.team_id")
             .join("Teams t2", "m.team2_id = t2.team_id")
@@ -59,7 +59,7 @@ def get_player_stats(player_id: int) -> Optional[Dict[str, Any]]:
 
         # ##: Get win count via QueryBuilder
         wc_result = (
-            QueryBuilder("Matches m")
+            SelectQueryBuilder("Matches m")
             .select("COUNT(*)")
             .join("Teams t", "m.winner_team_id = t.team_id")
             .where("t.player1_id = ? OR t.player2_id = ?", player_id, player_id)
@@ -153,7 +153,7 @@ def get_player_elo_history(player_id: int) -> List[Dict[str, Any]]:
     try:
         # ##: Fetch ELO history via QueryBuilder
         rows = (
-            QueryBuilder("ELO_History h")
+            SelectQueryBuilder("ELO_History h")
             .select(
                 "h.history_id",
                 "h.player_id",
