@@ -5,13 +5,11 @@ ELO Calculation Module
 This module provides functions to calculate team ELO, win probabilities, K factors, and ELO changes.
 """
 
-from typing import List, Dict, Any
-
 from math import pow
 from statistics import mean
+from typing import Any, Dict, List
 
 from loguru import logger
-
 
 # ##: K-factors for established players.
 K_TIER1 = 100  # ELO < 1200

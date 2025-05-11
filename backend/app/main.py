@@ -18,7 +18,11 @@ from app.db import DatabaseManager, initialize_database
 from app.routers import health, matches, players, teams, test_info
 from app.utils.error_handlers import setup_error_handlers
 from app.utils.rate_limiter import setup_rate_limiting
-from app.utils.validation import ValidationErrorResponse, validation_error_response_handler, validation_exception_handler
+from app.utils.validation import (
+    ValidationErrorResponse,
+    validation_error_response_handler,
+    validation_exception_handler,
+)
 
 
 @asynccontextmanager

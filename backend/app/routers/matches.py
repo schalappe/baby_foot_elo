@@ -1,6 +1,21 @@
 # -*- coding: utf-8 -*-
 """
-FastAPI router for match-related endpoints.
+This module defines FastAPI endpoints for managing matches in the Baby Foot Elo system.
+It supports recording, listing, retrieving, and exporting match records, as well as updating ELO ratings.
+
+Endpoints:
+    - POST /api/v1/matches/: Record a new match and update ELO ratings
+    - GET /api/v1/matches/: List all matches with pagination and filtering
+    - GET /api/v1/matches/{match_id}: Retrieve match details including ELO changes
+    - GET /api/v1/matches/export: Export all matches as JSON
+
+Notes
+-----
+- All endpoints return or accept Pydantic models for request and response bodies.
+- Match recording automatically updates player and team ELO ratings.
+- ELO history is recorded for each player involved in a match.
+- All endpoints include proper validation and error handling.
+- Transaction handling ensures atomicity of match recording and ELO updates.
 """
 
 from datetime import datetime
@@ -9,37 +24,66 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
-from app.crud.matches import get_match, get_fanny_matches, get_matches_by_team, get_matches_by_date_range, get_all_matches
-from app.crud.teams import get_team, update_team
-from app.crud.players import get_player, update_player
-from app.crud.matches import create_match
 from app.crud.elo_history import batch_record_elo_updates, get_elo_history_by_match
+from app.crud.matches import (
+    create_match,
+    get_all_matches,
+    get_fanny_matches,
+    get_match,
+    get_matches_by_date_range,
+    get_matches_by_team,
+)
+from app.crud.players import get_player, update_player
+from app.crud.teams import get_team, update_team
 from app.models.match import MatchCreate, MatchResponse, MatchWithEloResponse
 from app.models.team import TeamResponse
-from app.services.elo.calculator import process_match_result, calculate_team_elo
+from app.services.elo.calculator import calculate_team_elo, process_match_result
 
-router = APIRouter(prefix="/api/v1/matches", tags=["matches"])
+router = APIRouter(
+    prefix="/api/v1/matches",
+    tags=["matches"],
+    responses={
+        400: {"description": "Bad request"},
+        404: {"description": "Resource not found"},
+        422: {"description": "Validation error"},
+        500: {"description": "Internal server error"},
+    },
+)
 
 
-@router.post("/", response_model=MatchWithEloResponse, status_code=201)
+@router.post(
+    "/",
+    response_model=MatchWithEloResponse,
+    status_code=201,
+    summary="Record a new match",
+    description="Records a new match between two teams and updates ELO ratings for all involved players.",
+)
 async def record_match_endpoint(match_data: MatchCreate):
     """
     Record a new match and update ELO ratings for all involved players.
 
+    This endpoint handles the complete match recording process, including:
+    - Validating team and player existence
+    - Recording the match in the database
+    - Calculating ELO changes for all players
+    - Updating player ELO ratings
+    - Recording ELO history for each player
+    - Updating team ELO ratings
+
     Parameters
     ----------
     match_data : MatchCreate
-        Match data including winner and loser team IDs.
+        Match data including winner and loser team IDs, is_fanny flag, and optional played_at timestamp.
 
     Returns
     -------
     MatchWithEloResponse
-        Match details including ELO changes.
+        Match details including ELO changes for all involved players.
 
     Raises
     ------
     HTTPException
-        If teams don't exist or other validation fails.
+        If teams don't exist, are the same, or if any other validation fails.
     """
     # ##: Set default played_at time if not provided.
     played_at = match_data.played_at or datetime.now()
@@ -152,7 +196,12 @@ async def record_match_endpoint(match_data: MatchCreate):
         raise HTTPException(status_code=500, detail=f"Failed to process match: {str(e)}")
 
 
-@router.get("/", response_model=List[MatchResponse])
+@router.get(
+    "/",
+    response_model=List[MatchResponse],
+    summary="List all matches",
+    description="Returns a paginated list of matches with optional filtering by team, date range, or fanny status.",
+)
 async def list_matches(
     skip: int = Query(0, ge=0, description="Number of matches to skip"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of matches to return"),
@@ -163,6 +212,12 @@ async def list_matches(
 ):
     """
     List matches with pagination and filtering options.
+
+    This endpoint retrieves matches from the database with support for:
+    - Pagination (skip and limit parameters)
+    - Filtering by team ID
+    - Filtering by date range
+    - Filtering by fanny status (10-0 matches)
 
     Parameters
     ----------
@@ -212,10 +267,20 @@ async def list_matches(
     return result
 
 
-@router.get("/{match_id}", response_model=MatchWithEloResponse)
+@router.get(
+    "/{match_id}",
+    response_model=MatchWithEloResponse,
+    summary="Get match details",
+    description="Retrieves detailed information about a specific match, including ELO changes for all players involved.",
+)
 async def get_match_details(match_id: int):
     """
     Get detailed information about a specific match.
+
+    This endpoint retrieves comprehensive match information including:
+    - Basic match details (winner/loser teams, date, etc.)
+    - ELO changes for all players involved
+    - Team information for both winner and loser teams
 
     Parameters
     ----------
@@ -296,10 +361,18 @@ async def get_match_details(match_id: int):
     )
 
 
-@router.get("/export", response_model=List[MatchResponse])
+@router.get(
+    "/export",
+    response_model=List[MatchResponse],
+    summary="Export all matches",
+    description="Exports all matches in the system as a JSON array for backup or analysis purposes.",
+)
 async def export_matches():
     """
     Export all matches as JSON.
+
+    This endpoint retrieves all matches from the database without pagination limits,
+    making it suitable for data export, backup, or external analysis.
 
     Returns
     -------

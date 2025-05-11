@@ -324,31 +324,28 @@ def get_elo_history_by_match(match_id: int) -> List[Dict[str, Any]]:
         List of ELO history records for the match
     """
     try:
-        results = (
-            SelectQueryBuilder("ELO_History")
-            .select("*")
-            .where("match_id = ?", match_id)
-            .execute(fetch_all=True)
-        )
+        results = SelectQueryBuilder("ELO_History").select("*").where("match_id = ?", match_id).execute(fetch_all=True)
 
         if not results:
             return []
 
         history_records = []
         for record in results:
-            history_records.append({
-                "history_id": record[0],
-                "player_id": record[1],
-                "match_id": record[2],
-                "type": record[3],
-                "old_elo": record[4],
-                "new_elo": record[5],
-                "difference": record[6],
-                "date": record[7],
-                "year": record[8],
-                "month": record[9],
-                "day": record[10],
-            })
+            history_records.append(
+                {
+                    "history_id": record[0],
+                    "player_id": record[1],
+                    "match_id": record[2],
+                    "type": record[3],
+                    "old_elo": record[4],
+                    "new_elo": record[5],
+                    "difference": record[6],
+                    "date": record[7],
+                    "year": record[8],
+                    "month": record[9],
+                    "day": record[10],
+                }
+            )
         return history_records
     except Exception as e:
         logger.error(f"Failed to get ELO history for match {match_id}: {e}")

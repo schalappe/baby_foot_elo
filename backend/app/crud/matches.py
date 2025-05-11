@@ -363,19 +363,23 @@ def get_all_matches(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
             .execute()
         )
 
-        return [
-            {
-                "match_id": r[0],
-                "winner_team_id": r[1],
-                "loser_team_id": r[2],
-                "is_fanny": r[3],
-                "played_at": r[4],
-                "year": r[5],
-                "month": r[6],
-                "day": r[7],
-            }
-            for r in rows
-        ] if rows else []
+        return (
+            [
+                {
+                    "match_id": r[0],
+                    "winner_team_id": r[1],
+                    "loser_team_id": r[2],
+                    "is_fanny": r[3],
+                    "played_at": r[4],
+                    "year": r[5],
+                    "month": r[6],
+                    "day": r[7],
+                }
+                for r in rows
+            ]
+            if rows
+            else []
+        )
     except Exception as exc:
         logger.error(f"Failed to get all matches: {exc}")
         return []
