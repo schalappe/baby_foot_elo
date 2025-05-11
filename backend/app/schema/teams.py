@@ -26,3 +26,11 @@ CREATE_INDEX_TEAMS_PLAYER_PAIR_ORDER_INSENSITIVE = """
 CREATE UNIQUE INDEX IF NOT EXISTS idx_teams_player_pair_order_insensitive 
 ON Teams (LEAST(player1_id, player2_id), GREATEST(player1_id, player2_id));
 """
+
+CREATE_INDEX_TEAMS_PLAYER1_ID = """
+CREATE INDEX IF NOT EXISTS idx_teams_player1_id ON Teams(player1_id);
+"""
+
+CREATE_INDEX_TEAMS_PLAYER2_ID = """
+CREATE INDEX IF NOT EXISTS idx_teams_player2_id ON Teams(player2_id);
+"""

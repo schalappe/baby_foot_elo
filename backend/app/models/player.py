@@ -11,7 +11,6 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
-# Shared properties
 class PlayerBase(BaseModel):
     """
     Base model for player properties.

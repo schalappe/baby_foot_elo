@@ -275,3 +275,58 @@ def batch_insert_teams(teams: List[Dict[str, Any]]) -> List[Optional[int]]:
             team_ids.append(result[0] if result else None)
 
     return team_ids
+
+
+@with_retry(max_retries=3, retry_delay=0.5)
+def get_teams_by_player(player_id: int) -> List[Dict[str, Any]]:
+    """
+    Get all teams that a specific player is part of.
+
+    Parameters
+    ----------
+    player_id : int
+        ID of the player to find teams for.
+
+    Returns
+    -------
+    List[Dict[str, Any]]
+        List of team dictionaries, each containing team details.
+    """
+    try:
+        results = (
+            SelectQueryBuilder("Teams")
+            .select(
+                "team_id",
+                "player1_id",
+                "player2_id",
+                "global_elo",
+                "current_month_elo",
+                "created_at",
+                "last_match_at",
+            )
+            .where("player1_id = ? OR player2_id = ?", player_id, player_id)
+            .order_by_clause("created_at DESC")
+            .execute()
+        )
+
+        if not results:
+            return []
+
+        teams = []
+        for result in results:
+            teams.append({
+                "team_id": result[0],
+                "player1_id": result[1],
+                "player2_id": result[2],
+                "global_elo": result[3],
+                "current_month_elo": result[4],
+                "created_at": result[5],
+                "last_match_at": result[6],
+                "is_player1": result[1] == player_id,
+                "partner_id": result[2] if result[1] == player_id else result[1]
+            })
+
+        return teams
+    except Exception as exc:
+        logger.error(f"Failed to get teams for player ID {player_id}: {exc}")
+        return []

@@ -38,6 +38,7 @@ from .teams import (
     delete_team,
     get_all_teams,
     get_team,
+    get_teams_by_player,
 )
 
 __all__ = [
@@ -55,6 +56,7 @@ __all__ = [
     "get_all_teams",
     "delete_team",
     "batch_insert_teams",
+    "get_teams_by_player",
     # CRUD - Matches
     "create_match",
     "get_match",
