@@ -9,6 +9,7 @@ routers, error handling, rate limiting, and API documentation.
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
@@ -17,6 +18,7 @@ from app.db import DatabaseManager, initialize_database
 from app.routers import health, players, teams, test_info
 from app.utils.error_handlers import setup_error_handlers
 from app.utils.rate_limiter import setup_rate_limiting
+from app.utils.validation import ValidationErrorResponse, validation_error_response_handler, validation_exception_handler
 
 
 @asynccontextmanager
@@ -37,6 +39,10 @@ app = FastAPI(
 
 # ##: Set up error handlers.
 setup_error_handlers(app)
+
+# ##: Set up custom validation error handlers.
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(ValidationErrorResponse, validation_error_response_handler)
 
 # ##: Set up rate limiting.
 endpoint_limits = {

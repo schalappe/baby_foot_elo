@@ -462,7 +462,6 @@ class TestTeamsRouter(TestCase):
         mock_get_team.assert_called_once_with(1)
         mock_delete_team.assert_called_once_with(1)
 
-
     @patch("app.routers.teams.get_team_rankings")
     @patch("app.routers.teams.get_player")
     async def test_get_team_rankings(self, mock_get_player, mock_get_team_rankings):
@@ -479,7 +478,7 @@ class TestTeamsRouter(TestCase):
                 "current_month_elo": 1450.0,
                 "created_at": "2025-01-01T00:00:00",
                 "last_match_at": "2025-01-10T00:00:00",
-                "rank": 1
+                "rank": 1,
             },
             {
                 "team_id": 2,
@@ -489,10 +488,10 @@ class TestTeamsRouter(TestCase):
                 "current_month_elo": 1350.0,
                 "created_at": "2025-01-02T00:00:00",
                 "last_match_at": "2025-01-09T00:00:00",
-                "rank": 2
-            }
+                "rank": 2,
+            },
         ]
-        
+
         # Mock player retrieval
         mock_get_player.side_effect = [
             {
@@ -503,7 +502,7 @@ class TestTeamsRouter(TestCase):
                 "matches_played": 10,
                 "wins": 7,
                 "losses": 3,
-                "creation_date": "2025-01-01T00:00:00"
+                "creation_date": "2025-01-01T00:00:00",
             },
             {
                 "player_id": 2,
@@ -513,7 +512,7 @@ class TestTeamsRouter(TestCase):
                 "matches_played": 10,
                 "wins": 7,
                 "losses": 3,
-                "creation_date": "2025-01-01T00:00:00"
+                "creation_date": "2025-01-01T00:00:00",
             },
             {
                 "player_id": 3,
@@ -523,7 +522,7 @@ class TestTeamsRouter(TestCase):
                 "matches_played": 8,
                 "wins": 4,
                 "losses": 4,
-                "creation_date": "2025-01-01T00:00:00"
+                "creation_date": "2025-01-01T00:00:00",
             },
             {
                 "player_id": 4,
@@ -533,23 +532,23 @@ class TestTeamsRouter(TestCase):
                 "matches_played": 8,
                 "wins": 4,
                 "losses": 4,
-                "creation_date": "2025-01-01T00:00:00"
-            }
+                "creation_date": "2025-01-01T00:00:00",
+            },
         ]
-        
+
         # Make request
         response = await self.client.get("/api/v1/teams/rankings")
-        
+
         # Verify response
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.json()), 2)
         self.assertEqual(response.json()[0]["team_id"], 1)
         self.assertEqual(response.json()[1]["team_id"], 2)
-        
+
         # Verify mocks were called correctly
         mock_get_team_rankings.assert_called_once_with(limit=100, use_monthly_elo=False)
         self.assertEqual(mock_get_player.call_count, 4)
-    
+
     @patch("app.routers.teams.get_team_rankings")
     async def test_get_team_rankings_with_params(self, mock_get_team_rankings):
         """
@@ -557,16 +556,15 @@ class TestTeamsRouter(TestCase):
         """
         # Mock team rankings retrieval
         mock_get_team_rankings.return_value = []
-        
+
         # Make request with custom parameters
         response = await self.client.get("/api/v1/teams/rankings?limit=50&use_monthly_elo=true")
-        
+
         # Verify response
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        
+
         # Verify mock was called with correct parameters
         mock_get_team_rankings.assert_called_once_with(limit=50, use_monthly_elo=True)
-
 
     @patch("app.routers.teams.get_team")
     @patch("app.routers.teams.get_matches_by_team")
@@ -584,7 +582,7 @@ class TestTeamsRouter(TestCase):
             "created_at": "2025-01-01T00:00:00",
             "last_match_at": None,
         }
-        
+
         # Mock matches retrieval
         mock_get_matches_by_team.return_value = [
             {
@@ -610,20 +608,20 @@ class TestTeamsRouter(TestCase):
                 "won": False,
             },
         ]
-        
+
         # Make request
         response = self.client.get("/api/v1/teams/1/matches")
-        
+
         # Verify response
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.json()), 2)
         self.assertEqual(response.json()[0]["match_id"], 1)
         self.assertEqual(response.json()[1]["match_id"], 2)
-        
+
         # Verify mocks were called correctly
         mock_get_team.assert_called_once_with(1)
         mock_get_matches_by_team.assert_called_once_with(1)
-    
+
     @patch("app.routers.teams.get_team")
     def test_get_team_matches_team_not_found(self, mock_get_team):
         """
@@ -631,14 +629,14 @@ class TestTeamsRouter(TestCase):
         """
         # Mock team retrieval to return None
         mock_get_team.return_value = None
-        
+
         # Make request
         response = self.client.get("/api/v1/teams/999/matches")
-        
+
         # Verify response
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertIn("not found", response.json()["detail"])
-        
+
         # Verify mock was called correctly
         mock_get_team.assert_called_once_with(999)
 

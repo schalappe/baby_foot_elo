@@ -3,13 +3,12 @@
 Router for team-related endpoints.
 """
 
-from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Path, Query, status
 from loguru import logger
 
-from app.crud.matches import create_match, get_matches_by_team
+from app.crud.matches import get_matches_by_team
 from app.crud.players import get_player
 from app.crud.teams import (
     create_team,
@@ -18,20 +17,21 @@ from app.crud.teams import (
     get_team,
     get_team_rankings,
     get_teams_by_player,
-    update_team,
 )
-from app.models.match import MatchBase, MatchCreate, MatchResponse
+from app.models.match import MatchResponse
 from app.models.team import TeamCreate, TeamResponse
-from app.services.elo import (
-    calculate_elo_change,
-    calculate_team_elo,
-    calculate_win_probability,
-)
+from app.services.elo import calculate_team_elo
+from app.utils.validation import ValidationErrorResponse, validate_team_players
 
 router = APIRouter(
     prefix="/api/v1/teams",
     tags=["teams"],
-    responses={404: {"description": "Not found"}},
+    responses={
+        404: {"description": "Not found"},
+        400: {"description": "Bad request - invalid input parameters"},
+        422: {"description": "Validation error"},
+        500: {"description": "Internal server error"},
+    },
 )
 
 
@@ -61,6 +61,12 @@ async def create_team_endpoint(team: TeamCreate):
     HTTPException
         If player IDs are invalid or team creation fails.
     """
+    # ##: Validate team data
+    try:
+        validate_team_players(team.player1_id, team.player2_id)
+    except ValidationErrorResponse as e:
+        raise e
+
     # ##: Validate that both players exist.
     player1 = get_player(team.player1_id)
     if not player1:
@@ -114,7 +120,7 @@ async def create_team_endpoint(team: TeamCreate):
     "/",
     response_model=List[TeamResponse],
     summary="List all teams",
-    description="Get a list of all teams with optional pagination and filtering.",
+    description="Get a list of all teams with optional pagination and filtering by ELO rating or player ID.",
 )
 async def get_teams_endpoint(
     skip: int = Query(0, ge=0, description="Number of teams to skip"),
@@ -174,9 +180,9 @@ async def get_teams_endpoint(
     "/{team_id}",
     response_model=TeamResponse,
     summary="Get team details",
-    description="Get detailed information about a specific team.",
+    description="Get detailed information about a specific team including player details.",
 )
-async def get_team_endpoint(team_id: int):
+async def get_team_endpoint(team_id: int = Path(..., gt=0, description="The ID of the team to retrieve")):
     """
     Get detailed information about a specific team.
 
@@ -214,11 +220,11 @@ async def get_team_endpoint(team_id: int):
 @router.get(
     "/{team_id}/matches",
     response_model=List[MatchResponse],
-    summary="Get team's match history",
-    description="Get all matches played by a specific team.",
+    summary="Get team matches",
+    description="Get all matches played by a specific team with optional pagination.",
 )
 async def get_team_matches_endpoint(
-    team_id: int,
+    team_id: int = Path(..., gt=0, description="The ID of the team to retrieve matches for"),
     limit: int = Query(50, ge=1, le=100, description="Maximum number of matches to return"),
     skip: int = Query(0, ge=0, description="Number of matches to skip"),
 ):
@@ -280,7 +286,7 @@ async def get_team_matches_endpoint(
     "/rankings",
     response_model=List[TeamResponse],
     summary="Get team rankings",
-    description="Get teams sorted by ELO rating (global or monthly).",
+    description="Get teams sorted by ELO rating (global or monthly) with rank information.",
 )
 async def get_team_rankings_endpoint(
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of teams to return"),
@@ -318,10 +324,10 @@ async def get_team_rankings_endpoint(
 @router.delete(
     "/{team_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a team",
-    description="Delete a team by ID.",
+    summary="Delete team",
+    description="Delete a team by ID. This operation cannot be undone.",
 )
-async def delete_team_endpoint(team_id: int):
+async def delete_team_endpoint(team_id: int = Path(..., gt=0, description="The ID of the team to delete")):
     """
     Delete a team by ID.
 
