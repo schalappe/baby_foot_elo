@@ -36,11 +36,7 @@ def create_player(name: str, global_elo: int = 1000) -> Optional[int]:
         ID of the newly created player, or None on failure.
     """
     try:
-        result = (
-            InsertQueryBuilder("Players")
-            .set(name=name, global_elo=global_elo)
-            .build()
-        )
+        result = InsertQueryBuilder("Players").set(name=name, global_elo=global_elo).build()
 
         query, params = result
         with transaction() as db_manager:
