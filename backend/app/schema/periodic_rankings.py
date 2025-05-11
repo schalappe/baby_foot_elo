@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS Periodic_Rankings (
     matches_played INTEGER NOT NULL,
     wins INTEGER NOT NULL,
     losses INTEGER NOT NULL,
-    FOREIGN KEY (player_id) REFERENCES Players(player_id) ON DELETE CASCADE,
+    FOREIGN KEY (player_id) REFERENCES Players(player_id),
     UNIQUE (player_id, year, month, day)
 );
 """
