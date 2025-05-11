@@ -75,7 +75,6 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
   - `player_id` (INTEGER PRIMARY KEY)
   - `name` (VARCHAR)
   - `global_elo` (INTEGER) *(Note: ELO basé sur tous les matchs)*
-  - `current_month_elo` (INTEGER) *(Note: ELO basé sur les matchs du mois en cours)*
   - `created_at` (TIMESTAMP)
 
 - **Teams**:
@@ -83,7 +82,6 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
   - `player1_id` (INTEGER REFERENCES Players)
   - `player2_id` (INTEGER REFERENCES Players)
   - `global_elo` (FLOAT) *(Note: ELO basé sur tous les matchs)*
-  - `current_month_elo` (FLOAT) *(Note: ELO basé sur les matchs du mois en cours)*
   - `created_at` (TIMESTAMP)
   - `last_match` (TIMESTAMP)
 
@@ -101,7 +99,6 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
   - `history_id` (INTEGER PRIMARY KEY)
   - `player_id` (INTEGER REFERENCES Players)
   - `match_id` (INTEGER REFERENCES Matches)
-  - `type` (VARCHAR) *(Note: 'global' ou 'monthly' pour distinguer le type de calcul)*
   - `old_elo` (INTEGER)
   - `new_elo` (INTEGER)
   - `difference` (INTEGER)
@@ -110,44 +107,16 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
   - `month` (INTEGER)
   - `day` (INTEGER)
 
-- **Periodic_Rankings**:
-  - `ranking_id` (INTEGER PRIMARY KEY)
-  - `player_id` (INTEGER REFERENCES Players)
-  - `year` (INTEGER)
-  - `month` (INTEGER)
-  - `day` (INTEGER)
-  - `initial_elo` (INTEGER) *(Note: ELO de départ, typiquement 1000)*
-  - `final_elo` (INTEGER) *(Note: ELO final pour la période)*
-  - `ranking` (INTEGER)
-  - `matches_played` (INTEGER)
-  - `wins` (INTEGER)
-  - `loses` (INTEGER)
-
-- **Team_Periodic_Rankings**:
-  - `team_ranking_id` (INTEGER PRIMARY KEY)
-  - `team_id` (INTEGER REFERENCES Teams)
-  - `year` (INTEGER)
-  - `month` (INTEGER)
-  - `day` (INTEGER)
-  - `initial_elo` (FLOAT) *(Note: ELO de départ, typiquement 1000)*
-  - `final_elo` (FLOAT) *(Note: ELO final pour la période)*
-  - `ranking` (INTEGER)
-  - `matches_played` (INTEGER)
-  - `wins` (INTEGER)
-  - `loses` (INTEGER)
-
 #### Diagramme Entité-Relation (Conceptuel)
 
 ```mermaid
 erDiagram
     Players ||--o{ ELO_History : "tracks changes for"
-    Players ||--o{ Periodic_Rankings : "ranks"
     Players }o--|| Teams : "forms (joueur1)"
     Players }o--|| Teams : "forms (joueur2)"
 
     Teams ||--o{ Matches : "wins"
     Teams ||--o{ Matches : "loses"
-    Teams ||--o{ Team_Periodic_Rankings : "ranks"
 
     Matches ||--|{ ELO_History : "results in"
 
@@ -155,7 +124,6 @@ erDiagram
         INTEGER player_id PK
         VARCHAR name
         INTEGER global_elo
-        INTEGER current_month_elo
         TIMESTAMP created_at
     }
 
@@ -164,7 +132,6 @@ erDiagram
         INTEGER player1_id FK
         INTEGER player2_id FK
         FLOAT global_elo
-        FLOAT current_month_elo
         TIMESTAMP created_at
         TIMESTAMP last_match
     }
@@ -184,7 +151,6 @@ erDiagram
         INTEGER history_id PK
         INTEGER player_id FK
         INTEGER match_id FK
-        VARCHAR type
         INTEGER old_elo
         INTEGER new_elo
         INTEGER difference
@@ -192,34 +158,6 @@ erDiagram
         INTEGER year
         INTEGER month
         INTEGER day
-    }
-
-    Periodic_Rankings {
-        INTEGER ranking_id PK
-        INTEGER player_id FK
-        INTEGER year
-        INTEGER month
-        INTEGER day
-        INTEGER initial_elo
-        INTEGER final_elo
-        INTEGER ranking
-        INTEGER matches_played
-        INTEGER wins
-        INTEGER loses
-    }
-
-    Team_Periodic_Rankings {
-        INTEGER team_ranking_id PK
-        INTEGER team_id FK
-        INTEGER year
-        INTEGER month
-        INTEGER day
-        FLOAT initial_elo
-        FLOAT final_elo
-        INTEGER ranking
-        INTEGER matches_played
-        INTEGER wins
-        INTEGER loses
     }
 ```
 
@@ -253,28 +191,6 @@ erDiagram
   - Options d'affichage personnalisées
 - Accès rapide aux pages joueur via les entrées du tableau
 
-### Page des classements périodiques
-
-**Fonctionnalités:**
-
-- Sélecteur de période :
-  - Par année (ex: 2025)
-  - Par mois (ex: Janvier 2025)
-- Tableau de classement des joueurs
-  - Position finale pour la période
-  - Nom du joueur
-  - ELO initial (1000) et ELO final
-  - Progression sur la période
-  - Nombre de matchs joués
-  - Ratio victoires/défaites
-- Tableau de classement des équipes
-  - Position finale pour la période
-  - Noms des joueurs
-  - ELO initial (1000) et ELO final
-  - Progression sur la période
-  - Matchs joués ensemble
-  - Ratio victoires/défaites
-
 ### Page d'information d'un joueur
 
 ![page d'information d'un joueur](./capture/template_player.png)
@@ -289,7 +205,7 @@ erDiagram
   - Ratio victoires/défaites
 - Graphiques d'évolution
   - ELO global dans le temps
-  - ELO mensuel (réinitialisé chaque mois)
+  - ELO mensuel (variation du ELO global durant le mois)
   - Points représentant les matchs
   - Informations détaillées au survol
 - Historique des matchs récents
@@ -302,9 +218,6 @@ erDiagram
   - Taux de victoire avec chaque partenaire
   - Nombre de matchs joués ensemble
   - ELO moyen de l'équipe formée
-- Historique des classements périodiques:
-  - Position et ELO final par période
-  - Progression visualisée
 
 ### Page des résultats et enregistrement de match
 
@@ -345,14 +258,8 @@ erDiagram
   - Fonctionnalités de recherche et tri
   - Option de modification/désactivation
   - Statistiques résumées
-- Outil de génération d'équipes
-  - Suggestion d'équipes équilibrées (logique potentiellement côté backend)
-  - Basé sur l'ELO ou d'autres critères
-  - Utile pour organiser des matchs équitables
 - Interface d'administration
-  - Ajustements manuels d'ELO (via endpoint API sécurisé)
-  - Fusion de profils en cas de doublon
-  - Réinitialisation de saison
+  - Réinitialisation de saison ???
 
 ## Système ELO hybride
 
@@ -477,11 +384,3 @@ L'interaction entre le frontend Next.js et le backend FastAPI se fera via des ap
     - Le fichier DuckDB (`babyfoot_elo.duckdb`) doit être accessible par l'instance backend déployée (ex: via un volume persistant si conteneurisé).
     - Utilisation d'un serveur ASGI plus robuste comme Gunicorn avec Uvicorn workers.
   - **Base de données (DuckDB):** Le fichier de base de données est géré avec l'application backend. Des stratégies de sauvegarde régulières du fichier `.duckdb` sont nécessaires.
-
-### Considérations pour les classements périodiques
-
-- Chaque match est automatiquement catégorisé par année et mois lors de son enregistrement via l'API.
-- Le backend calcule et maintient les classements périodiques (potentiellement dans les tables dédiées `Classements_Periodiques` et `Classements_Equipes_Periodiques`).
-- Les classements sont mis à jour après chaque match via la logique backend.
-- Performance optimisée via l'indexation SQL des champs temporels et ID dans DuckDB.
-- Possibilité d'ajouter des endpoints API pour recalculer l'historique complet si nécessaire.
