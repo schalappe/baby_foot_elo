@@ -261,6 +261,8 @@ def get_monthly_elo_history(player_id: int, year: int, month: int, elo_type: str
         Year to filter by
     month : int
         Month to filter by
+    elo_type : str, optional
+        Type of ELO to retrieve ('global' or 'monthly'), by default 'global'
 
     Returns
     -------
@@ -303,4 +305,51 @@ def get_monthly_elo_history(player_id: int, year: int, month: int, elo_type: str
         return history_records
     except Exception as e:
         logger.error(f"Failed to get monthly ELO history for player ID {player_id}: {e}")
+        return []
+
+
+@with_retry(max_retries=3, retry_delay=0.5)
+def get_elo_history_by_match(match_id: int) -> List[Dict[str, Any]]:
+    """
+    Get all ELO history records for a specific match.
+
+    Parameters
+    ----------
+    match_id : int
+        ID of the match
+
+    Returns
+    -------
+    List[Dict[str, Any]]
+        List of ELO history records for the match
+    """
+    try:
+        results = (
+            SelectQueryBuilder("ELO_History")
+            .select("*")
+            .where("match_id = ?", match_id)
+            .execute(fetch_all=True)
+        )
+
+        if not results:
+            return []
+
+        history_records = []
+        for record in results:
+            history_records.append({
+                "history_id": record[0],
+                "player_id": record[1],
+                "match_id": record[2],
+                "type": record[3],
+                "old_elo": record[4],
+                "new_elo": record[5],
+                "difference": record[6],
+                "date": record[7],
+                "year": record[8],
+                "month": record[9],
+                "day": record[10],
+            })
+        return history_records
+    except Exception as e:
+        logger.error(f"Failed to get ELO history for match {match_id}: {e}")
         return []

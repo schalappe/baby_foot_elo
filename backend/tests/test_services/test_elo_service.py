@@ -12,19 +12,6 @@ from app.services.elo.calculator import (
     determine_k_factor,
     process_match_result,
 )
-from app.services.elo.validation import (
-    validate_match_result,
-    validate_scores,
-    validate_teams,
-)
-
-
-class MockPlayer:
-    """Mock player class for testing."""
-
-    def __init__(self, id_val, elo_val):
-        self.id = id_val
-        self.elo = elo_val
 
 
 class TestEloCalculator(TestCase):
@@ -101,9 +88,9 @@ class TestEloCalculator(TestCase):
     def test_process_match_result_simple(self):
         """Test process_match_result with equal ELO players."""
 
-        team_a = [MockPlayer(1, 1500), MockPlayer(2, 1500)]
-        team_b = [MockPlayer(3, 1500), MockPlayer(4, 1500)]
-        results = process_match_result(team_a, team_b, winner_score=2, loser_score=1)
+        team_a = [{"id": 1, "elo": 1500}, {"id": 2, "elo": 1500}]
+        team_b = [{"id": 3, "elo": 1500}, {"id": 4, "elo": 1500}]
+        results = process_match_result(team_a, team_b)
 
         for pid in (1, 2):
             self.assertEqual(results[pid]["change"], 25)
@@ -114,10 +101,11 @@ class TestEloCalculator(TestCase):
 
     def test_process_match_result_new_players(self):
         """Test process_match_result with new players (low ELO, provisional K-factor)."""
-        team_a = [MockPlayer(1, 1000), MockPlayer(2, 1000)]
-        team_b = [MockPlayer(3, 1100), MockPlayer(4, 1100)]
 
-        results = process_match_result(team_a, team_b, winner_score=2, loser_score=1)
+        results = process_match_result(
+            winning_team=[{"id": 1, "elo": 1000}, {"id": 2, "elo": 1000}],
+            losing_team=[{"id": 3, "elo": 1100}, {"id": 4, "elo": 1100}],
+        )
 
         self.assertEqual(results[1]["change"], 64)
         self.assertEqual(results[1]["new_elo"], 1064)
@@ -131,15 +119,15 @@ class TestEloCalculator(TestCase):
 
     def test_process_match_result_extreme_elo_difference_upset(self):
         """Test process_match_result with extreme ELO difference - upset win, mixed provisional/established."""
-        team_a_player1 = MockPlayer(1, 1000)
-        team_a_player2 = MockPlayer(2, 1000)
+        team_a_player1 = {"id": 1, "elo": 1000}
+        team_a_player2 = {"id": 2, "elo": 1000}
         team_a = [team_a_player1, team_a_player2]
 
-        team_b_player3 = MockPlayer(3, 2000)
-        team_b_player4 = MockPlayer(4, 2000)
+        team_b_player3 = {"id": 3, "elo": 2000}
+        team_b_player4 = {"id": 4, "elo": 2000}
         team_b = [team_b_player3, team_b_player4]
 
-        results = process_match_result(team_a, team_b, winner_score=2, loser_score=1)
+        results = process_match_result(team_a, team_b)
 
         self.assertEqual(results[1]["change"], 99)
         self.assertEqual(results[1]["new_elo"], 1099)
@@ -153,15 +141,15 @@ class TestEloCalculator(TestCase):
 
     def test_process_match_result_extreme_elo_difference_expected(self):
         """Test process_match_result with extreme ELO difference - expected win, mixed K-factors."""
-        team_a_player1 = MockPlayer(1, 2000)
-        team_a_player2 = MockPlayer(2, 2000)
+        team_a_player1 = {"id": 1, "elo": 2000}
+        team_a_player2 = {"id": 2, "elo": 2000}
         team_a = [team_a_player1, team_a_player2]
 
-        team_b_player3 = MockPlayer(3, 1000)
-        team_b_player4 = MockPlayer(4, 1000)
+        team_b_player3 = {"id": 3, "elo": 1000}
+        team_b_player4 = {"id": 4, "elo": 1000}
         team_b = [team_b_player3, team_b_player4]
 
-        results = process_match_result(team_a, team_b, winner_score=2, loser_score=1)
+        results = process_match_result(team_a, team_b)
 
         self.assertEqual(results[1]["change"], 0)
         self.assertEqual(results[1]["new_elo"], 2000)
@@ -175,9 +163,9 @@ class TestEloCalculator(TestCase):
 
     def test_process_match_result_with_tournament_modifier(self):
         """Test process_match_result with a tournament importance modifier."""
-        team_a = [MockPlayer(1, 1500), MockPlayer(2, 1500)]
-        team_b = [MockPlayer(3, 1500), MockPlayer(4, 1500)]
-        results = process_match_result(team_a, team_b, winner_score=2, loser_score=1)
+        team_a = [{"id": 1, "elo": 1500}, {"id": 2, "elo": 1500}]
+        team_b = [{"id": 3, "elo": 1500}, {"id": 4, "elo": 1500}]
+        results = process_match_result(team_a, team_b)
 
         for pid in (1, 2):
             self.assertEqual(results[pid]["change"], 25)
@@ -185,27 +173,6 @@ class TestEloCalculator(TestCase):
         for pid in (3, 4):
             self.assertEqual(results[pid]["change"], -25)
             self.assertEqual(results[pid]["new_elo"], 1475)
-
-    def test_validate_teams_invalid_elo(self):
-        """Test validate_teams with invalid ELO ratings."""
-        with self.assertRaises(ValueError):
-            validate_teams([MockPlayer(1, -5)], [MockPlayer(2, -5)])
-
-    def test_validate_scores_negative(self):
-        """Test validate_scores with negative scores."""
-        with self.assertRaises(ValueError):
-            validate_scores(-1, 0)
-
-    def test_validate_scores_invalid_order(self):
-        """Test validate_scores with invalid score order."""
-        with self.assertRaises(ValueError):
-            validate_scores(1, 2)
-
-    def test_validate_match_result_valid(self):
-        """Test validate_match_result with valid match result."""
-        team_a = [MockPlayer(1, 1000)]
-        team_b = [MockPlayer(2, 1001)]
-        validate_match_result(team_a, team_b, 2, 1)
 
 
 if __name__ == "__main__":

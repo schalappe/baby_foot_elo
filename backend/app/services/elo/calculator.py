@@ -5,13 +5,12 @@ ELO Calculation Module
 This module provides functions to calculate team ELO, win probabilities, K factors, and ELO changes.
 """
 
-from logging import getLogger
+from typing import List, Dict, Any
+
 from math import pow
 from statistics import mean
 
-from .validation import validate_match_result
-
-logger = getLogger(__name__)
+from loguru import logger
 
 
 # ##: K-factors for established players.
@@ -162,35 +161,29 @@ def calculate_elo_change(player_elo: int, win_probability: float, match_result: 
     return change
 
 
-def process_match_result(winning_team: list, losing_team: list, winner_score: int, loser_score: int) -> dict:
+def process_match_result(winning_team: List[Dict[str, Any]], losing_team: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Process match results and calculate updated ELO values for each player.
 
     Parameters
     ----------
-    winning_team : list
+    winning_team : List[Dict[str, Any]]
         List of player objects for the winning team.
-    losing_team : list
+    losing_team : List[Dict[str, Any]]
         List of player objects for the losing team.
-    winner_score : int
-        Score of winning team.
-    loser_score : int
-        Score of losing team.
 
     Returns
     -------
-    dict
+    Dict[str, Any]
         Mapping player IDs to a dict with 'old_elo', 'new_elo', and 'change'.
     """
-    validate_match_result(winning_team, losing_team, winner_score, loser_score)
-
     logger.info(
-        f"Processing match: Winners ({[p.id for p in winning_team]}) vs Losers ({[p.id for p in losing_team]}), Score: {winner_score}-{loser_score}"
+        f"Processing match: Winners ({[p['id'] for p in winning_team]}) vs Losers ({[p['id'] for p in losing_team]})"
     )
 
     # ##: Calculate team ELOs by averaging individual ratings.
-    elo_winner = calculate_team_elo(winning_team[0].elo, winning_team[1].elo)
-    elo_loser = calculate_team_elo(losing_team[0].elo, losing_team[1].elo)
+    elo_winner = calculate_team_elo(winning_team[0]["elo"], winning_team[1]["elo"])
+    elo_loser = calculate_team_elo(losing_team[0]["elo"], losing_team[1]["elo"])
     logger.debug(f"Team ELOs calculated: Winners {elo_winner}, Losers {elo_loser}")
 
     results = {}
@@ -198,17 +191,17 @@ def process_match_result(winning_team: list, losing_team: list, winner_score: in
     # ##: Calculate ELO changes for winning team.
     for player in winning_team:
         win_prob = calculate_win_probability(elo_winner, elo_loser)
-        change = calculate_elo_change(player.elo, win_prob, 1)
-        new_elo = player.elo + change
-        logger.info(f"Player {player.id} (Winner): ELO {player.elo} -> {new_elo} (Change: {change})")
-        results[player.id] = {"old_elo": player.elo, "new_elo": new_elo, "change": change}
+        change = calculate_elo_change(player["elo"], win_prob, 1)
+        new_elo = player["elo"] + change
+        logger.info(f"Player {player['id']} (Winner): ELO {player['elo']} -> {new_elo} (Change: {change})")
+        results[player["id"]] = {"old_elo": player["elo"], "new_elo": new_elo, "change": change}
 
     # ##: Calculate ELO changes for losing team.
     for player in losing_team:
         win_prob = calculate_win_probability(elo_loser, elo_winner)
-        change = calculate_elo_change(player.elo, win_prob, 0)
-        new_elo = player.elo + change
-        logger.info(f"Player {player.id} (Loser): ELO {player.elo} -> {new_elo} (Change: {change})")
-        results[player.id] = {"old_elo": player.elo, "new_elo": new_elo, "change": change}
+        change = calculate_elo_change(player["elo"], win_prob, 0)
+        new_elo = player["elo"] + change
+        logger.info(f"Player {player['id']} (Loser): ELO {player['elo']} -> {new_elo} (Change: {change})")
+        results[player["id"]] = {"old_elo": player["elo"], "new_elo": new_elo, "change": change}
 
     return results

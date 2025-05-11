@@ -15,7 +15,7 @@ from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 
 from app.db import DatabaseManager, initialize_database
-from app.routers import health, players, teams, test_info
+from app.routers import health, matches, players, teams, test_info
 from app.utils.error_handlers import setup_error_handlers
 from app.utils.rate_limiter import setup_rate_limiting
 from app.utils.validation import ValidationErrorResponse, validation_error_response_handler, validation_exception_handler
@@ -65,6 +65,7 @@ app.include_router(health.router)
 app.include_router(test_info.router)
 app.include_router(players.router)
 app.include_router(teams.router)
+app.include_router(matches.router)
 
 
 @app.get("/", tags=["root"])
@@ -137,6 +138,10 @@ def custom_openapi():
         {
             "name": "teams",
             "description": "Operations related to team management",
+        },
+        {
+            "name": "matches",
+            "description": "Operations related to match recording and history",
         },
         {
             "name": "health",

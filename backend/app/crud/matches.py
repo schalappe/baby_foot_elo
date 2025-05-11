@@ -305,6 +305,7 @@ def get_fanny_matches() -> List[Dict[str, Any]]:
     List[Dict[str, Any]]
         List of fanny match dictionaries
     """
+
     try:
         rows = (
             SelectQueryBuilder("Matches")
@@ -332,4 +333,49 @@ def get_fanny_matches() -> List[Dict[str, Any]]:
         )
     except Exception as exc:
         logger.error(f"Failed to get fanny matches: {exc}")
+        return []
+
+
+@with_retry(max_retries=3, retry_delay=0.5)
+def get_all_matches(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+    """
+    Get all matches with pagination support.
+
+    Parameters
+    ----------
+    limit : int, optional
+        Maximum number of matches to return, by default 100
+    offset : int, optional
+        Number of matches to skip, by default 0
+
+    Returns
+    -------
+    List[Dict[str, Any]]
+        List of match dictionaries
+    """
+    try:
+        rows = (
+            SelectQueryBuilder("Matches")
+            .select("match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "year", "month", "day")
+            .order_by_clause("played_at DESC")
+            .limit(limit)
+            .offset(offset)
+            .execute()
+        )
+
+        return [
+            {
+                "match_id": r[0],
+                "winner_team_id": r[1],
+                "loser_team_id": r[2],
+                "is_fanny": r[3],
+                "played_at": r[4],
+                "year": r[5],
+                "month": r[6],
+                "day": r[7],
+            }
+            for r in rows
+        ] if rows else []
+    except Exception as exc:
+        logger.error(f"Failed to get all matches: {exc}")
         return []

@@ -111,3 +111,15 @@ class MatchResponse(MatchBase):
 
     class Config:
         from_attributes = True
+
+
+class MatchWithEloResponse(MatchResponse):
+    """
+    Extended match response that includes ELO changes.
+    
+    Attributes
+    ----------
+    elo_changes : dict
+        Dictionary mapping player IDs to their ELO changes.
+    """
+    elo_changes: dict = Field(default_factory=dict, description="ELO changes for each player")
