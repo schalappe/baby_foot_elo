@@ -90,5 +90,5 @@ class BaseQueryBuilder:
                     return db_manager.fetchone(query, params)
                 return db_manager.execute(query, params)
         except Exception as exc:
-            logger.error("Failed to execute query: %s", exc)
+            logger.error(f"Failed to execute query: {exc}")
             return []

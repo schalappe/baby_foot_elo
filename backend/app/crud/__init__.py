@@ -31,7 +31,7 @@ from .players import (
     search_players,
     update_player,
 )
-from .stats import get_leaderboard, get_player_elo_history, get_player_stats
+from .stats import get_player_elo_history, get_player_stats
 from .teams import (
     batch_insert_teams,
     create_team,
@@ -65,7 +65,6 @@ __all__ = [
     "batch_record_elo_updates",
     # Stats
     "get_player_stats",
-    "get_leaderboard",
     "get_player_elo_history",
     # Query Builders
     "SelectQueryBuilder",

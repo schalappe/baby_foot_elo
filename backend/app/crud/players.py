@@ -3,8 +3,9 @@
 Operations related to the Players table.
 """
 
-import logging
 from typing import Any, Dict, List, Optional
+
+from loguru import logger
 
 from app.db.retry import with_retry
 from app.db.transaction import transaction
@@ -15,8 +16,6 @@ from .builders import (
     SelectQueryBuilder,
     UpdateQueryBuilder,
 )
-
-logger = logging.getLogger(__name__)
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -46,12 +45,11 @@ def create_player(name: str, global_elo: int = 1000, current_month_elo: int = 10
         )
 
         query, params = result
-        query += " RETURNING player_id"
         with transaction() as db_manager:
-            res = db_manager.fetchone(query, params)
+            res = db_manager.fetchone(f"{query} RETURNING player_id", params)
         return res[0] if res else None
     except Exception as exc:
-        logger.error("Failed to create player '%s': %s", name, exc)
+        logger.error(f"Failed to create player '{name}': {exc}")
         return None
 
 
@@ -93,7 +91,7 @@ def get_player(player_id: int) -> Optional[Dict[str, Any]]:
             }
         return None
     except Exception as exc:
-        logger.error("Failed to get player by ID %d: %s", player_id, exc)
+        logger.error(f"Failed to get player by ID {player_id}: {exc}")
         return None
 
 
@@ -136,13 +134,12 @@ def update_player(
 
         update_builder.where("player_id = ?", player_id)
         query, params = update_builder.build()
-        query += " RETURNING player_id"
 
         with transaction() as db_manager:
             result = db_manager.fetchone(query, params)
-            return result is not None
+            return bool(result[0])
     except Exception as exc:
-        logger.error("Failed to update player ID %d: %s", player_id, exc)
+        logger.error(f"Failed to update player ID {player_id}: {exc}")
         return False
 
 
@@ -164,12 +161,12 @@ def delete_player(player_id: int) -> bool:
     try:
         delete_builder = DeleteQueryBuilder("Players").where("player_id = ?", player_id)
         query, params = delete_builder.build()
-        query += " RETURNING player_id"
+
         with transaction() as db_manager:
             result = db_manager.fetchone(query, params)
-            return result is not None
+            return bool(result[0])
     except Exception as exc:
-        logger.error("Failed to delete player ID %d: %s", player_id, exc)
+        logger.error(f"Failed to delete player ID {player_id}: {exc}")
         return False
 
 
@@ -199,12 +196,11 @@ def batch_insert_players(players: List[Dict[str, Any]]) -> List[Optional[int]]:
                     name=name, global_elo=global_elo, current_month_elo=current_month_elo
                 )
                 query, params = builder.build()
-                query += " RETURNING player_id"
-                result = db_manager.fetchone(query, params)
+                result = db_manager.fetchone(f"{query} RETURNING player_id", params)
                 player_ids.append(result[0] if result else None)
         return player_ids
     except Exception as exc:
-        logger.error("Failed during batch insert: %s", exc)
+        logger.error(f"Failed during batch insert: {exc}")
         return player_ids
 
 
@@ -240,7 +236,7 @@ def get_all_players() -> List[Dict[str, Any]]:
             else []
         )
     except Exception as exc:
-        logger.error("Failed to get all players: %s", exc)
+        logger.error(f"Failed to get all players: {exc}")
         return []
 
 
@@ -285,5 +281,5 @@ def search_players(name_pattern: str, limit: int = 10) -> List[Dict[str, Any]]:
             else []
         )
     except Exception as exc:
-        logger.error("Failed to search players with pattern '%s': %s", name_pattern, exc)
+        logger.error(f"Failed to search players with pattern '{name_pattern}': {exc}")
         return []

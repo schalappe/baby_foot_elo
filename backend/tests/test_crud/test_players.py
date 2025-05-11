@@ -91,9 +91,14 @@ class TestPlayerCRUD(unittest.TestCase):
         updated = update_player(player_id, name=new_name)
         self.assertTrue(updated)
 
+        new_elo = 1500
+        updated = update_player(player_id, global_elo=new_elo)
+        self.assertTrue(updated)
+
         retrieved_player = get_player(player_id)
         self.assertIsNotNone(retrieved_player)
         self.assertEqual(retrieved_player["name"], new_name)
+        self.assertEqual(retrieved_player["global_elo"], new_elo)
 
     def test_update_player_not_exists(self):
         """Test updating a non-existent player."""

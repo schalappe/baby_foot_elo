@@ -39,10 +39,10 @@ def get_player_stats(player_id: int) -> Optional[Dict[str, Any]]:
         mc_result = (
             SelectQueryBuilder("Matches m")
             .select("COUNT(DISTINCT m.match_id)")
-            .join("Teams t1", "m.team1_id = t1.team_id")
-            .join("Teams t2", "m.team2_id = t2.team_id")
+            .join("Teams tw", "m.winner_team_id = tw.team_id")
+            .join("Teams tl", "m.loser_team_id = tl.team_id")
             .where(
-                "t1.player1_id = ? OR t1.player2_id = ? OR t2.player1_id = ? OR t2.player2_id = ?",
+                "tw.player1_id = ? OR tw.player2_id = ? OR tl.player1_id = ? OR tl.player2_id = ?",
                 player_id,
                 player_id,
                 player_id,
@@ -62,6 +62,16 @@ def get_player_stats(player_id: int) -> Optional[Dict[str, Any]]:
         )
         win_count = wc_result[0] if wc_result else 0
 
+        # ##: Get loss count via QueryBuilder
+        lc_result = (
+            SelectQueryBuilder("Matches m")
+            .select("COUNT(*)")
+            .join("Teams t", "m.loser_team_id = t.team_id")
+            .where("t.player1_id = ? OR t.player2_id = ?", player_id, player_id)
+            .execute(fetch_all=False)
+        )
+        loss_count = lc_result[0] if lc_result else 0
+
         # ##: Calculate win rate.
         win_rate = (win_count / match_count * 100) if match_count > 0 else 0
 
@@ -69,64 +79,12 @@ def get_player_stats(player_id: int) -> Optional[Dict[str, Any]]:
             **player,
             "matches_played": match_count,
             "wins": win_count,
+            "losses": loss_count,
             "win_rate": win_rate,
         }
     except Exception as e:
         logger.error("Failed to get player stats for ID %d: %s", player_id, e)
         return None
-
-
-@with_retry(max_retries=3, retry_delay=0.5)
-def get_leaderboard(limit: int = 10) -> List[Dict[str, Any]]:
-    """
-    Get the current leaderboard based on ELO scores.
-    Assumes a default ELO of 1000 for players without history.
-
-    Parameters
-    ----------
-    limit : int
-        Maximum number of players to include
-
-    Returns
-    -------
-    List[Dict[str, Any]]
-        Leaderboard entries
-    """
-    try:
-        db_manager = DatabaseManager()
-        query = """
-        SELECT
-            p.player_id,
-            p.name,
-            COALESCE(h.elo_score, 1000.0) as elo_score
-        FROM Players p
-        LEFT JOIN (
-            SELECT player_id, MAX(updated_at) as latest_update
-            FROM ELO_History
-            GROUP BY player_id
-        ) latest ON p.player_id = latest.player_id
-        LEFT JOIN ELO_History h ON latest.player_id = h.player_id AND latest.latest_update = h.updated_at
-        ORDER BY elo_score DESC
-        LIMIT ?
-        """
-
-        leaderboard_players = db_manager.fetchall(query, [limit])
-        results = []
-
-        # ##: Now, for each player in the top list, fetch their stats.
-        for player_data in leaderboard_players:
-            player_id_from_lb = player_data[0]
-            stats = get_player_stats(player_id_from_lb)
-            if stats:
-                results.append(stats)
-
-        # ##: Re-sort based on the potentially updated ELO from stats (though it should match).
-        results.sort(key=lambda x: x.get("current_elo", 1000.0), reverse=True)
-
-        return results
-    except Exception as e:
-        logger.error("Failed to get leaderboard: %s", e)
-        return []
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -152,13 +110,19 @@ def get_player_elo_history(player_id: int) -> List[Dict[str, Any]]:
                 "h.history_id",
                 "h.player_id",
                 "h.match_id",
-                "h.elo_score",
-                "h.updated_at",
-                "m.match_date",
+                "h.type",
+                "h.old_elo",
+                "h.new_elo",
+                "h.difference",
+                "h.date",
+                "h.year",
+                "h.month",
+                "h.day",
+                "m.played_at",
             )
             .join("Matches m", "h.match_id = m.match_id")
             .where("h.player_id = ?", player_id)
-            .order_by_clause("m.match_date DESC")
+            .order_by_clause("h.date DESC")
             .execute()
         )
         return (
@@ -167,9 +131,15 @@ def get_player_elo_history(player_id: int) -> List[Dict[str, Any]]:
                     "history_id": r[0],
                     "player_id": r[1],
                     "match_id": r[2],
-                    "elo_score": r[3],
-                    "updated_at": r[4],
-                    "match_date": r[5],
+                    "type": r[3],
+                    "old_elo": r[4],
+                    "new_elo": r[5],
+                    "difference": r[6],
+                    "date": r[7],
+                    "year": r[8],
+                    "month": r[9],
+                    "day": r[10],
+                    "match_date": r[11],
                 }
                 for r in rows
             ]

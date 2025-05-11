@@ -73,8 +73,8 @@ class TestELOHistoryCRUD(TestCase):
         self.assertEqual(len(hist_ids), 3)
         self.assertTrue(all(i is not None for i in hist_ids), "Some history IDs are None")
 
-        self.assertEqual(get_current_elo(p1), 1125)
-        self.assertEqual(get_current_elo(p2), 1150)
+        self.assertEqual(get_player_elo_history(p1)[0]["new_elo"], 1125)
+        self.assertEqual(get_player_elo_history(p2)[0]["new_elo"], 1150)
 
     def test_empty_batch(self):
         """Test that empty batch returns empty list."""

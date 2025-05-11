@@ -3,10 +3,10 @@
 Operations related to the Teams table.
 """
 
-from logging import getLogger
 from typing import Any, Dict, List, Optional
 
 from duckdb import ConstraintException
+from loguru import logger
 
 from app.db import transaction, with_retry
 
@@ -16,8 +16,6 @@ from .builders import (
     SelectQueryBuilder,
     UpdateQueryBuilder,
 )
-
-logger = getLogger(__name__)
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -60,11 +58,7 @@ def create_team(
                 [player1_id, player2_id, player2_id, player1_id],
             )
             if existing_team:
-                logger.warning(
-                    "Attempted to create duplicate team for players %d and %d",
-                    player1_id,
-                    player2_id,
-                )
+                logger.warning(f"Attempted to create duplicate team for players {player1_id} and {player2_id}")
                 return None
 
             builder = InsertQueryBuilder("Teams")
@@ -78,19 +72,18 @@ def create_team(
                 builder.set(last_match_at=last_match_at)
 
             query, params = builder.build()
-            query += " RETURNING team_id"
+            result = db_manager.fetchone(f"{query} RETURNING team_id", params)
 
-            result = db_manager.fetchone(query, params)
             if result and result[0]:
-                logger.info("Created team with ID: %d", result[0])
+                logger.info(f"Created team with ID: {result[0]}")
                 return result[0]
             logger.error("Failed to create team or retrieve its ID.")
             return None
     except ConstraintException as constraint_exc:
-        logger.error("Constraint error on create_team: %s", constraint_exc)
+        logger.error(f"Constraint error on create_team: {constraint_exc}")
         return None
     except Exception as exc:
-        logger.error("Failed to create team: %s", exc)
+        logger.error(f"Failed to create team: {exc}")
         return None
 
 
@@ -120,7 +113,7 @@ def update_team(
         True if update was successful, False otherwise.
     """
     if global_elo is None and current_month_elo is None and last_match_at is None:
-        logger.warning("No fields provided to update for team %d", team_id)
+        logger.warning(f"No fields provided to update for team {team_id}")
         return False
 
     builder = UpdateQueryBuilder("Teams")
@@ -133,11 +126,10 @@ def update_team(
 
     builder.where("team_id = ?", team_id)
     query, params = builder.build()
-    query += " RETURNING team_id"
 
     with transaction() as db_manager:
         result = db_manager.fetchone(query, params)
-        return result is not None
+        return bool(result[0])
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -156,10 +148,9 @@ def delete_team(team_id: int) -> bool:
         True if the deletion was successful, False otherwise.
     """
     query, params = DeleteQueryBuilder("Teams").where("team_id = ?", team_id).build()
-    query += " RETURNING team_id"
     with transaction() as db_manager:
         result = db_manager.fetchone(query, params)
-        return result is not None
+        return bool(result[0])
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -204,7 +195,7 @@ def get_team(team_id: int) -> Optional[Dict[str, Any]]:
             }
         return None
     except Exception as exc:
-        logger.error("Failed to get team by ID %d: %s", team_id, exc)
+        logger.error(f"Failed to get team by ID {team_id}: {exc}")
         return None
 
 
@@ -250,7 +241,7 @@ def get_all_teams() -> List[Dict[str, Any]]:
             else []
         )
     except Exception as exc:
-        logger.error("Failed to get all teams: %s", exc)
+        logger.error(f"Failed to get all teams: {exc}")
         return []
 
 

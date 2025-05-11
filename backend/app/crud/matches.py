@@ -98,12 +98,11 @@ def delete_match(match_id: int) -> bool:
             query_builder.where("match_id = ?", match_id)
             query, params = query_builder.build()
 
-            result = db_manager.fetchone(f"{query} RETURNING match_id", params)
+            result = bool(db_manager.fetchone(query, params)[0])
             if result:
                 logger.info(f"Match ID {match_id} deleted successfully.")
-                return True
             logger.warning(f"Attempted to delete non-existent Match ID {match_id}.")
-            return False
+            return result
     except Exception as exc:
         logger.error(f"Failed to delete match ID {match_id}: {exc}")
         return False
