@@ -7,14 +7,13 @@ and query utilities from their respective submodules.
 """
 
 from .builders import (
-    SelectQueryBuilder,
-    InsertQueryBuilder,
-    UpdateQueryBuilder,
     DeleteQueryBuilder,
+    InsertQueryBuilder,
+    SelectQueryBuilder,
+    UpdateQueryBuilder,
 )
 from .elo_history import (
     batch_record_elo_updates,
-    get_current_elo,
     record_elo_update,
 )
 from .matches import (
@@ -63,7 +62,6 @@ __all__ = [
     "get_all_matches_for_recalculation",
     # ELO
     "record_elo_update",
-    "get_current_elo",
     "batch_record_elo_updates",
     # Stats
     "get_player_stats",

@@ -5,8 +5,9 @@ Query builder for constructing SQL queries.
 
 from __future__ import annotations
 
-from loguru import logger
 from typing import Any, List, Optional, Tuple, Union
+
+from loguru import logger
 
 from app.db import transaction
 

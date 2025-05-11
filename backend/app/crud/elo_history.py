@@ -78,39 +78,6 @@ def record_elo_update(
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_current_elo(player_id: int, elo_type: str = "global") -> Optional[int]:
-    """
-    Get the current ELO score for a player.
-
-    Parameters
-    ----------
-    player_id : int
-        ID of the player
-    elo_type : str, optional
-        Type of ELO update ('global' or 'monthly'), by default 'global'
-
-    Returns
-    -------
-    Optional[int]
-        Current ELO score, or None if no history exists
-    """
-    try:
-        result = (
-            SelectQueryBuilder("ELO_History")
-            .select("new_elo")
-            .where("player_id = ?", player_id)
-            .where("type = ?", elo_type)
-            .order_by_clause("history_id DESC")
-            .limit(1)
-            .execute(fetch_all=False)
-        )
-        return result[0] if result else None
-    except Exception as e:
-        logger.error(f"Failed to get current ELO for player ID {player_id}: {e}")
-        return None
-
-
-@with_retry(max_retries=3, retry_delay=0.5)
 def batch_record_elo_updates(elo_updates: List[Dict[str, Any]]) -> List[Optional[int]]:
     """
     Record multiple ELO updates in a single transaction.

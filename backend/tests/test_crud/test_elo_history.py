@@ -8,7 +8,6 @@ from unittest import TestCase, main
 
 from app.crud.elo_history import (
     batch_record_elo_updates,
-    get_current_elo,
     get_elo_by_date,
     get_monthly_elo_history,
     get_player_elo_history,
@@ -34,32 +33,6 @@ class TestELOHistoryCRUD(TestCase):
         if hasattr(self, "db") and self.db.connection:
             self.db.close()
         DatabaseManager._instance = None
-
-    def test_record_and_get_current_elo(self):
-        """Test recording a single ELO update and retrieving current ELO."""
-        # ##: Create players and teams and a match.
-        p1 = create_player("Alice")
-        p2 = create_player("Bob")
-        p3 = create_player("Charlie")
-        p4 = create_player("David")
-        t1 = create_team(p1, p2)
-        t2 = create_team(p3, p4)
-        match_date = datetime(2023, 1, 1, 12, 0, 0)
-        m_id = create_match(t1, t2, match_date)
-
-        # ##: Record first ELO update.
-        hist_id = record_elo_update(p1, m_id, 1000, 1200, "global", match_date)
-        self.assertIsNotNone(hist_id)
-        self.assertIsInstance(hist_id, int)
-        self.assertEqual(get_current_elo(p1), 1200)
-
-        # ##: Record second ELO update.
-        hist_id2 = record_elo_update(p1, m_id, 1200, 1250, "global", match_date)
-        self.assertIsNotNone(hist_id2)
-        self.assertEqual(get_current_elo(p1), 1250)
-
-        # ##: No history for player without records.
-        self.assertIsNone(get_current_elo(p2))
 
     def test_batch_record_elo_updates(self):
         """Test batch recording multiple ELO updates."""

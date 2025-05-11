@@ -3,17 +3,15 @@
 Operations related to player statistics and leaderboards.
 """
 
-import logging
 from typing import Any, Dict, List, Optional
+
+from loguru import logger
 
 from app.db import DatabaseManager
 from app.db.retry import with_retry
 
 from .builders import SelectQueryBuilder
-from .elo_history import get_current_elo
 from .players import get_player
-
-logger = logging.getLogger(__name__)
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -36,9 +34,6 @@ def get_player_stats(player_id: int) -> Optional[Dict[str, Any]]:
         player = get_player(player_id)
         if not player:
             return None
-
-        # ##: Get current ELO.
-        current_elo = get_current_elo(player_id)
 
         # ##: Get match count via QueryBuilder
         mc_result = (
@@ -72,7 +67,6 @@ def get_player_stats(player_id: int) -> Optional[Dict[str, Any]]:
 
         return {
             **player,
-            "current_elo": current_elo if current_elo is not None else 1000.0,
             "matches_played": match_count,
             "wins": win_count,
             "win_rate": win_rate,
