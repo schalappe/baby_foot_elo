@@ -112,14 +112,12 @@ async def create_team_endpoint(team: TeamCreate):
 
     # ##: Calculate initial team ELO based on player ELOs.
     team.global_elo = calculate_team_elo(player1["global_elo"], player2["global_elo"])
-    team.current_month_elo = calculate_team_elo(player1["current_month_elo"], player2["current_month_elo"])
 
     # ##: Create the team.
     team_id = create_team(
         player1_id=team.player1_id,
         player2_id=team.player2_id,
         global_elo=team.global_elo,
-        current_month_elo=team.current_month_elo,
     )
 
     if not team_id:

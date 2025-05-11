@@ -128,7 +128,6 @@ async def create_player_endpoint(player: PlayerCreate):
             id=stats["player_id"],
             name=stats["name"],
             global_elo=int(stats.get("global_elo", 1000)),
-            current_month_elo=int(stats.get("current_month_elo", 1000)),
             creation_date=stats.get("created_at"),
             matches_played=stats["matches_played"],
             wins=stats["wins"],
@@ -186,7 +185,7 @@ async def list_players_endpoint(
     """
     try:
         # ##: Validate sort parameters.
-        valid_sort_fields = ["name", "global_elo", "current_month_elo", "matches_played", "wins", "losses"]
+        valid_sort_fields = ["name", "global_elo", "matches_played", "wins", "losses"]
         if sort_by and sort_by not in valid_sort_fields:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -218,7 +217,6 @@ async def list_players_endpoint(
                     id=pid,
                     name=stats["name"],
                     global_elo=int(stats.get("global_elo", 1000)),
-                    current_month_elo=int(stats.get("current_month_elo", 1000)),
                     creation_date=stats.get("created_at"),
                     matches_played=stats["matches_played"],
                     wins=stats["wins"],
@@ -290,7 +288,6 @@ async def get_player_endpoint(player_id: int = Path(..., gt=0, description="The 
             id=stats["player_id"],
             name=stats["name"],
             global_elo=int(stats.get("global_elo", 1000)),
-            current_month_elo=int(stats.get("current_month_elo", 1000)),
             creation_date=stats.get("created_at"),
             matches_played=stats["matches_played"],
             wins=stats["wins"],
@@ -378,7 +375,6 @@ async def update_player_endpoint(
             id=stats["player_id"],
             name=stats["name"],
             global_elo=int(stats.get("global_elo", 1000)),
-            current_month_elo=int(stats.get("current_month_elo", 1000)),
             creation_date=stats.get("created_at"),
             matches_played=stats["matches_played"],
             wins=stats["wins"],
@@ -711,7 +707,6 @@ async def get_player_statistics_endpoint(
             "player_id": player_id,
             "name": stats["name"],
             "global_elo": int(stats.get("global_elo", 1000)),
-            "current_month_elo": int(stats.get("current_month_elo", 1000)),
             "matches_played": matches_played,
             "wins": wins,
             "losses": losses,

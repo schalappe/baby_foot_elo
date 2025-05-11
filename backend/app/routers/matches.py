@@ -330,7 +330,6 @@ async def get_match_details(match_id: int):
             player1_id=winner_team["player1_id"],
             player2_id=winner_team["player2_id"],
             global_elo=winner_team["global_elo"],
-            current_month_elo=winner_team["current_month_elo"],
             created_at=winner_team["created_at"],
             last_match_at=winner_team["last_match_at"],
         )
@@ -341,7 +340,6 @@ async def get_match_details(match_id: int):
             player1_id=loser_team["player1_id"],
             player2_id=loser_team["player2_id"],
             global_elo=loser_team["global_elo"],
-            current_month_elo=loser_team["current_month_elo"],
             created_at=loser_team["created_at"],
             last_match_at=loser_team["last_match_at"],
         )
