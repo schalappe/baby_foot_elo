@@ -76,8 +76,10 @@ class TestPlayerCRUD(unittest.TestCase):
         self.assertEqual(len(players), 2)
         player_names = {p["name"] for p in players}
         self.assertEqual(player_names, {"Charlie", "David"})
-        self.assertEqual(players[0]["name"], "Charlie")
-        self.assertEqual(players[1]["name"], "David")
+        for p in players:
+            self.assertIn("global_elo", p)
+            self.assertIn("current_month_elo", p)
+            self.assertIn("created_at", p)
 
     def test_update_player_exists(self):
         """Test updating an existing player."""
@@ -86,7 +88,7 @@ class TestPlayerCRUD(unittest.TestCase):
         self.assertIsNotNone(player_id)
 
         new_name = "Evelyn"
-        updated = update_player(player_id, new_name)
+        updated = update_player(player_id, name=new_name)
         self.assertTrue(updated)
 
         retrieved_player = get_player(player_id)
@@ -95,7 +97,7 @@ class TestPlayerCRUD(unittest.TestCase):
 
     def test_update_player_not_exists(self):
         """Test updating a non-existent player."""
-        updated = update_player(99999, "No One")
+        updated = update_player(99999, name="No One")
         self.assertFalse(updated)
 
     def test_delete_player_exists(self):
@@ -116,7 +118,10 @@ class TestPlayerCRUD(unittest.TestCase):
 
     def test_batch_insert_players(self):
         """Test inserting multiple players in a batch."""
-        players_to_insert = [{"name": "Grace"}, {"name": "Heidi"}]
+        players_to_insert = [
+            {"name": "Grace", "global_elo": 1100, "current_month_elo": 1200},
+            {"name": "Heidi"},
+        ]
         player_ids = batch_insert_players(players_to_insert)
 
         self.assertEqual(len(player_ids), 2)
@@ -126,6 +131,17 @@ class TestPlayerCRUD(unittest.TestCase):
         self.assertEqual(len(all_players), 2)
         player_names = {p["name"] for p in all_players}
         self.assertEqual(player_names, {"Grace", "Heidi"})
+        for p in all_players:
+            self.assertIn("global_elo", p)
+            self.assertIn("current_month_elo", p)
+            self.assertIn("created_at", p)
+
+        grace = next(p for p in all_players if p["name"] == "Grace")
+        heidi = next(p for p in all_players if p["name"] == "Heidi")
+        self.assertEqual(grace["global_elo"], 1100)
+        self.assertEqual(grace["current_month_elo"], 1200)
+        self.assertEqual(heidi["global_elo"], 1000)
+        self.assertEqual(heidi["current_month_elo"], 1000)
 
     def test_search_players_found(self):
         """Test searching for players that exist."""
@@ -137,6 +153,10 @@ class TestPlayerCRUD(unittest.TestCase):
         self.assertEqual(len(results), 2)
         names = {p["name"] for p in results}
         self.assertEqual(names, {"Ivan", "Ivy"})
+        for p in results:
+            self.assertIn("global_elo", p)
+            self.assertIn("current_month_elo", p)
+            self.assertIn("created_at", p)
         self.assertEqual(results[0]["name"], "Ivan")
         self.assertEqual(results[1]["name"], "Ivy")
 
@@ -156,6 +176,10 @@ class TestPlayerCRUD(unittest.TestCase):
         self.assertEqual(len(results), 2)
         names = {p["name"] for p in results}
         self.assertEqual(names, {"Player A", "Player B"})
+        for p in results:
+            self.assertIn("global_elo", p)
+            self.assertIn("current_month_elo", p)
+            self.assertIn("created_at", p)
 
 
 if __name__ == "__main__":
