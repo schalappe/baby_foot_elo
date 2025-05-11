@@ -16,32 +16,68 @@ Notes
 -----
 - All endpoints return or accept Pydantic models for request and response bodies.
 - ELO updates are not supported via the update endpoint.
+- All endpoints include proper validation and error handling.
+- Rate limiting is applied to prevent abuse.
 """
 
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Path, Query, status
+from loguru import logger
 
+from app.crud.elo_history import get_player_elo_history as get_elo_history
+from app.crud.matches import get_matches_by_team
 from app.crud.players import (
     create_player,
     delete_player,
     get_all_players,
+    get_player,
     update_player,
 )
-from app.crud.stats import get_player_stats, get_player_elo_history
-from app.crud.matches import get_matches_by_team
-from app.crud.elo_history import get_player_elo_history as get_elo_history
+from app.crud.stats import get_player_elo_history, get_player_stats
 from app.crud.teams import get_teams_by_player
-from app.models.player import PlayerCreate, PlayerResponse, PlayerUpdate
-from app.models.match import MatchResponse
 from app.models.elo_history import EloHistoryResponse
+from app.models.match import MatchResponse
+from app.models.player import PlayerCreate, PlayerResponse, PlayerUpdate
+from app.utils.error_handlers import ErrorResponse
 
-router = APIRouter(prefix="/api/v1/players", tags=["players"])
+router = APIRouter(
+    prefix="/api/v1/players",
+    tags=["players"],
+    responses={
+        status.HTTP_400_BAD_REQUEST: {
+            "model": ErrorResponse,
+            "description": "Bad request",
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "model": ErrorResponse,
+            "description": "Resource not found",
+        },
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+            "model": ErrorResponse,
+            "description": "Validation error",
+        },
+        status.HTTP_429_TOO_MANY_REQUESTS: {
+            "model": ErrorResponse,
+            "description": "Rate limit exceeded",
+        },
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {
+            "model": ErrorResponse,
+            "description": "Internal server error",
+        },
+    },
+)
 
 
-@router.post("/", response_model=PlayerResponse, status_code=status.HTTP_201_CREATED)
-def create_player_endpoint(player: PlayerCreate):
+@router.post(
+    "/",
+    response_model=PlayerResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a new player",
+    description="Creates a new player in the system with the provided name and optional initial ELO ratings.",
+)
+async def create_player_endpoint(player: PlayerCreate):
     """
     Create a new player and return the player's details.
 
@@ -60,63 +96,160 @@ def create_player_endpoint(player: PlayerCreate):
     HTTPException
         If player creation or fetching stats fails.
     """
-    player_id = create_player(player.name)
-    if not player_id:
-        raise HTTPException(status_code=500, detail="Failed to create player")
+    try:
+        # ##: Check if name contains only valid characters.
+        if not player.name.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Player name cannot be empty or whitespace only"
+            )
 
-    stats = get_player_stats(player_id)
-    if not stats:
-        raise HTTPException(status_code=500, detail="Failed to fetch player after creation")
+        # ##: Create the player.
+        player_id = create_player(
+            player.name, global_elo=player.global_elo, current_month_elo=player.current_month_elo
+        )
 
-    losses = stats["matches_played"] - stats["wins"]
-    return PlayerResponse(
-        id=stats["player_id"],
-        name=stats["name"],
-        global_elo=int(stats.get("global_elo", 1000)),
-        current_month_elo=int(stats.get("current_month_elo", 1000)),
-        creation_date=stats.get("created_at"),
-        matches_played=stats["matches_played"],
-        wins=stats["wins"],
-        losses=losses,
-    )
+        if not player_id:
+            logger.error(f"Failed to create player with name: {player.name}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create player")
+
+        # ##: Get player stats.
+        stats = get_player_stats(player_id)
+        if not stats:
+            logger.error(f"Failed to fetch stats for newly created player ID: {player_id}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch player after creation"
+            )
+
+        # ##: Calculate losses.
+        losses = stats["matches_played"] - stats["wins"]
+
+        # ##: Return player response.
+        return PlayerResponse(
+            id=stats["player_id"],
+            name=stats["name"],
+            global_elo=int(stats.get("global_elo", 1000)),
+            current_month_elo=int(stats.get("current_month_elo", 1000)),
+            creation_date=stats.get("created_at"),
+            matches_played=stats["matches_played"],
+            wins=stats["wins"],
+            losses=losses,
+        )
+    except HTTPException:
+        # ##: Re-raise HTTP exceptions.
+        raise
+    except Exception as exc:
+        # ##: Log unexpected errors and return a generic error message.
+        logger.exception(f"Unexpected error creating player: {str(exc)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while creating the player",
+        )
 
 
-@router.get("/", response_model=List[PlayerResponse])
-def list_players_endpoint():
+@router.get(
+    "/",
+    response_model=List[PlayerResponse],
+    summary="List all players",
+    description="Retrieves a list of all players with their details and statistics.",
+)
+async def list_players_endpoint(
+    limit: int = Query(50, ge=1, le=100, description="Maximum number of players to return"),
+    offset: int = Query(0, ge=0, description="Number of players to skip"),
+    sort_by: Optional[str] = Query(
+        None, description="Field to sort by (name, global_elo, current_month_elo, matches_played, wins, losses)"
+    ),
+    order: str = Query("asc", description="Sort order (asc or desc)"),
+):
     """
     List all players with their details and statistics.
+
+    Parameters
+    ----------
+    limit : int, optional
+        Maximum number of players to return (default: 50, max: 100).
+    offset : int, optional
+        Number of players to skip for pagination (default: 0).
+    sort_by : Optional[str], optional
+        Field to sort by (default: None).
+    order : str, optional
+        Sort order, 'asc' or 'desc' (default: 'asc').
 
     Returns
     -------
     List[PlayerResponse]
         List of all players with their ELO and statistics.
+
+    Raises
+    ------
+    HTTPException
+        If sorting or pagination fails.
     """
-    response = []
-    for player in get_all_players():
-        pid = player.get("player_id")
-
-        stats = get_player_stats(pid)
-        if not stats:
-            continue
-
-        losses = stats["matches_played"] - stats["wins"]
-        response.append(
-            PlayerResponse(
-                id=pid,
-                name=stats["name"],
-                global_elo=int(stats.get("global_elo", 1000)),
-                current_month_elo=int(stats.get("current_month_elo", 1000)),
-                creation_date=stats.get("created_at"),
-                matches_played=stats["matches_played"],
-                wins=stats["wins"],
-                losses=losses,
+    try:
+        # ##: Validate sort parameters.
+        valid_sort_fields = ["name", "global_elo", "current_month_elo", "matches_played", "wins", "losses"]
+        if sort_by and sort_by not in valid_sort_fields:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid sort field. Must be one of: {', '.join(valid_sort_fields)}",
             )
+
+        if order.lower() not in ["asc", "desc"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid order. Must be 'asc' or 'desc'"
+            )
+
+        # ##: Get all players.
+        all_players = get_all_players()
+        if not all_players:
+            return []
+
+        # ##: Process players and get their stats.
+        response = []
+        for player in all_players:
+            pid = player.get("player_id")
+            stats = get_player_stats(pid)
+
+            if not stats:
+                continue
+
+            losses = stats["matches_played"] - stats["wins"]
+            response.append(
+                PlayerResponse(
+                    id=pid,
+                    name=stats["name"],
+                    global_elo=int(stats.get("global_elo", 1000)),
+                    current_month_elo=int(stats.get("current_month_elo", 1000)),
+                    creation_date=stats.get("created_at"),
+                    matches_played=stats["matches_played"],
+                    wins=stats["wins"],
+                    losses=losses,
+                )
+            )
+
+        # ##: Sort the response if requested.
+        if sort_by:
+            reverse = order.lower() == "desc"
+            response.sort(key=lambda x: getattr(x, sort_by), reverse=reverse)
+
+        # ##: Apply pagination.
+        return response[offset : offset + limit]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception(f"Unexpected error listing players: {str(exc)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while listing players",
         )
-    return response
 
 
-@router.get("/{player_id}", response_model=PlayerResponse)
-def get_player_endpoint(player_id: int):
+@router.get(
+    "/{player_id}",
+    response_model=PlayerResponse,
+    summary="Get player details",
+    description="Retrieves a player's details and statistics by player ID.",
+)
+async def get_player_endpoint(player_id: int = Path(..., gt=0, description="The unique identifier of the player")):
     """
     Retrieve a player's details and statistics by player ID.
 
@@ -135,34 +268,63 @@ def get_player_endpoint(player_id: int):
     HTTPException
         If the player is not found.
     """
-    stats = get_player_stats(player_id)
-    if not stats:
-        raise HTTPException(status_code=404, detail="Player not found")
+    try:
+        # ##: First check if the player exists.
+        player = get_player(player_id)
+        if not player:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Player with ID {player_id} not found")
 
-    losses = stats["matches_played"] - stats["wins"]
-    return PlayerResponse(
-        id=stats["player_id"],
-        name=stats["name"],
-        global_elo=int(stats.get("global_elo", 1000)),
-        current_month_elo=int(stats.get("current_month_elo", 1000)),
-        creation_date=stats.get("created_at"),
-        matches_played=stats["matches_played"],
-        wins=stats["wins"],
-        losses=losses,
-    )
+        # ##: Get player stats.
+        stats = get_player_stats(player_id)
+        if not stats:
+            logger.error(f"Player found but stats missing for ID: {player_id}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch player statistics"
+            )
+
+        # ##: Calculate losses.
+        losses = stats["matches_played"] - stats["wins"]
+
+        # ##: Return player response.
+        return PlayerResponse(
+            id=stats["player_id"],
+            name=stats["name"],
+            global_elo=int(stats.get("global_elo", 1000)),
+            current_month_elo=int(stats.get("current_month_elo", 1000)),
+            creation_date=stats.get("created_at"),
+            matches_played=stats["matches_played"],
+            wins=stats["wins"],
+            losses=losses,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception(f"Unexpected error retrieving player {player_id}: {str(exc)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while retrieving the player",
+        )
 
 
-@router.put("/{player_id}", response_model=PlayerResponse)
-def update_player_endpoint(player_id: int, player: PlayerUpdate):
+@router.put(
+    "/{player_id}",
+    response_model=PlayerResponse,
+    summary="Update player information",
+    description="Updates a player's name by player ID. ELO updates are not supported via this endpoint.",
+)
+async def update_player_endpoint(
+    player_id: int = Path(..., gt=0, description="The unique identifier of the player to update"),
+    player: PlayerUpdate = None,
+):
     """
-    Update a player's name or initial ELO by player ID.
+    Update a player's name by player ID.
 
     Parameters
     ----------
     player_id : int
         The unique identifier of the player to update.
     player : PlayerUpdate
-        The updated player data (name and/or initial ELO).
+        The updated player data (name).
 
     Returns
     -------
@@ -178,33 +340,69 @@ def update_player_endpoint(player_id: int, player: PlayerUpdate):
     -----
     ELO updates are not supported via this endpoint.
     """
-    if player.name is None and player.initial_elo is None:
-        raise HTTPException(status_code=400, detail="No update fields provided")
+    try:
+        # ##: Validate update data.
+        if player.name is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No update fields provided")
 
-    if player.name is not None:
+        # ##: Check if name contains only valid characters.
+        if player.name is not None and not player.name.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Player name cannot be empty or whitespace only"
+            )
+
+        # ##: First check if the player exists.
+        existing_player = get_player(player_id)
+        if not existing_player:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Player with ID {player_id} not found")
+
+        # ##: Update the player.
         success = update_player(player_id, player.name)
         if not success:
-            raise HTTPException(status_code=404, detail="Player not found")
+            logger.error(f"Failed to update player ID {player_id} with name {player.name}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update player")
 
-    stats = get_player_stats(player_id)
-    if not stats:
-        raise HTTPException(status_code=500, detail="Failed to fetch player after update")
+        # ##: Get updated player stats.
+        stats = get_player_stats(player_id)
+        if not stats:
+            logger.error(f"Failed to fetch stats for player ID {player_id} after update")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch player after update"
+            )
 
-    losses = stats["matches_played"] - stats["wins"]
-    return PlayerResponse(
-        id=stats["player_id"],
-        name=stats["name"],
-        global_elo=int(stats.get("global_elo", 1000)),
-        current_month_elo=int(stats.get("current_month_elo", 1000)),
-        creation_date=stats.get("created_at"),
-        matches_played=stats["matches_played"],
-        wins=stats["wins"],
-        losses=losses,
-    )
+        # ##: Calculate losses.
+        losses = stats["matches_played"] - stats["wins"]
+
+        # ##: Return updated player response.
+        return PlayerResponse(
+            id=stats["player_id"],
+            name=stats["name"],
+            global_elo=int(stats.get("global_elo", 1000)),
+            current_month_elo=int(stats.get("current_month_elo", 1000)),
+            creation_date=stats.get("created_at"),
+            matches_played=stats["matches_played"],
+            wins=stats["wins"],
+            losses=losses,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception(f"Unexpected error updating player {player_id}: {str(exc)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while updating the player",
+        )
 
 
-@router.delete("/{player_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_player_endpoint(player_id: int):
+@router.delete(
+    "/{player_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete player",
+    description="Deletes a player by player ID. This operation cannot be undone.",
+)
+async def delete_player_endpoint(
+    player_id: int = Path(..., gt=0, description="The unique identifier of the player to delete")
+):
     """
     Delete a player by player ID.
 
@@ -213,23 +411,51 @@ def delete_player_endpoint(player_id: int):
     player_id : int
         The unique identifier of the player to delete.
 
+    Returns
+    -------
+    None
+        No content is returned on successful deletion.
+
     Raises
     ------
     HTTPException
         If the player is not found.
     """
-    deleted = delete_player(player_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Player not found")
-    return None
+    try:
+        # ##: First check if the player exists.
+        existing_player = get_player(player_id)
+        if not existing_player:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Player with ID {player_id} not found")
 
-@router.get("/{player_id}/matches", response_model=List[MatchResponse])
-def get_player_matches_endpoint(
-    player_id: int, 
+        # ##: Delete the player.
+        success = delete_player(player_id)
+        if not success:
+            logger.error(f"Failed to delete player ID {player_id}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete player")
+
+        return None
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception(f"Unexpected error deleting player {player_id}: {str(exc)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while deleting the player",
+        )
+
+
+@router.get(
+    "/{player_id}/matches",
+    response_model=List[MatchResponse],
+    summary="Get player match history",
+    description="Retrieves a player's match history with pagination and date filtering options.",
+)
+async def get_player_matches_endpoint(
+    player_id: int = Path(..., gt=0, description="The unique identifier of the player"),
     limit: int = Query(10, ge=1, le=100, description="Maximum number of matches to return"),
     offset: int = Query(0, ge=0, description="Number of matches to skip"),
     start_date: Optional[datetime] = Query(None, description="Filter matches after this date"),
-    end_date: Optional[datetime] = Query(None, description="Filter matches before this date")
+    end_date: Optional[datetime] = Query(None, description="Filter matches before this date"),
 ):
     """
     Get match history for a player.
@@ -255,64 +481,74 @@ def get_player_matches_endpoint(
     Raises
     ------
     HTTPException
-        If the player is not found.
+        If the player is not found or an error occurs.
     """
-    # ##: First check if player exists.
-    stats = get_player_stats(player_id)
-    if not stats:
-        raise HTTPException(status_code=404, detail="Player not found")
-    
-    # ##: Get all teams the player is a part of.
-    teams = get_teams_by_player(player_id)
-    if not teams:
-        return []
-    
-    # ##: Get matches for each team and combine results.
-    all_matches = []
-    for team in teams:
-        team_matches = get_matches_by_team(team["team_id"])
-        for match in team_matches:
-            match["player_won"] = match["winner_team_id"] == team["team_id"]
-            all_matches.append(match)
-    
-    # ##: Apply date filters if provided.
-    filtered_matches = all_matches
-    if start_date:
-        filtered_matches = [m for m in filtered_matches if m["played_at"] >= start_date]
-    if end_date:
-        filtered_matches = [m for m in filtered_matches if m["played_at"] <= end_date]
-    
-    # ##: Sort by date (newest first).
-    sorted_matches = sorted(filtered_matches, key=lambda x: x["played_at"], reverse=True)
-    
-    # ##: Apply pagination.
-    paginated_matches = sorted_matches[offset:offset+limit]
-    
-    # ##: Convert to MatchResponse objects.
-    return [
-        MatchResponse(
-            match_id=match["match_id"],
-            winner_team_id=match["winner_team_id"],
-            loser_team_id=match["loser_team_id"],
-            is_fanny=match["is_fanny"],
-            played_at=match["played_at"],
-            year=match["year"],
-            month=match["month"],
-            day=match["day"],
-            player_won=match["player_won"]
+    try:
+        # ##: Validate date range if both are provided.
+        if start_date and end_date and start_date > end_date:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Start date cannot be after end date")
+
+        # ##: First check if the player exists.
+        player = get_player(player_id)
+        if not player:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Player with ID {player_id} not found")
+
+        # ##: Get teams for the player.
+        teams = get_teams_by_player(player_id)
+        if not teams:
+            return []
+
+        # ##: Get matches for each team.
+        matches = []
+        for team in teams:
+            team_matches = get_matches_by_team(team["team_id"], limit, offset, start_date, end_date)
+            if team_matches:
+                matches.extend(team_matches)
+
+        # ##: Sort by date (newest first) and apply pagination.
+        matches.sort(key=lambda x: x["match_date"], reverse=True)
+        matches = matches[offset : offset + limit]
+
+        # ##: Convert to response model.
+        response = []
+        for match in matches:
+            response.append(
+                MatchResponse(
+                    id=match["match_id"],
+                    team1_id=match["team1_id"],
+                    team2_id=match["team2_id"],
+                    team1_score=match["team1_score"],
+                    team2_score=match["team2_score"],
+                    team1_elo_change=match["team1_elo_change"],
+                    team2_elo_change=match["team2_elo_change"],
+                    match_date=match["match_date"],
+                )
+            )
+
+        return response
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception(f"Unexpected error retrieving matches for player {player_id}: {str(exc)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while retrieving player matches",
         )
-        for match in paginated_matches
-    ]
 
 
-@router.get("/{player_id}/elo-history", response_model=List[EloHistoryResponse])
-def get_player_elo_history_endpoint(
-    player_id: int,
+@router.get(
+    "/{player_id}/elo-history",
+    response_model=List[EloHistoryResponse],
+    summary="Get player ELO history",
+    description="Retrieves a player's ELO rating history with pagination, date filtering, and ELO type filtering options.",
+)
+async def get_player_elo_history_endpoint(
+    player_id: int = Path(..., gt=0, description="The unique identifier of the player"),
     limit: int = Query(20, ge=1, le=100, description="Maximum number of history records to return"),
     offset: int = Query(0, ge=0, description="Number of records to skip"),
     start_date: Optional[datetime] = Query(None, description="Filter records after this date"),
     end_date: Optional[datetime] = Query(None, description="Filter records before this date"),
-    elo_type: Optional[str] = Query(None, description="Filter by ELO type ('global' or 'monthly')")
+    elo_type: Optional[str] = Query(None, description="Filter by ELO type ('global' or 'monthly')"),
 ):
     """
     Get ELO history for a player.
@@ -340,47 +576,66 @@ def get_player_elo_history_endpoint(
     Raises
     ------
     HTTPException
-        If the player is not found.
+        If the player is not found or an error occurs.
     """
-    # ##: First check if player exists.
-    stats = get_player_stats(player_id)
-    if not stats:
-        raise HTTPException(status_code=404, detail="Player not found")
-    
-    # ##: Get ELO history with filters.
-    history = get_elo_history(
-        player_id=player_id,
-        limit=limit,
-        offset=offset,
-        start_date=start_date,
-        end_date=end_date,
-        elo_type=elo_type
-    )
-    
-    if not history:
-        return []
-    
-    # ##: Convert to EloHistoryResponse objects.
-    return [
-        EloHistoryResponse(
-            history_id=record["history_id"],
-            player_id=record["player_id"],
-            match_id=record["match_id"],
-            type=record["type"],
-            old_elo=record["old_elo"],
-            new_elo=record["new_elo"],
-            difference=record["difference"],
-            date=record["date"],
-            year=record["year"],
-            month=record["month"],
-            day=record["day"]
+    try:
+        # ##: Validate date range if both are provided.
+        if start_date and end_date and start_date > end_date:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Start date cannot be after end date")
+
+        # ##: Validate ELO type.
+        if elo_type and elo_type not in ["global", "monthly"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid ELO type. Must be 'global' or 'monthly'."
+            )
+
+        # ##: First check if the player exists.
+        player = get_player(player_id)
+        if not player:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Player with ID {player_id} not found")
+
+        # ##: Get ELO history.
+        history = get_elo_history(player_id, limit, offset, start_date, end_date, elo_type)
+
+        # ##: If no history found, return empty list (player exists but has no history).
+        if not history:
+            return []
+
+        # ##: Convert to response model.
+        response = []
+        for record in history:
+            response.append(
+                EloHistoryResponse(
+                    id=record["history_id"],
+                    player_id=record["player_id"],
+                    elo_value=record["elo_value"],
+                    elo_change=record["elo_change"],
+                    match_id=record["match_id"],
+                    elo_type=record["elo_type"],
+                    timestamp=record["timestamp"],
+                )
+            )
+
+        return response
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception(f"Unexpected error retrieving ELO history for player {player_id}: {str(exc)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while retrieving player ELO history",
         )
-        for record in history
-    ]
 
 
-@router.get("/{player_id}/statistics", response_model=Dict[str, Any])
-def get_player_statistics_endpoint(player_id: int) -> Dict[str, Any]:
+@router.get(
+    "/{player_id}/statistics",
+    response_model=Dict[str, Any],
+    summary="Get player statistics",
+    description="Retrieves detailed statistics for a player, including match results, streaks, and ELO rating information.",
+)
+async def get_player_statistics_endpoint(
+    player_id: int = Path(..., gt=0, description="The unique identifier of the player")
+) -> Dict[str, Any]:
     """
     Get detailed statistics for a player.
 
@@ -407,44 +662,73 @@ def get_player_statistics_endpoint(player_id: int) -> Dict[str, Any]:
     Raises
     ------
     HTTPException
-        If the player is not found.
+        If the player is not found or an error occurs.
     """
-    # ##: Get player stats.
-    stats = get_player_stats(player_id)
-    if not stats:
-        raise HTTPException(status_code=404, detail="Player not found")
-    
-    # ##: Get ELO history for additional stats.
-    elo_history = get_player_elo_history(player_id)
-    
-    # ##: Calculate additional statistics.
-    result = {
-        "matches_played": stats["matches_played"],
-        "wins": stats["wins"],
-        "losses": stats["losses"],
-        "win_rate": stats["win_rate"] if "win_rate" in stats else 0,
-    }
-    
-    # ##: Add ELO-based statistics if history exists.
-    if elo_history:
-        # ##: Calculate average ELO change.
-        global_changes = [h["difference"] for h in elo_history if h["type"] == "global"]
-        result["average_elo_change"] = sum(global_changes) / len(global_changes) if global_changes else 0
-        
-        # ##: Find highest and lowest ELO.
-        global_elos = [h["new_elo"] for h in elo_history if h["type"] == "global"]
-        result["highest_elo"] = max(global_elos) if global_elos else stats.get("global_elo", 1000)
-        result["lowest_elo"] = min(global_elos) if global_elos else stats.get("global_elo", 1000)
-    
-    # ##: Get player's teams.
-    teams = get_teams_by_player(player_id)
-    
-    # ##: TODO: Calculate streaks if we have teams and matches.
-    if teams:
-        # ##: This would require additional logic to calculate streaks.
-        # ##: For now, we'll set placeholder values.
-        result["current_streak"] = 0
-        result["best_streak"] = 0
-        result["worst_streak"] = 0
-    
-    return result
+    try:
+        # ##: First check if the player exists.
+        player = get_player(player_id)
+        if not player:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Player with ID {player_id} not found")
+
+        # ##: Get player stats.
+        stats = get_player_stats(player_id)
+        if not stats:
+            logger.error(f"Player found but stats missing for ID: {player_id}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch player statistics"
+            )
+
+        # ##: Get ELO history for additional stats.
+        elo_history = get_player_elo_history(player_id, 1000, 0, None, None, "global")
+
+        # ##: Calculate win rate.
+        matches_played = stats["matches_played"]
+        wins = stats["wins"]
+        losses = matches_played - wins
+        win_rate = (wins / matches_played) * 100 if matches_played > 0 else 0
+
+        # ##: TODO: Calculate streaks and ELO stats.
+        current_streak = 0
+        best_streak = 0
+        worst_streak = 0
+        streak_type = None  # 'win' or 'loss'
+        temp_streak = 0
+
+        # ##: Process ELO history if available.
+        elo_changes = []
+        elo_values = []
+
+        if elo_history:
+            elo_changes = [record["elo_change"] for record in elo_history if record["elo_change"] is not None]
+            elo_values = [record["elo_value"] for record in elo_history if record["elo_value"] is not None]
+
+        avg_elo_change = sum(elo_changes) / len(elo_changes) if elo_changes else 0
+        highest_elo = max(elo_values) if elo_values else stats.get("global_elo", 1000)
+        lowest_elo = min(elo_values) if elo_values else stats.get("global_elo", 1000)
+
+        # ##: Return comprehensive statistics.
+        return {
+            "player_id": player_id,
+            "name": stats["name"],
+            "global_elo": int(stats.get("global_elo", 1000)),
+            "current_month_elo": int(stats.get("current_month_elo", 1000)),
+            "matches_played": matches_played,
+            "wins": wins,
+            "losses": losses,
+            "win_rate": round(win_rate, 2),
+            "current_streak": current_streak,
+            "best_streak": best_streak,
+            "worst_streak": worst_streak,
+            "average_elo_change": round(avg_elo_change, 2),
+            "highest_elo": int(highest_elo),
+            "lowest_elo": int(lowest_elo),
+            "creation_date": stats.get("created_at"),
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception(f"Unexpected error retrieving statistics for player {player_id}: {str(exc)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while retrieving player statistics",
+        )

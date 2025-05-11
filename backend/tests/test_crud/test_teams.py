@@ -176,43 +176,43 @@ class TestTeamCRUD(TestCase):
         p2 = create_player("Bob")
         p3 = create_player("Charlie")
         p4 = create_player("David")
-        
+
         # Create teams with different combinations
         t1 = create_team(p1, p2)  # Alice and Bob
         t2 = create_team(p1, p3)  # Alice and Charlie
         t3 = create_team(p3, p4)  # Charlie and David (no Alice)
-        
+
         # Test getting teams for Alice (should be in 2 teams)
         alice_teams = get_teams_by_player(p1)
         self.assertEqual(len(alice_teams), 2)
         team_ids = {team["team_id"] for team in alice_teams}
         self.assertIn(t1, team_ids)
         self.assertIn(t2, team_ids)
-        
+
         # Check that partner_id and is_player1 fields are correctly set
         for team in alice_teams:
             if team["team_id"] == t1:
                 self.assertEqual(team["partner_id"], p2)  # Bob is partner
             elif team["team_id"] == t2:
                 self.assertEqual(team["partner_id"], p3)  # Charlie is partner
-            
+
             # Alice should be player1 in both teams since we created them with Alice as player1
             self.assertTrue(team["is_player1"])
             self.assertEqual(team["player1_id"], p1)
-        
+
         # Test getting teams for Charlie (should be in 2 teams)
         charlie_teams = get_teams_by_player(p3)
         self.assertEqual(len(charlie_teams), 2)
         team_ids = {team["team_id"] for team in charlie_teams}
         self.assertIn(t2, team_ids)
         self.assertIn(t3, team_ids)
-        
+
         # Test getting teams for David (should be in 1 team)
         david_teams = get_teams_by_player(p4)
         self.assertEqual(len(david_teams), 1)
         self.assertEqual(david_teams[0]["team_id"], t3)
         self.assertEqual(david_teams[0]["partner_id"], p3)  # Charlie is partner
-        
+
         # Test getting teams for non-existent player
         nonexistent_teams = get_teams_by_player(9999)
         self.assertEqual(len(nonexistent_teams), 0)

@@ -8,7 +8,11 @@ from unittest import TestCase, main
 
 from pydantic import BaseModel, Field, ValidationError
 
-from app.models.periodic_ranking import PeriodicRankingCreate, PeriodicRankingResponse, PeriodicRankingUpdate
+from app.models.periodic_ranking import (
+    PeriodicRankingCreate,
+    PeriodicRankingResponse,
+    PeriodicRankingUpdate,
+)
 
 
 class MockPlayerForRanking(BaseModel):

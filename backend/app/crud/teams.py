@@ -314,17 +314,19 @@ def get_teams_by_player(player_id: int) -> List[Dict[str, Any]]:
 
         teams = []
         for result in results:
-            teams.append({
-                "team_id": result[0],
-                "player1_id": result[1],
-                "player2_id": result[2],
-                "global_elo": result[3],
-                "current_month_elo": result[4],
-                "created_at": result[5],
-                "last_match_at": result[6],
-                "is_player1": result[1] == player_id,
-                "partner_id": result[2] if result[1] == player_id else result[1]
-            })
+            teams.append(
+                {
+                    "team_id": result[0],
+                    "player1_id": result[1],
+                    "player2_id": result[2],
+                    "global_elo": result[3],
+                    "current_month_elo": result[4],
+                    "created_at": result[5],
+                    "last_match_at": result[6],
+                    "is_player1": result[1] == player_id,
+                    "partner_id": result[2] if result[1] == player_id else result[1],
+                }
+            )
 
         return teams
     except Exception as exc:

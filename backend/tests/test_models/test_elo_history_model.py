@@ -8,7 +8,11 @@ from unittest import TestCase, main
 
 from pydantic import ValidationError
 
-from app.models.elo_history import EloHistoryCreate, EloHistoryResponse, EloHistoryUpdate
+from app.models.elo_history import (
+    EloHistoryCreate,
+    EloHistoryResponse,
+    EloHistoryUpdate,
+)
 
 
 class TestEloHistoryModels(TestCase):

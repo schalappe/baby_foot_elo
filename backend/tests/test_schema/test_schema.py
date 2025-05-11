@@ -95,14 +95,10 @@ class TestSchemaDefinitions(TestCase):
     def tearDownClass(cls):
         cls.con.close()
 
-    def assertColumn(
-        self, table_info, col_name, expected_type, is_notnull, dflt_val_contains=None, is_pk=False
-    ):
+    def assertColumn(self, table_info, col_name, expected_type, is_notnull, dflt_val_contains=None, is_pk=False):
         self.assertIn(col_name, table_info, f"Column {col_name} not found.")
         col = table_info[col_name]
-        self.assertEqual(
-            col["type"].upper(), expected_type.upper(), f"Type mismatch for {col_name}"
-        )
+        self.assertEqual(col["type"].upper(), expected_type.upper(), f"Type mismatch for {col_name}")
         self.assertEqual(col["notnull"], is_notnull, f"NOT NULL constraint mismatch for {col_name}")
         if dflt_val_contains:
             self.assertIsNotNone(col["dflt_value"], f"{col_name} default value is None")
@@ -117,9 +113,7 @@ class TestSchemaDefinitions(TestCase):
 
     def test_players_table(self):
         table_info = get_table_info(self.con, "Players")
-        self.assertColumn(
-            table_info, "player_id", "INTEGER", True, "nextval('seq_players_id')", True
-        )
+        self.assertColumn(table_info, "player_id", "INTEGER", True, "nextval('seq_players_id')", True)
         self.assertColumn(table_info, "name", "VARCHAR", True)
         self.assertColumn(table_info, "global_elo", "INTEGER", True, "1000")
         self.assertColumn(table_info, "current_month_elo", "INTEGER", True, "1000")
@@ -139,45 +133,29 @@ class TestSchemaDefinitions(TestCase):
 
         # ##: Test Foreign Keys (simplified check by string presence).
         fks = get_foreign_key_constraints(self.con, "Teams")
-        self.assertTrue(
-            any("FOREIGN KEY (player1_id) REFERENCES Players(player_id)" in fk for fk in fks)
-        )
-        self.assertTrue(
-            any("FOREIGN KEY (player2_id) REFERENCES Players(player_id)" in fk for fk in fks)
-        )
+        self.assertTrue(any("FOREIGN KEY (player1_id) REFERENCES Players(player_id)" in fk for fk in fks))
+        self.assertTrue(any("FOREIGN KEY (player2_id) REFERENCES Players(player_id)" in fk for fk in fks))
 
         # ##: Test UNIQUE constraint (player1_id, player2_id).
         self.con.execute("INSERT INTO Players (name) VALUES ('P1'), ('P2')")
         p1_id = self.con.execute("SELECT player_id FROM Players WHERE name='P1'").fetchone()[0]
         p2_id = self.con.execute("SELECT player_id FROM Players WHERE name='P2'").fetchone()[0]
         self.con.execute("INSERT INTO Teams (player1_id, player2_id) VALUES (?, ?)", (p1_id, p2_id))
-        with self.assertRaises(
-            duckdb.ConstraintException, msg="UNIQUE constraint on (player1_id, player2_id) failed"
-        ):
-            self.con.execute(
-                "INSERT INTO Teams (player1_id, player2_id) VALUES (?, ?)", (p1_id, p2_id)
-            )
+        with self.assertRaises(duckdb.ConstraintException, msg="UNIQUE constraint on (player1_id, player2_id) failed"):
+            self.con.execute("INSERT INTO Teams (player1_id, player2_id) VALUES (?, ?)", (p1_id, p2_id))
         with self.assertRaises(
             duckdb.ConstraintException,
             msg="UNIQUE constraint on (player1_id, player2_id) failed for swapped players",
         ):
-            self.con.execute(
-                "INSERT INTO Teams (player1_id, player2_id) VALUES (?, ?)", (p2_id, p1_id)
-            )
+            self.con.execute("INSERT INTO Teams (player1_id, player2_id) VALUES (?, ?)", (p2_id, p1_id))
 
         # ##: Test CHECK constraint (player1_id <> player2_id).
-        with self.assertRaises(
-            duckdb.ConstraintException, msg="CHECK constraint player1_id <> player2_id failed"
-        ):
-            self.con.execute(
-                "INSERT INTO Teams (player1_id, player2_id) VALUES (?, ?)", (p1_id, p1_id)
-            )
+        with self.assertRaises(duckdb.ConstraintException, msg="CHECK constraint player1_id <> player2_id failed"):
+            self.con.execute("INSERT INTO Teams (player1_id, player2_id) VALUES (?, ?)", (p1_id, p1_id))
 
     def test_matches_table(self):
         table_info = get_table_info(self.con, "Matches")
-        self.assertColumn(
-            table_info, "match_id", "INTEGER", True, "nextval('seq_matches_id')", True
-        )
+        self.assertColumn(table_info, "match_id", "INTEGER", True, "nextval('seq_matches_id')", True)
         self.assertColumn(table_info, "winner_team_id", "INTEGER", True)
         self.assertColumn(table_info, "loser_team_id", "INTEGER", True)
         self.assertColumn(table_info, "is_fanny", "BOOLEAN", True, "CAST('f' AS BOOLEAN)")
@@ -187,12 +165,8 @@ class TestSchemaDefinitions(TestCase):
         self.assertColumn(table_info, "day", "INTEGER", True)
 
         fks = get_foreign_key_constraints(self.con, "Matches")
-        self.assertTrue(
-            any("FOREIGN KEY (winner_team_id) REFERENCES Teams(team_id)" in fk for fk in fks)
-        )
-        self.assertTrue(
-            any("FOREIGN KEY (loser_team_id) REFERENCES Teams(team_id)" in fk for fk in fks)
-        )
+        self.assertTrue(any("FOREIGN KEY (winner_team_id) REFERENCES Teams(team_id)" in fk for fk in fks))
+        self.assertTrue(any("FOREIGN KEY (loser_team_id) REFERENCES Teams(team_id)" in fk for fk in fks))
 
         indexes = get_indexes_info(self.con, "Matches")
         self.assertIn("idx_matches_winner_team_id", indexes)
@@ -204,9 +178,7 @@ class TestSchemaDefinitions(TestCase):
         p3_id = self.con.execute("SELECT player_id FROM Players WHERE name='P3'").fetchone()[0]
         p4_id = self.con.execute("SELECT player_id FROM Players WHERE name='P4'").fetchone()[0]
         self.con.execute("INSERT INTO Teams (player1_id, player2_id) VALUES (?, ?)", (p3_id, p4_id))
-        t1_id = self.con.execute(
-            "SELECT team_id FROM Teams WHERE player1_id=?", (p3_id,)
-        ).fetchone()[0]
+        t1_id = self.con.execute("SELECT team_id FROM Teams WHERE player1_id=?", (p3_id,)).fetchone()[0]
         with self.assertRaises(
             duckdb.ConstraintException,
             msg="CHECK constraint winner_team_id <> loser_team_id failed",
@@ -218,9 +190,7 @@ class TestSchemaDefinitions(TestCase):
 
     def test_elo_history_table(self):
         table_info = get_table_info(self.con, "ELO_History")
-        self.assertColumn(
-            table_info, "history_id", "INTEGER", True, "nextval('seq_elo_history_id')", True
-        )
+        self.assertColumn(table_info, "history_id", "INTEGER", True, "nextval('seq_elo_history_id')", True)
         self.assertColumn(table_info, "player_id", "INTEGER", True)
         self.assertColumn(table_info, "match_id", "INTEGER", True)
         self.assertColumn(table_info, "type", "VARCHAR", True)
@@ -233,12 +203,8 @@ class TestSchemaDefinitions(TestCase):
         self.assertColumn(table_info, "day", "INTEGER", True)
 
         fks = get_foreign_key_constraints(self.con, "ELO_History")
-        self.assertTrue(
-            any("FOREIGN KEY (player_id) REFERENCES Players(player_id)" in fk for fk in fks)
-        )
-        self.assertTrue(
-            any("FOREIGN KEY (match_id) REFERENCES Matches(match_id)" in fk for fk in fks)
-        )
+        self.assertTrue(any("FOREIGN KEY (player_id) REFERENCES Players(player_id)" in fk for fk in fks))
+        self.assertTrue(any("FOREIGN KEY (match_id) REFERENCES Matches(match_id)" in fk for fk in fks))
 
         indexes = get_indexes_info(self.con, "ELO_History")
         self.assertIn("idx_elohist_player_id", indexes)
@@ -247,9 +213,7 @@ class TestSchemaDefinitions(TestCase):
 
     def test_periodic_rankings_table(self):
         table_info = get_table_info(self.con, "Periodic_Rankings")
-        self.assertColumn(
-            table_info, "ranking_id", "INTEGER", True, "nextval('seq_periodic_rankings_id')", True
-        )
+        self.assertColumn(table_info, "ranking_id", "INTEGER", True, "nextval('seq_periodic_rankings_id')", True)
         self.assertColumn(table_info, "player_id", "INTEGER", True)
         self.assertColumn(table_info, "year", "INTEGER", True)
         self.assertColumn(table_info, "month", "INTEGER", True)
@@ -262,9 +226,7 @@ class TestSchemaDefinitions(TestCase):
         self.assertColumn(table_info, "losses", "INTEGER", True)
 
         fks = get_foreign_key_constraints(self.con, "Periodic_Rankings")
-        self.assertTrue(
-            any("FOREIGN KEY (player_id) REFERENCES Players(player_id)" in fk for fk in fks)
-        )
+        self.assertTrue(any("FOREIGN KEY (player_id) REFERENCES Players(player_id)" in fk for fk in fks))
 
         indexes = get_indexes_info(self.con, "Periodic_Rankings")
         self.assertIn("idx_periodic_rankings_player_id", indexes)
@@ -281,9 +243,7 @@ class TestSchemaDefinitions(TestCase):
             "INSERT INTO Periodic_Rankings (player_id, year, month, day, initial_elo, final_elo, ranking, matches_played, wins, losses) VALUES (?, 2024, 1, 1, 1000, 1010, 1, 1, 1, 0)",
             (p_id,),
         )
-        with self.assertRaises(
-            duckdb.ConstraintException, msg="UNIQUE constraint on Periodic_Rankings failed"
-        ):
+        with self.assertRaises(duckdb.ConstraintException, msg="UNIQUE constraint on Periodic_Rankings failed"):
             self.con.execute(
                 "INSERT INTO Periodic_Rankings (player_id, year, month, day, initial_elo, final_elo, ranking, matches_played, wins, losses) VALUES (?, 2024, 1, 1, 1000, 1010, 1, 1, 1, 0)",
                 (p_id,),
@@ -319,15 +279,9 @@ class TestSchemaDefinitions(TestCase):
 
         # ##: Test UNIQUE constraint (team_id, year, month, day).
         self.con.execute("INSERT INTO Players (name) VALUES ('TPR_P1'), ('TPR_P2')")
-        tpr_p1_id = self.con.execute(
-            "SELECT player_id FROM Players WHERE name='TPR_P1'"
-        ).fetchone()[0]
-        tpr_p2_id = self.con.execute(
-            "SELECT player_id FROM Players WHERE name='TPR_P2'"
-        ).fetchone()[0]
-        self.con.execute(
-            "INSERT INTO Teams (player1_id, player2_id) VALUES (?,?)", (tpr_p1_id, tpr_p2_id)
-        )
+        tpr_p1_id = self.con.execute("SELECT player_id FROM Players WHERE name='TPR_P1'").fetchone()[0]
+        tpr_p2_id = self.con.execute("SELECT player_id FROM Players WHERE name='TPR_P2'").fetchone()[0]
+        self.con.execute("INSERT INTO Teams (player1_id, player2_id) VALUES (?,?)", (tpr_p1_id, tpr_p2_id))
         t_id = self.con.execute(
             "SELECT team_id FROM Teams WHERE player1_id=? AND player2_id=? LIMIT 1",
             (tpr_p1_id, tpr_p2_id),
@@ -336,9 +290,7 @@ class TestSchemaDefinitions(TestCase):
             "INSERT INTO Team_Periodic_Rankings (team_id, year, month, day, initial_elo, final_elo, ranking, matches_played, wins, losses) VALUES (?, 2024, 1, 1, 1000.0, 1010.0, 1, 1, 1, 0)",
             (t_id,),
         )
-        with self.assertRaises(
-            duckdb.ConstraintException, msg="UNIQUE constraint on Team_Periodic_Rankings failed"
-        ):
+        with self.assertRaises(duckdb.ConstraintException, msg="UNIQUE constraint on Team_Periodic_Rankings failed"):
             self.con.execute(
                 "INSERT INTO Team_Periodic_Rankings (team_id, year, month, day, initial_elo, final_elo, ranking, matches_played, wins, losses) VALUES (?, 2024, 1, 1, 1000.0, 1010.0, 1, 1, 1, 0)",
                 (t_id,),
