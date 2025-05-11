@@ -12,7 +12,6 @@ CREATE TABLE IF NOT EXISTS ELO_History (
     history_id INTEGER PRIMARY KEY DEFAULT nextval('seq_elo_history_id'),
     player_id INTEGER NOT NULL,
     match_id INTEGER NOT NULL,
-    type VARCHAR NOT NULL, -- 'global' or 'monthly'
     old_elo INTEGER NOT NULL,
     new_elo INTEGER NOT NULL,
     difference INTEGER NOT NULL,

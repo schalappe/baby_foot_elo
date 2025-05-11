@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS Teams (
     player1_id INTEGER NOT NULL,
     player2_id INTEGER NOT NULL,
     global_elo FLOAT NOT NULL DEFAULT 1000.0,
-    current_month_elo FLOAT NOT NULL DEFAULT 1000.0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_match_at TIMESTAMP,
     FOREIGN KEY (player1_id) REFERENCES Players(player_id),

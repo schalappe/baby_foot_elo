@@ -5,7 +5,7 @@ Unit tests for the matches router.
 
 import unittest
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 from unittest.mock import MagicMock, patch
 
 from fastapi import HTTPException
@@ -36,9 +36,16 @@ class TestMatchesRouter(unittest.TestCase):
     @patch("app.routers.matches.update_team")
     @patch("app.routers.matches.get_match")
     async def test_record_match_success(
-        self, mock_get_match, mock_update_team, mock_update_player, mock_calculate_team_elo, 
-        mock_process_match_result, mock_batch_record_elo_updates, mock_create_match, 
-        mock_get_player, mock_get_team
+        self,
+        mock_get_match,
+        mock_update_team,
+        mock_update_player,
+        mock_calculate_team_elo,
+        mock_process_match_result,
+        mock_batch_record_elo_updates,
+        mock_create_match,
+        mock_get_player,
+        mock_get_team,
     ):
         """
         Test successful match recording with ELO updates.
@@ -153,8 +160,12 @@ class TestMatchesRouter(unittest.TestCase):
         mock_create_match.assert_called_once()
         mock_process_match_result.assert_called_once()
         mock_batch_record_elo_updates.assert_called_once()
-        mock_update_team.assert_any_call(1, global_elo=1215, last_match_at=mock_get_match.return_value["played_at"].isoformat())
-        mock_update_team.assert_any_call(2, global_elo=1085, last_match_at=mock_get_match.return_value["played_at"].isoformat())
+        mock_update_team.assert_any_call(
+            1, global_elo=1215, last_match_at=mock_get_match.return_value["played_at"].isoformat()
+        )
+        mock_update_team.assert_any_call(
+            2, global_elo=1085, last_match_at=mock_get_match.return_value["played_at"].isoformat()
+        )
 
     @patch("app.routers.matches.get_team")
     def test_record_match_team_not_found(self, mock_get_team):
@@ -231,10 +242,10 @@ class TestMatchesRouter(unittest.TestCase):
 
         # Mock empty ELO history
         mock_get_elo_history.return_value = []
-        
+
         # Mock team data
         mock_get_team.return_value = None
-        
+
         # Mock match not found
         mock_get_match.side_effect = [
             {
@@ -264,7 +275,9 @@ class TestMatchesRouter(unittest.TestCase):
     @patch("app.routers.matches.get_matches_by_team")
     @patch("app.routers.matches.get_matches_by_date_range")
     @patch("app.routers.matches.get_fanny_matches")
-    def test_list_matches(self, mock_get_fanny_matches, mock_get_matches_by_date_range, mock_get_matches_by_team, mock_get_all_matches):
+    def test_list_matches(
+        self, mock_get_fanny_matches, mock_get_matches_by_date_range, mock_get_matches_by_team, mock_get_all_matches
+    ):
         """
         Test listing matches with pagination and filtering.
         """

@@ -49,8 +49,6 @@ class TestSchemaDefinitions(TestCase):
             schema.CREATE_SEQ_TEAMS,
             schema.CREATE_SEQ_MATCHES,
             schema.CREATE_SEQ_ELO_HISTORY,
-            schema.CREATE_SEQ_PERIODIC_RANKINGS,
-            schema.CREATE_SEQ_TEAM_PERIODIC_RANKINGS,
         ]
         for sql in sequences:
             cls.con.execute(sql)
@@ -60,8 +58,6 @@ class TestSchemaDefinitions(TestCase):
             schema.CREATE_TEAMS_TABLE,
             schema.CREATE_MATCHES_TABLE,
             schema.CREATE_ELO_HISTORY_TABLE,
-            schema.CREATE_PERIODIC_RANKINGS_TABLE,
-            schema.CREATE_TEAM_PERIODIC_RANKINGS_TABLE,
         ]
         for sql in tables:
             try:
@@ -79,10 +75,6 @@ class TestSchemaDefinitions(TestCase):
             schema.CREATE_INDEX_ELOHIST_PLAYER_ID,
             schema.CREATE_INDEX_ELOHIST_MATCH_ID,
             schema.CREATE_INDEX_ELOHIST_DATE,
-            schema.CREATE_INDEX_PERIODIC_RANKINGS_PLAYER_ID,
-            schema.CREATE_INDEX_PERIODIC_RANKINGS_PERIOD,
-            schema.CREATE_INDEX_TEAM_PERIODIC_RANKINGS_TEAM_ID,
-            schema.CREATE_INDEX_TEAM_PERIODIC_RANKINGS_PERIOD,
         ]
         for sql in indexes:
             try:
@@ -116,7 +108,6 @@ class TestSchemaDefinitions(TestCase):
         self.assertColumn(table_info, "player_id", "INTEGER", True, "nextval('seq_players_id')", True)
         self.assertColumn(table_info, "name", "VARCHAR", True)
         self.assertColumn(table_info, "global_elo", "INTEGER", True, "1000")
-        self.assertColumn(table_info, "current_month_elo", "INTEGER", True, "1000")
         self.assertColumn(table_info, "created_at", "TIMESTAMP", True, "CURRENT_TIMESTAMP")
         indexes = get_indexes_info(self.con, "Players")
         self.assertIn("idx_players_name", indexes)
@@ -127,7 +118,6 @@ class TestSchemaDefinitions(TestCase):
         self.assertColumn(table_info, "player1_id", "INTEGER", True)
         self.assertColumn(table_info, "player2_id", "INTEGER", True)
         self.assertColumn(table_info, "global_elo", "FLOAT", True, "1000.0")
-        self.assertColumn(table_info, "current_month_elo", "FLOAT", True, "1000.0")
         self.assertColumn(table_info, "created_at", "TIMESTAMP", True, "CURRENT_TIMESTAMP")
         self.assertColumn(table_info, "last_match_at", "TIMESTAMP", False)
 
@@ -193,7 +183,6 @@ class TestSchemaDefinitions(TestCase):
         self.assertColumn(table_info, "history_id", "INTEGER", True, "nextval('seq_elo_history_id')", True)
         self.assertColumn(table_info, "player_id", "INTEGER", True)
         self.assertColumn(table_info, "match_id", "INTEGER", True)
-        self.assertColumn(table_info, "type", "VARCHAR", True)
         self.assertColumn(table_info, "old_elo", "INTEGER", True)
         self.assertColumn(table_info, "new_elo", "INTEGER", True)
         self.assertColumn(table_info, "difference", "INTEGER", True)
@@ -210,91 +199,6 @@ class TestSchemaDefinitions(TestCase):
         self.assertIn("idx_elohist_player_id", indexes)
         self.assertIn("idx_elohist_match_id", indexes)
         self.assertIn("idx_elohist_date", indexes)
-
-    def test_periodic_rankings_table(self):
-        table_info = get_table_info(self.con, "Periodic_Rankings")
-        self.assertColumn(table_info, "ranking_id", "INTEGER", True, "nextval('seq_periodic_rankings_id')", True)
-        self.assertColumn(table_info, "player_id", "INTEGER", True)
-        self.assertColumn(table_info, "year", "INTEGER", True)
-        self.assertColumn(table_info, "month", "INTEGER", True)
-        self.assertColumn(table_info, "day", "INTEGER", True)
-        self.assertColumn(table_info, "initial_elo", "INTEGER", True)
-        self.assertColumn(table_info, "final_elo", "INTEGER", True)
-        self.assertColumn(table_info, "ranking", "INTEGER", True)
-        self.assertColumn(table_info, "matches_played", "INTEGER", True)
-        self.assertColumn(table_info, "wins", "INTEGER", True)
-        self.assertColumn(table_info, "losses", "INTEGER", True)
-
-        fks = get_foreign_key_constraints(self.con, "Periodic_Rankings")
-        self.assertTrue(any("FOREIGN KEY (player_id) REFERENCES Players(player_id)" in fk for fk in fks))
-
-        indexes = get_indexes_info(self.con, "Periodic_Rankings")
-        self.assertIn("idx_periodic_rankings_player_id", indexes)
-        self.assertIn("idx_periodic_rankings_period", indexes)
-
-        # ##: Test UNIQUE constraint (player_id, year, month, day).
-        self.con.execute(
-            "INSERT INTO Players (name, global_elo, current_month_elo) VALUES ('Test Player for Rankings', 1000, 1000)"
-        )
-        p_id = self.con.execute(
-            "SELECT player_id FROM Players WHERE name = 'Test Player for Rankings' LIMIT 1"
-        ).fetchone()[0]
-        self.con.execute(
-            "INSERT INTO Periodic_Rankings (player_id, year, month, day, initial_elo, final_elo, ranking, matches_played, wins, losses) VALUES (?, 2024, 1, 1, 1000, 1010, 1, 1, 1, 0)",
-            (p_id,),
-        )
-        with self.assertRaises(duckdb.ConstraintException, msg="UNIQUE constraint on Periodic_Rankings failed"):
-            self.con.execute(
-                "INSERT INTO Periodic_Rankings (player_id, year, month, day, initial_elo, final_elo, ranking, matches_played, wins, losses) VALUES (?, 2024, 1, 1, 1000, 1010, 1, 1, 1, 0)",
-                (p_id,),
-            )
-
-    def test_team_periodic_rankings_table(self):
-        table_info = get_table_info(self.con, "Team_Periodic_Rankings")
-        self.assertColumn(
-            table_info,
-            "team_ranking_id",
-            "INTEGER",
-            True,
-            "nextval('seq_team_periodic_rankings_id')",
-            True,
-        )
-        self.assertColumn(table_info, "team_id", "INTEGER", True)
-        self.assertColumn(table_info, "year", "INTEGER", True)
-        self.assertColumn(table_info, "month", "INTEGER", True)
-        self.assertColumn(table_info, "day", "INTEGER", True)
-        self.assertColumn(table_info, "initial_elo", "FLOAT", True)
-        self.assertColumn(table_info, "final_elo", "FLOAT", True)
-        self.assertColumn(table_info, "ranking", "INTEGER", True)
-        self.assertColumn(table_info, "matches_played", "INTEGER", True)
-        self.assertColumn(table_info, "wins", "INTEGER", True)
-        self.assertColumn(table_info, "losses", "INTEGER", True)
-
-        fks = get_foreign_key_constraints(self.con, "Team_Periodic_Rankings")
-        self.assertTrue(any("FOREIGN KEY (team_id) REFERENCES Teams(team_id)" in fk for fk in fks))
-
-        indexes = get_indexes_info(self.con, "Team_Periodic_Rankings")
-        self.assertIn("idx_team_periodic_rankings_team_id", indexes)
-        self.assertIn("idx_team_periodic_rankings_period", indexes)
-
-        # ##: Test UNIQUE constraint (team_id, year, month, day).
-        self.con.execute("INSERT INTO Players (name) VALUES ('TPR_P1'), ('TPR_P2')")
-        tpr_p1_id = self.con.execute("SELECT player_id FROM Players WHERE name='TPR_P1'").fetchone()[0]
-        tpr_p2_id = self.con.execute("SELECT player_id FROM Players WHERE name='TPR_P2'").fetchone()[0]
-        self.con.execute("INSERT INTO Teams (player1_id, player2_id) VALUES (?,?)", (tpr_p1_id, tpr_p2_id))
-        t_id = self.con.execute(
-            "SELECT team_id FROM Teams WHERE player1_id=? AND player2_id=? LIMIT 1",
-            (tpr_p1_id, tpr_p2_id),
-        ).fetchone()[0]
-        self.con.execute(
-            "INSERT INTO Team_Periodic_Rankings (team_id, year, month, day, initial_elo, final_elo, ranking, matches_played, wins, losses) VALUES (?, 2024, 1, 1, 1000.0, 1010.0, 1, 1, 1, 0)",
-            (t_id,),
-        )
-        with self.assertRaises(duckdb.ConstraintException, msg="UNIQUE constraint on Team_Periodic_Rankings failed"):
-            self.con.execute(
-                "INSERT INTO Team_Periodic_Rankings (team_id, year, month, day, initial_elo, final_elo, ranking, matches_played, wins, losses) VALUES (?, 2024, 1, 1, 1000.0, 1010.0, 1, 1, 1, 0)",
-                (t_id,),
-            )
 
 
 if __name__ == "__main__":
