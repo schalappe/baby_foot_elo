@@ -63,7 +63,8 @@ def create_player_endpoint(player: PlayerCreate):
     return PlayerResponse(
         id=stats["player_id"],
         name=stats["name"],
-        elo=int(stats.get("current_elo", 1000)),
+        global_elo=int(stats.get("global_elo", 1000)),
+        current_month_elo=int(stats.get("current_month_elo", 1000)),
         creation_date=stats.get("created_at"),
         matches_played=stats["matches_played"],
         wins=stats["wins"],
@@ -94,7 +95,8 @@ def list_players_endpoint():
             PlayerResponse(
                 id=pid,
                 name=stats["name"],
-                elo=int(stats.get("current_elo", 1000)),
+                global_elo=int(stats.get("global_elo", 1000)),
+                current_month_elo=int(stats.get("current_month_elo", 1000)),
                 creation_date=stats.get("created_at"),
                 matches_played=stats["matches_played"],
                 wins=stats["wins"],
@@ -132,7 +134,8 @@ def get_player_endpoint(player_id: int):
     return PlayerResponse(
         id=stats["player_id"],
         name=stats["name"],
-        elo=int(stats.get("current_elo", 1000)),
+        global_elo=int(stats.get("global_elo", 1000)),
+        current_month_elo=int(stats.get("current_month_elo", 1000)),
         creation_date=stats.get("created_at"),
         matches_played=stats["matches_played"],
         wins=stats["wins"],
@@ -182,7 +185,8 @@ def update_player_endpoint(player_id: int, player: PlayerUpdate):
     return PlayerResponse(
         id=stats["player_id"],
         name=stats["name"],
-        elo=int(stats.get("current_elo", 1000)),
+        global_elo=int(stats.get("global_elo", 1000)),
+        current_month_elo=int(stats.get("current_month_elo", 1000)),
         creation_date=stats.get("created_at"),
         matches_played=stats["matches_played"],
         wins=stats["wins"],
