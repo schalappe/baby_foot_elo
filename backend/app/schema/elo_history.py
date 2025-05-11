@@ -20,8 +20,8 @@ CREATE TABLE IF NOT EXISTS ELO_History (
     year INTEGER NOT NULL,
     month INTEGER NOT NULL,
     day INTEGER NOT NULL,
-    FOREIGN KEY (player_id) REFERENCES Players(player_id),
-    FOREIGN KEY (match_id) REFERENCES Matches(match_id)
+    FOREIGN KEY (player_id) REFERENCES Players(player_id) ON DELETE CASCADE,
+    FOREIGN KEY (match_id) REFERENCES Matches(match_id) ON DELETE CASCADE
 );
 """
 
