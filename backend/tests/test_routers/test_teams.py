@@ -463,5 +463,110 @@ class TestTeamsRouter(TestCase):
         mock_delete_team.assert_called_once_with(1)
 
 
+    @patch("app.routers.teams.get_team_rankings")
+    @patch("app.routers.teams.get_player")
+    async def test_get_team_rankings(self, mock_get_player, mock_get_team_rankings):
+        """
+        Test getting team rankings.
+        """
+        # Mock team rankings retrieval
+        mock_get_team_rankings.return_value = [
+            {
+                "team_id": 1,
+                "player1_id": 1,
+                "player2_id": 2,
+                "global_elo": 1500.0,
+                "current_month_elo": 1450.0,
+                "created_at": "2025-01-01T00:00:00",
+                "last_match_at": "2025-01-10T00:00:00",
+                "rank": 1
+            },
+            {
+                "team_id": 2,
+                "player1_id": 3,
+                "player2_id": 4,
+                "global_elo": 1400.0,
+                "current_month_elo": 1350.0,
+                "created_at": "2025-01-02T00:00:00",
+                "last_match_at": "2025-01-09T00:00:00",
+                "rank": 2
+            }
+        ]
+        
+        # Mock player retrieval
+        mock_get_player.side_effect = [
+            {
+                "player_id": 1,
+                "name": "Player 1",
+                "global_elo": 1500,
+                "current_month_elo": 1450,
+                "matches_played": 10,
+                "wins": 7,
+                "losses": 3,
+                "creation_date": "2025-01-01T00:00:00"
+            },
+            {
+                "player_id": 2,
+                "name": "Player 2",
+                "global_elo": 1500,
+                "current_month_elo": 1450,
+                "matches_played": 10,
+                "wins": 7,
+                "losses": 3,
+                "creation_date": "2025-01-01T00:00:00"
+            },
+            {
+                "player_id": 3,
+                "name": "Player 3",
+                "global_elo": 1400,
+                "current_month_elo": 1350,
+                "matches_played": 8,
+                "wins": 4,
+                "losses": 4,
+                "creation_date": "2025-01-01T00:00:00"
+            },
+            {
+                "player_id": 4,
+                "name": "Player 4",
+                "global_elo": 1400,
+                "current_month_elo": 1350,
+                "matches_played": 8,
+                "wins": 4,
+                "losses": 4,
+                "creation_date": "2025-01-01T00:00:00"
+            }
+        ]
+        
+        # Make request
+        response = await self.client.get("/api/v1/teams/rankings")
+        
+        # Verify response
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.json()), 2)
+        self.assertEqual(response.json()[0]["team_id"], 1)
+        self.assertEqual(response.json()[1]["team_id"], 2)
+        
+        # Verify mocks were called correctly
+        mock_get_team_rankings.assert_called_once_with(limit=100, use_monthly_elo=False)
+        self.assertEqual(mock_get_player.call_count, 4)
+    
+    @patch("app.routers.teams.get_team_rankings")
+    async def test_get_team_rankings_with_params(self, mock_get_team_rankings):
+        """
+        Test getting team rankings with custom parameters.
+        """
+        # Mock team rankings retrieval
+        mock_get_team_rankings.return_value = []
+        
+        # Make request with custom parameters
+        response = await self.client.get("/api/v1/teams/rankings?limit=50&use_monthly_elo=true")
+        
+        # Verify response
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Verify mock was called with correct parameters
+        mock_get_team_rankings.assert_called_once_with(limit=50, use_monthly_elo=True)
+
+
 if __name__ == "__main__":
     main()

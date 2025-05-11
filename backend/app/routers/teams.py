@@ -3,21 +3,30 @@
 Router for team-related endpoints.
 """
 
+from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Query, status
 from loguru import logger
 
+from app.crud.matches import create_match
 from app.crud.players import get_player
 from app.crud.teams import (
     create_team,
     delete_team,
     get_all_teams,
     get_team,
+    get_team_rankings,
     get_teams_by_player,
+    update_team,
 )
+from app.models.match import MatchCreate, MatchResponse
 from app.models.team import TeamCreate, TeamResponse
-from app.services.elo import calculate_team_elo
+from app.services.elo import (
+    calculate_elo_change,
+    calculate_team_elo,
+    calculate_win_probability,
+)
 
 router = APIRouter(
     prefix="/api/v1/teams",
@@ -200,6 +209,45 @@ async def get_team_endpoint(team_id: int):
     response.player2 = get_player(response.player2_id)
 
     return response
+
+
+@router.get(
+    "/rankings",
+    response_model=List[TeamResponse],
+    summary="Get team rankings",
+    description="Get teams sorted by ELO rating (global or monthly).",
+)
+async def get_team_rankings_endpoint(
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of teams to return"),
+    use_monthly_elo: bool = Query(False, description="If True, sort by current month ELO instead of global ELO"),
+):
+    """
+    Get teams sorted by ELO rating.
+
+    Parameters
+    ----------
+    limit : int, optional
+        Maximum number of teams to return, by default 100
+    use_monthly_elo : bool, optional
+        If True, sort by current_month_elo instead of global_elo, by default False
+
+    Returns
+    -------
+    List[TeamResponse]
+        List of teams sorted by ELO in descending order with rank information
+    """
+    # Get ranked teams from database
+    teams_data = get_team_rankings(limit=limit, use_monthly_elo=use_monthly_elo)
+
+    # Populate player details for each team
+    result = []
+    for team_data in teams_data:
+        team = TeamResponse(**team_data)
+        team.player1 = get_player(team.player1_id)
+        team.player2 = get_player(team.player2_id)
+        result.append(team)
+
+    return result
 
 
 @router.delete(

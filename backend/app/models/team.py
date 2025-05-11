@@ -101,6 +101,8 @@ class TeamResponse(TeamBase):
         Detailed information for player 1 (populated by service layer).
     player2 : Optional[PlayerResponse]
         Detailed information for player 2 (populated by service layer).
+    rank : Optional[int]
+        Ranking position based on ELO (populated for ranking endpoints).
     """
 
     team_id: int = Field(..., gt=0, description="Unique identifier for the team")
@@ -111,5 +113,6 @@ class TeamResponse(TeamBase):
 
     player1: Optional[PlayerResponse] = Field(default=None, description="Details for player 1")
     player2: Optional[PlayerResponse] = Field(default=None, description="Details for player 2")
+    rank: Optional[int] = Field(default=None, description="Ranking position based on ELO")
 
     model_config = {"from_attributes": True}

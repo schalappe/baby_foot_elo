@@ -332,3 +332,61 @@ def get_teams_by_player(player_id: int) -> List[Dict[str, Any]]:
     except Exception as exc:
         logger.error(f"Failed to get teams for player ID {player_id}: {exc}")
         return []
+
+
+@with_retry(max_retries=3, retry_delay=0.5)
+def get_team_rankings(limit: int = 100, use_monthly_elo: bool = False) -> List[Dict[str, Any]]:
+    """
+    Get teams sorted by ELO rating (global or monthly).
+
+    Parameters
+    ----------
+    limit : int, optional
+        Maximum number of teams to return, by default 100
+    use_monthly_elo : bool, optional
+        If True, sort by current_month_elo instead of global_elo, by default False
+
+    Returns
+    -------
+    List[Dict[str, Any]]
+        List of team dictionaries sorted by ELO in descending order
+    """
+    try:
+        elo_field = "current_month_elo" if use_monthly_elo else "global_elo"
+
+        rows = (
+            SelectQueryBuilder("Teams")
+            .select(
+                "team_id",
+                "player1_id",
+                "player2_id",
+                "global_elo",
+                "current_month_elo",
+                "created_at",
+                "last_match_at",
+            )
+            .order_by_clause(f"{elo_field} DESC")
+            .limit(limit)
+            .execute()
+        )
+
+        return (
+            [
+                {
+                    "team_id": row[0],
+                    "player1_id": row[1],
+                    "player2_id": row[2],
+                    "global_elo": row[3],
+                    "current_month_elo": row[4],
+                    "created_at": row[5],
+                    "last_match_at": row[6],
+                    "rank": idx + 1,
+                }
+                for idx, row in enumerate(rows)
+            ]
+            if rows
+            else []
+        )
+    except Exception as exc:
+        logger.error(f"Failed to get team rankings: {exc}")
+        return []
