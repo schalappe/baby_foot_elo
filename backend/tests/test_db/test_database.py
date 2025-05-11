@@ -25,8 +25,6 @@ class TestDatabase(TestCase):
             "Teams",
             "Matches",
             "ELO_History",
-            "Periodic_Rankings",
-            "Team_Periodic_Rankings",
         }
 
         initialize_database(self.db)
