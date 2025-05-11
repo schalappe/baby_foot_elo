@@ -19,7 +19,7 @@ from .builders import (
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def create_player(name: str, global_elo: int = 1000, current_month_elo: int = 1000) -> Optional[int]:
+def create_player(name: str, global_elo: int = 1000) -> Optional[int]:
     """
     Create a new player in the database.
 
@@ -29,8 +29,6 @@ def create_player(name: str, global_elo: int = 1000, current_month_elo: int = 10
         Name of the player.
     global_elo : int, optional
         Initial global ELO rating (default 1000).
-    current_month_elo : int, optional
-        Initial current month ELO rating (default 1000).
 
     Returns
     -------
@@ -40,7 +38,7 @@ def create_player(name: str, global_elo: int = 1000, current_month_elo: int = 10
     try:
         result = (
             InsertQueryBuilder("Players")
-            .set(name=name, global_elo=global_elo, current_month_elo=current_month_elo)
+            .set(name=name, global_elo=global_elo)
             .build()
         )
 
@@ -75,7 +73,6 @@ def get_player(player_id: int) -> Optional[Dict[str, Any]]:
                 "player_id",
                 "name",
                 "global_elo",
-                "current_month_elo",
                 "created_at",
             )
             .where("player_id = ?", player_id)
@@ -86,8 +83,7 @@ def get_player(player_id: int) -> Optional[Dict[str, Any]]:
                 "player_id": result[0],
                 "name": result[1],
                 "global_elo": result[2],
-                "current_month_elo": result[3],
-                "created_at": result[4],
+                "created_at": result[3],
             }
         return None
     except Exception as exc:
@@ -100,7 +96,6 @@ def update_player(
     player_id: int,
     name: Optional[str] = None,
     global_elo: Optional[int] = None,
-    current_month_elo: Optional[int] = None,
 ) -> bool:
     """
     Update an existing player's attributes.
@@ -127,8 +122,6 @@ def update_player(
             update_builder.set(name=name)
         if global_elo is not None:
             update_builder.set(global_elo=global_elo)
-        if current_month_elo is not None:
-            update_builder.set(current_month_elo=current_month_elo)
         if not update_builder.set_clauses:
             return False
 
@@ -178,7 +171,7 @@ def batch_insert_players(players: List[Dict[str, Any]]) -> List[Optional[int]]:
     Parameters
     ----------
     players : List[Dict[str, Any]]
-        List of player dictionaries, each with at least a 'name' key. Optional: 'global_elo', 'current_month_elo'.
+        List of player dictionaries, each with at least a 'name' key. Optional: 'global_elo'.
 
     Returns
     -------
@@ -191,11 +184,7 @@ def batch_insert_players(players: List[Dict[str, Any]]) -> List[Optional[int]]:
             for player in players:
                 name = player["name"]
                 global_elo = player.get("global_elo", 1000)
-                current_month_elo = player.get("current_month_elo", 1000)
-                builder = InsertQueryBuilder("Players").set(
-                    name=name, global_elo=global_elo, current_month_elo=current_month_elo
-                )
-                query, params = builder.build()
+                query, params = InsertQueryBuilder("Players").set(name=name, global_elo=global_elo).build()
                 result = db_manager.fetchone(f"{query} RETURNING player_id", params)
                 player_ids.append(result[0] if result else None)
         return player_ids
@@ -212,12 +201,12 @@ def get_all_players() -> List[Dict[str, Any]]:
     Returns
     -------
     List[Dict[str, Any]]
-        List of player dictionaries, each including 'player_id', 'name', 'global_elo', 'current_month_elo', 'created_at'.
+        List of player dictionaries, each including 'player_id', 'name', 'global_elo', 'created_at'.
     """
     try:
         rows = (
             SelectQueryBuilder("Players")
-            .select("player_id", "name", "global_elo", "current_month_elo", "created_at")
+            .select("player_id", "name", "global_elo", "created_at")
             .order_by_clause("name")
             .execute()
         )
@@ -227,8 +216,7 @@ def get_all_players() -> List[Dict[str, Any]]:
                     "player_id": row[0],
                     "name": row[1],
                     "global_elo": row[2],
-                    "current_month_elo": row[3],
-                    "created_at": row[4],
+                    "created_at": row[3],
                 }
                 for row in rows
             ]
@@ -260,7 +248,7 @@ def search_players(name_pattern: str, limit: int = 10) -> List[Dict[str, Any]]:
     try:
         rows = (
             SelectQueryBuilder("Players")
-            .select("player_id", "name", "global_elo", "current_month_elo", "created_at")
+            .select("player_id", "name", "global_elo", "created_at")
             .where("name LIKE ?", f"%{name_pattern}%")
             .order_by_clause("name")
             .limit(limit)
@@ -272,8 +260,7 @@ def search_players(name_pattern: str, limit: int = 10) -> List[Dict[str, Any]]:
                     "player_id": row[0],
                     "name": row[1],
                     "global_elo": row[2],
-                    "current_month_elo": row[3],
-                    "created_at": row[4],
+                    "created_at": row[3],
                 }
                 for row in rows
             ]

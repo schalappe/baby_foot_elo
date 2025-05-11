@@ -23,7 +23,6 @@ def create_team(
     player1_id: int,
     player2_id: int,
     global_elo: float = 1000.0,
-    current_month_elo: float = 1000.0,
     last_match_at: Optional[str] = None,
 ) -> Optional[int]:
     """
@@ -37,8 +36,6 @@ def create_team(
         ID of the second player.
     global_elo : float, optional
         Initial global ELO rating, by default 1000.0.
-    current_month_elo : float, optional
-        Initial monthly ELO rating, by default 1000.0.
     last_match_at : Optional[str], optional
         Timestamp of the last match, by default None.
 
@@ -66,7 +63,6 @@ def create_team(
                 player1_id=player1_id,
                 player2_id=player2_id,
                 global_elo=global_elo,
-                current_month_elo=current_month_elo,
             )
             if last_match_at is not None:
                 builder.set(last_match_at=last_match_at)
@@ -90,7 +86,6 @@ def create_team(
 def update_team(
     team_id: int,
     global_elo: Optional[float] = None,
-    current_month_elo: Optional[float] = None,
     last_match_at: Optional[str] = None,
 ) -> bool:
     """
@@ -102,8 +97,6 @@ def update_team(
         ID of the team to update.
     global_elo : Optional[float], optional
         New global ELO value.
-    current_month_elo : Optional[float], optional
-        New monthly ELO value.
     last_match_at : Optional[str], optional
         New last match timestamp.
 
@@ -112,15 +105,13 @@ def update_team(
     bool
         True if update was successful, False otherwise.
     """
-    if global_elo is None and current_month_elo is None and last_match_at is None:
+    if global_elo is None and last_match_at is None:
         logger.warning(f"No fields provided to update for team {team_id}")
         return False
 
     builder = UpdateQueryBuilder("Teams")
     if global_elo is not None:
         builder.set(global_elo=global_elo)
-    if current_month_elo is not None:
-        builder.set(current_month_elo=current_month_elo)
     if last_match_at is not None:
         builder.set(last_match_at=last_match_at)
 
@@ -176,7 +167,6 @@ def get_team(team_id: int) -> Optional[Dict[str, Any]]:
                 "player1_id",
                 "player2_id",
                 "global_elo",
-                "current_month_elo",
                 "created_at",
                 "last_match_at",
             )
@@ -189,9 +179,8 @@ def get_team(team_id: int) -> Optional[Dict[str, Any]]:
                 "player1_id": result[1],
                 "player2_id": result[2],
                 "global_elo": result[3],
-                "current_month_elo": result[4],
-                "created_at": result[5],
-                "last_match_at": result[6],
+                "created_at": result[4],
+                "last_match_at": result[5],
             }
         return None
     except Exception as exc:
@@ -217,7 +206,6 @@ def get_all_teams() -> List[Dict[str, Any]]:
                 "player1_id",
                 "player2_id",
                 "global_elo",
-                "current_month_elo",
                 "created_at",
                 "last_match_at",
             )
@@ -231,9 +219,8 @@ def get_all_teams() -> List[Dict[str, Any]]:
                     "player1_id": row[1],
                     "player2_id": row[2],
                     "global_elo": row[3],
-                    "current_month_elo": row[4],
-                    "created_at": row[5],
-                    "last_match_at": row[6],
+                    "created_at": row[4],
+                    "last_match_at": row[5],
                 }
                 for row in rows
             ]
@@ -300,7 +287,6 @@ def get_teams_by_player(player_id: int) -> List[Dict[str, Any]]:
                 "player1_id",
                 "player2_id",
                 "global_elo",
-                "current_month_elo",
                 "created_at",
                 "last_match_at",
             )
@@ -320,9 +306,8 @@ def get_teams_by_player(player_id: int) -> List[Dict[str, Any]]:
                     "player1_id": result[1],
                     "player2_id": result[2],
                     "global_elo": result[3],
-                    "current_month_elo": result[4],
-                    "created_at": result[5],
-                    "last_match_at": result[6],
+                    "created_at": result[4],
+                    "last_match_at": result[5],
                     "is_player1": result[1] == player_id,
                     "partner_id": result[2] if result[1] == player_id else result[1],
                 }
@@ -361,7 +346,6 @@ def get_team_rankings(limit: int = 100, use_monthly_elo: bool = False) -> List[D
                 "player1_id",
                 "player2_id",
                 "global_elo",
-                "current_month_elo",
                 "created_at",
                 "last_match_at",
             )
@@ -377,9 +361,8 @@ def get_team_rankings(limit: int = 100, use_monthly_elo: bool = False) -> List[D
                     "player1_id": row[1],
                     "player2_id": row[2],
                     "global_elo": row[3],
-                    "current_month_elo": row[4],
-                    "created_at": row[5],
-                    "last_match_at": row[6],
+                    "created_at": row[4],
+                    "last_match_at": row[5],
                     "rank": idx + 1,
                 }
                 for idx, row in enumerate(rows)

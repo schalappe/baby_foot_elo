@@ -19,7 +19,6 @@ def record_elo_update(
     match_id: int,
     old_elo: int,
     new_elo: int,
-    elo_type: str = "global",
     date: Optional[datetime] = None,
 ) -> Optional[int]:
     """
@@ -35,8 +34,6 @@ def record_elo_update(
         Previous ELO score before the match
     new_elo : int
         New ELO score after the match
-    elo_type : str, optional
-        Type of ELO update ('global' or 'monthly'), by default 'global'
     date : Optional[datetime], optional
         Date of the update, by default current time
 
@@ -55,7 +52,6 @@ def record_elo_update(
                 .set(
                     player_id=player_id,
                     match_id=match_id,
-                    type=elo_type,
                     old_elo=old_elo,
                     new_elo=new_elo,
                     difference=new_elo - old_elo,
@@ -91,7 +87,6 @@ def batch_record_elo_updates(elo_updates: List[Dict[str, Any]]) -> List[Optional
         - 'old_elo': int - Previous ELO score
         - 'new_elo': int - New ELO score
         Optional keys:
-        - 'type': str - Type of ELO update ('global' or 'monthly')
         - 'date': datetime - Date of the update
 
     Returns
@@ -117,7 +112,6 @@ def batch_record_elo_updates(elo_updates: List[Dict[str, Any]]) -> List[Optional
                     .set(
                         player_id=update["player_id"],
                         match_id=update["match_id"],
-                        type=update.get("type", "global"),
                         old_elo=update["old_elo"],
                         new_elo=update["new_elo"],
                         difference=update["new_elo"] - update["old_elo"],
@@ -146,7 +140,6 @@ def get_player_elo_history(
     offset: int = 0,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
-    elo_type: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """
     Get the ELO history for a player with optional filtering.
@@ -163,8 +156,6 @@ def get_player_elo_history(
         Filter by start date, by default None
     end_date : Optional[datetime], optional
         Filter by end date, by default None
-    elo_type : Optional[str], optional
-        Filter by ELO type ('global' or 'monthly'), by default None
 
     Returns
     -------
@@ -179,9 +170,6 @@ def get_player_elo_history(
 
         if end_date:
             builder = builder.where("date <= ?", end_date)
-
-        if elo_type:
-            builder = builder.where("type = ?", elo_type)
 
         results = builder.order_by_clause("date DESC").limit(limit).offset(offset).execute(fetch_all=True)
 
@@ -213,7 +201,7 @@ def get_player_elo_history(
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_elo_by_date(player_id: int, target_date: datetime, elo_type: str = "global") -> Optional[int]:
+def get_elo_by_date(player_id: int, target_date: datetime) -> Optional[int]:
     """
     Get the ELO score for a player at a specific date.
 
@@ -223,8 +211,6 @@ def get_elo_by_date(player_id: int, target_date: datetime, elo_type: str = "glob
         ID of the player
     target_date : datetime
         The date to get the ELO score for
-    elo_type : str, optional
-        Type of ELO to retrieve ('global' or 'monthly'), by default 'global'
 
     Returns
     -------
@@ -236,7 +222,6 @@ def get_elo_by_date(player_id: int, target_date: datetime, elo_type: str = "glob
             SelectQueryBuilder("ELO_History")
             .select("new_elo")
             .where("player_id = ?", player_id)
-            .where("type = ?", elo_type)
             .where("date <= ?", target_date)
             .order_by_clause("date DESC")
             .limit(1)
@@ -249,7 +234,7 @@ def get_elo_by_date(player_id: int, target_date: datetime, elo_type: str = "glob
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_monthly_elo_history(player_id: int, year: int, month: int, elo_type: str = "global") -> List[Dict[str, Any]]:
+def get_monthly_elo_history(player_id: int, year: int, month: int) -> List[Dict[str, Any]]:
     """
     Get the monthly ELO history for a player for a specific year and month.
 
@@ -261,8 +246,6 @@ def get_monthly_elo_history(player_id: int, year: int, month: int, elo_type: str
         Year to filter by
     month : int
         Month to filter by
-    elo_type : str, optional
-        Type of ELO to retrieve ('global' or 'monthly'), by default 'global'
 
     Returns
     -------
@@ -276,7 +259,6 @@ def get_monthly_elo_history(player_id: int, year: int, month: int, elo_type: str
             .where("player_id = ?", player_id)
             .where("year = ?", year)
             .where("month = ?", month)
-            .where("type = ?", elo_type)
             .order_by_clause("date ASC")
             .execute(fetch_all=True)
         )
@@ -291,7 +273,6 @@ def get_monthly_elo_history(player_id: int, year: int, month: int, elo_type: str
                     "history_id": record[0],
                     "player_id": record[1],
                     "match_id": record[2],
-                    "type": record[3],
                     "old_elo": record[4],
                     "new_elo": record[5],
                     "difference": record[6],
@@ -336,7 +317,6 @@ def get_elo_history_by_match(match_id: int) -> List[Dict[str, Any]]:
                     "history_id": record[0],
                     "player_id": record[1],
                     "match_id": record[2],
-                    "type": record[3],
                     "old_elo": record[4],
                     "new_elo": record[5],
                     "difference": record[6],
