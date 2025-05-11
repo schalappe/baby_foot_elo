@@ -39,12 +39,9 @@ class TeamCreate(TeamBase):
         The ID of the second player.
     global_elo : float, optional
         The initial global ELO rating for the team (default is 1000.0).
-    current_month_elo : float, optional
-        The initial ELO rating for the current month for the team (default is 1000.0).
     """
 
     global_elo: float = Field(default=1000.0, ge=0, description="Initial global ELO rating for the team")
-    current_month_elo: float = Field(default=1000.0, ge=0, description="Initial ELO rating for the current month")
 
     @model_validator(mode="after")
     def validate_players(cls, values: Any) -> Any:
@@ -91,8 +88,6 @@ class TeamResponse(TeamBase):
         ID of the second player.
     global_elo : float
         The current global ELO rating of the team.
-    current_month_elo : float
-        The current ELO rating of the team for the month.
     created_at : datetime
         The date and time when the team was created.
     last_match_at : Optional[datetime]
@@ -107,7 +102,6 @@ class TeamResponse(TeamBase):
 
     team_id: int = Field(..., gt=0, description="Unique identifier for the team")
     global_elo: float = Field(..., ge=0, description="Current global ELO rating of the team")
-    current_month_elo: float = Field(..., ge=0, description="Current ELO rating for the team for the month")
     created_at: datetime = Field(..., description="Timestamp of team creation")
     last_match_at: Optional[datetime] = Field(default=None, description="Timestamp of the team's last match")
 

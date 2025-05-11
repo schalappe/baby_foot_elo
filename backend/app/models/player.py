@@ -34,12 +34,9 @@ class PlayerCreate(PlayerBase):
         The name of the player (inherited from PlayerBase).
     global_elo : int, optional
         The initial global ELO rating for the player (default is 1000).
-    current_month_elo : int, optional
-        The initial ELO rating for the current month (default is 1000).
     """
 
     global_elo: int = Field(default=1000, ge=0, description="Initial global ELO rating for the player")
-    current_month_elo: int = Field(default=1000, ge=0, description="Initial ELO rating for the current month")
 
 
 class PlayerUpdate(BaseModel):
@@ -67,8 +64,6 @@ class PlayerResponse(PlayerBase):
         The name of the player (inherited from PlayerBase).
     global_elo : int
         The current global ELO rating of the player.
-    current_month_elo : int
-        The current ELO rating of the player for the month.
     creation_date : datetime
         The date and time when the player was created.
     matches_played : int, optional
@@ -81,7 +76,6 @@ class PlayerResponse(PlayerBase):
 
     id: int = Field(..., gt=0, description="Unique identifier for the player")
     global_elo: int = Field(..., ge=0, description="Current global ELO rating of the player")
-    current_month_elo: int = Field(..., ge=0, description="Current ELO rating of the player for the month")
     creation_date: datetime = Field(..., description="Timestamp of player creation")
     matches_played: int = Field(default=0, ge=0, description="Total matches played by the player")
     wins: int = Field(default=0, ge=0, description="Total matches won by the player")

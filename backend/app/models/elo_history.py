@@ -6,7 +6,7 @@ Pydantic models for ELO history, mirroring the ELO_History database schema.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -21,8 +21,6 @@ class EloHistoryBase(BaseModel):
         ID of the player.
     match_id : int
         ID of the match that caused the ELO change.
-    type : Literal['global', 'monthly']
-        Type of ELO (global or monthly).
     old_elo : int
         ELO before the match.
     new_elo : int
@@ -35,7 +33,6 @@ class EloHistoryBase(BaseModel):
 
     player_id: int = Field(..., gt=0, description="ID of the player")
     match_id: int = Field(..., gt=0, description="ID of the match")
-    type: Literal["global", "monthly"] = Field(..., description="Type of ELO: 'global' or 'monthly'")
     old_elo: int = Field(..., ge=0, description="ELO before the match")
     new_elo: int = Field(..., ge=0, description="ELO after the match")
     difference: int = Field(..., description="Change in ELO (new_elo - old_elo)")
