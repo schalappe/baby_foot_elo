@@ -568,5 +568,80 @@ class TestTeamsRouter(TestCase):
         mock_get_team_rankings.assert_called_once_with(limit=50, use_monthly_elo=True)
 
 
+    @patch("app.routers.teams.get_team")
+    @patch("app.routers.teams.get_matches_by_team")
+    def test_get_team_matches(self, mock_get_matches_by_team, mock_get_team):
+        """
+        Test getting a team's match history.
+        """
+        # Mock team retrieval
+        mock_get_team.return_value = {
+            "team_id": 1,
+            "player1_id": 1,
+            "player2_id": 2,
+            "global_elo": 1200.0,
+            "current_month_elo": 1200.0,
+            "created_at": "2025-01-01T00:00:00",
+            "last_match_at": None,
+        }
+        
+        # Mock matches retrieval
+        mock_get_matches_by_team.return_value = [
+            {
+                "match_id": 1,
+                "winner_team_id": 1,
+                "loser_team_id": 2,
+                "is_fanny": False,
+                "played_at": "2025-01-02T10:00:00",
+                "year": 2025,
+                "month": 1,
+                "day": 2,
+                "won": True,
+            },
+            {
+                "match_id": 2,
+                "winner_team_id": 3,
+                "loser_team_id": 1,
+                "is_fanny": True,
+                "played_at": "2025-01-03T15:30:00",
+                "year": 2025,
+                "month": 1,
+                "day": 3,
+                "won": False,
+            },
+        ]
+        
+        # Make request
+        response = self.client.get("/api/v1/teams/1/matches")
+        
+        # Verify response
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.json()), 2)
+        self.assertEqual(response.json()[0]["match_id"], 1)
+        self.assertEqual(response.json()[1]["match_id"], 2)
+        
+        # Verify mocks were called correctly
+        mock_get_team.assert_called_once_with(1)
+        mock_get_matches_by_team.assert_called_once_with(1)
+    
+    @patch("app.routers.teams.get_team")
+    def test_get_team_matches_team_not_found(self, mock_get_team):
+        """
+        Test getting match history for a non-existent team.
+        """
+        # Mock team retrieval to return None
+        mock_get_team.return_value = None
+        
+        # Make request
+        response = self.client.get("/api/v1/teams/999/matches")
+        
+        # Verify response
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn("not found", response.json()["detail"])
+        
+        # Verify mock was called correctly
+        mock_get_team.assert_called_once_with(999)
+
+
 if __name__ == "__main__":
     main()

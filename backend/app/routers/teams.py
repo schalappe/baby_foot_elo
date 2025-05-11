@@ -9,7 +9,7 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query, status
 from loguru import logger
 
-from app.crud.matches import create_match
+from app.crud.matches import create_match, get_matches_by_team
 from app.crud.players import get_player
 from app.crud.teams import (
     create_team,
@@ -20,7 +20,7 @@ from app.crud.teams import (
     get_teams_by_player,
     update_team,
 )
-from app.models.match import MatchCreate, MatchResponse
+from app.models.match import MatchBase, MatchCreate, MatchResponse
 from app.models.team import TeamCreate, TeamResponse
 from app.services.elo import (
     calculate_elo_change,
@@ -212,6 +212,71 @@ async def get_team_endpoint(team_id: int):
 
 
 @router.get(
+    "/{team_id}/matches",
+    response_model=List[MatchResponse],
+    summary="Get team's match history",
+    description="Get all matches played by a specific team.",
+)
+async def get_team_matches_endpoint(
+    team_id: int,
+    limit: int = Query(50, ge=1, le=100, description="Maximum number of matches to return"),
+    skip: int = Query(0, ge=0, description="Number of matches to skip"),
+):
+    """
+    Get all matches played by a specific team.
+
+    Parameters
+    ----------
+    team_id : int
+        ID of the team to retrieve matches for.
+    limit : int, optional
+        Maximum number of matches to return, by default 50.
+    skip : int, optional
+        Number of matches to skip, by default 0.
+
+    Returns
+    -------
+    List[MatchResponse]
+        List of matches played by the team.
+
+    Raises
+    ------
+    HTTPException
+        If the team is not found.
+    """
+    # ##: Verify that the team exists.
+    team_data = get_team(team_id)
+    if not team_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Team with ID {team_id} not found",
+        )
+
+    # ##: Get matches for the team.
+    matches = get_matches_by_team(team_id)
+
+    # ##: Apply pagination.
+    matches = matches[skip : skip + limit]
+
+    # ##: Convert to response model.
+    result = []
+    for match in matches:
+        match_response = MatchResponse(
+            match_id=match["match_id"],
+            winner_team_id=match["winner_team_id"],
+            loser_team_id=match["loser_team_id"],
+            is_fanny=match["is_fanny"],
+            played_at=match["played_at"],
+            year=match["year"],
+            month=match["month"],
+            day=match["day"],
+        )
+        result.append(match_response)
+
+    return result
+
+
+@router.get(
     "/rankings",
     response_model=List[TeamResponse],
     summary="Get team rankings",
@@ -236,10 +301,10 @@ async def get_team_rankings_endpoint(
     List[TeamResponse]
         List of teams sorted by ELO in descending order with rank information
     """
-    # Get ranked teams from database
+    # ##: Get ranked teams from database.
     teams_data = get_team_rankings(limit=limit, use_monthly_elo=use_monthly_elo)
 
-    # Populate player details for each team
+    # ##: Populate player details for each team.
     result = []
     for team_data in teams_data:
         team = TeamResponse(**team_data)
