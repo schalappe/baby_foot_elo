@@ -6,55 +6,138 @@ Operations related to the Teams table.
 from logging import getLogger
 from typing import Any, Dict, List, Optional
 
+from duckdb import ConstraintException
+
 from app.db import transaction, with_retry
 
-from .builders import SelectQueryBuilder
+from .builders import (
+    DeleteQueryBuilder,
+    InsertQueryBuilder,
+    SelectQueryBuilder,
+    UpdateQueryBuilder,
+)
 
 logger = getLogger(__name__)
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def create_team(player1_id: int, player2_id: int) -> Optional[int]:
+def create_team(
+    player1_id: int,
+    player2_id: int,
+    global_elo: float = 1000.0,
+    current_month_elo: float = 1000.0,
+    last_match_at: Optional[str] = None,
+) -> Optional[int]:
     """
     Create a new team in the database.
 
     Parameters
     ----------
     player1_id : int
-        ID of the first player
+        ID of the first player.
     player2_id : int
-        ID of the second player
+        ID of the second player.
+    global_elo : float, optional
+        Initial global ELO rating, by default 1000.0.
+    current_month_elo : float, optional
+        Initial monthly ELO rating, by default 1000.0.
+    last_match_at : Optional[str], optional
+        Timestamp of the last match, by default None.
 
     Returns
     -------
     Optional[int]
-        ID of the newly created team, or None on failure
+        ID of the newly created team, or None on failure.
     """
-    with transaction() as db:
-        # ##: Check if team with the same players already exists (regardless of order).
-        existing_team = db.fetchone(
-            """SELECT team_id FROM Teams 
-               WHERE (player1_id = ? AND player2_id = ?) OR (player1_id = ? AND player2_id = ?)""",
-            [player1_id, player2_id, player2_id, player1_id],
-        )
-        if existing_team:
-            logger.warning(
-                "Attempted to create duplicate team for players %d and %d",
-                player1_id,
-                player2_id,
+    try:
+        with transaction() as db_manager:
+            # ##: Check if team with same players exists (order-insensitive).
+            existing_team = db_manager.fetchone(
+                """
+                SELECT team_id FROM Teams
+                WHERE (player1_id = ? AND player2_id = ?) OR (player1_id = ? AND player2_id = ?)
+                """,
+                [player1_id, player2_id, player2_id, player1_id],
             )
+            if existing_team:
+                logger.warning(
+                    "Attempted to create duplicate team for players %d and %d",
+                    player1_id,
+                    player2_id,
+                )
+                return None
+
+            builder = InsertQueryBuilder("Teams")
+            builder.set(
+                player1_id=player1_id,
+                player2_id=player2_id,
+                global_elo=global_elo,
+                current_month_elo=current_month_elo,
+            )
+            if last_match_at is not None:
+                builder.set(last_match_at=last_match_at)
+
+            query, params = builder.build()
+            query += " RETURNING team_id"
+
+            result = db_manager.fetchone(query, params)
+            if result and result[0]:
+                logger.info("Created team with ID: %d", result[0])
+                return result[0]
+            logger.error("Failed to create team or retrieve its ID.")
             return None
-
-        # ##: Use RETURNING clause for consistency and reliability across DBs.
-        query = "INSERT INTO Teams (player1_id, player2_id) VALUES (?, ?) RETURNING team_id"
-        result = db.fetchone(query, [player1_id, player2_id])
-
-        if result and result[0]:
-            logger.info("Created team with ID: %d", result[0])
-            return result[0]
-
-        logger.error("Failed to create team or retrieve its ID.")
+    except ConstraintException as constraint_exc:
+        logger.error("Constraint error on create_team: %s", constraint_exc)
         return None
+    except Exception as exc:
+        logger.error("Failed to create team: %s", exc)
+        return None
+
+
+def update_team(
+    team_id: int,
+    global_elo: Optional[float] = None,
+    current_month_elo: Optional[float] = None,
+    last_match_at: Optional[str] = None,
+) -> bool:
+    """
+    Update a team's ELO ratings or last match timestamp.
+
+    Parameters
+    ----------
+    team_id : int
+        ID of the team to update.
+    global_elo : Optional[float], optional
+        New global ELO value.
+    current_month_elo : Optional[float], optional
+        New monthly ELO value.
+    last_match_at : Optional[str], optional
+        New last match timestamp.
+
+    Returns
+    -------
+    bool
+        True if update was successful, False otherwise.
+    """
+    if global_elo is None and current_month_elo is None and last_match_at is None:
+        logger.warning("No fields provided to update for team %d", team_id)
+        return False
+
+    builder = UpdateQueryBuilder("Teams")
+    if global_elo is not None:
+        builder.set(global_elo=global_elo)
+    if current_month_elo is not None:
+        builder.set(current_month_elo=current_month_elo)
+    if last_match_at is not None:
+        builder.set(last_match_at=last_match_at)
+
+    builder.where("team_id = ?", team_id)
+    query, params = builder.build()
+    query += " RETURNING team_id"
+
+    with transaction() as db_manager:
+        result = db_manager.fetchone(query, params)
+        return result is not None
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -65,25 +148,41 @@ def get_team(team_id: int) -> Optional[Dict[str, Any]]:
     Parameters
     ----------
     team_id : int
-        ID of the team to retrieve
+        ID of the team to retrieve.
 
     Returns
     -------
     Optional[Dict[str, Any]]
-        Team data as a dictionary, or None if not found
+        Team data as a dictionary, or None if not found.
     """
     try:
         result = (
             SelectQueryBuilder("Teams")
-            .select("team_id", "player1_id", "player2_id")
+            .select(
+                "team_id",
+                "player1_id",
+                "player2_id",
+                "global_elo",
+                "current_month_elo",
+                "created_at",
+                "last_match_at",
+            )
             .where("team_id = ?", team_id)
             .execute(fetch_all=False)
         )
         if result:
-            return {"team_id": result[0], "player1_id": result[1], "player2_id": result[2]}
+            return {
+                "team_id": result[0],
+                "player1_id": result[1],
+                "player2_id": result[2],
+                "global_elo": result[3],
+                "current_month_elo": result[4],
+                "created_at": result[5],
+                "last_match_at": result[6],
+            }
         return None
-    except Exception as e:
-        logger.error("Failed to get team by ID %d: %s", team_id, e)
+    except Exception as exc:
+        logger.error("Failed to get team by ID %d: %s", team_id, exc)
         return None
 
 
@@ -99,11 +198,37 @@ def get_all_teams() -> List[Dict[str, Any]]:
     """
     try:
         rows = (
-            SelectQueryBuilder("Teams").select("team_id", "player1_id", "player2_id").order_by_clause("player1_id").execute()
+            SelectQueryBuilder("Teams")
+            .select(
+                "team_id",
+                "player1_id",
+                "player2_id",
+                "global_elo",
+                "current_month_elo",
+                "created_at",
+                "last_match_at",
+            )
+            .order_by_clause("player1_id")
+            .execute()
         )
-        return [{"team_id": row[0], "player1_id": row[1], "player2_id": row[2]} for row in rows] if rows else []
-    except Exception as e:
-        logger.error("Failed to get all teams: %s", e)
+        return (
+            [
+                {
+                    "team_id": row[0],
+                    "player1_id": row[1],
+                    "player2_id": row[2],
+                    "global_elo": row[3],
+                    "current_month_elo": row[4],
+                    "created_at": row[5],
+                    "last_match_at": row[6],
+                }
+                for row in rows
+            ]
+            if rows
+            else []
+        )
+    except Exception as exc:
+        logger.error("Failed to get all teams: %s", exc)
         return []
 
 
@@ -115,16 +240,18 @@ def delete_team(team_id: int) -> bool:
     Parameters
     ----------
     team_id : int
-        ID of the team to delete
+        ID of the team to delete.
 
     Returns
     -------
     bool
         True if the deletion was successful, False otherwise.
     """
-    with transaction() as db:
-        result = db.fetchone("DELETE FROM Teams WHERE team_id = ? RETURNING team_id", [team_id])
-        return bool(result)
+    query, params = DeleteQueryBuilder("Teams").where("team_id = ?", team_id).build()
+    query += " RETURNING team_id"
+    with transaction() as db_manager:
+        result = db_manager.fetchone(query, params)
+        return result is not None
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -143,7 +270,7 @@ def batch_insert_teams(teams: List[Dict[str, Any]]) -> List[Optional[int]]:
         List of IDs for the newly created teams, or None for failures.
     """
     team_ids = []
-    with transaction() as db:
+    with transaction() as db_manager:
         for team in teams:
             # ##: Ensure players are ordered consistently.
             p1_id = team["player1_id"]
@@ -151,9 +278,9 @@ def batch_insert_teams(teams: List[Dict[str, Any]]) -> List[Optional[int]]:
             if p1_id > p2_id:
                 p1_id, p2_id = p2_id, p1_id
 
-            # ##: Consider adding the same check as in create_team here.
-            query = "INSERT INTO Teams (player1_id, player2_id) VALUES (?, ?) RETURNING team_id"
-            result = db.fetchone(query, [p1_id, p2_id])
+            query, params = InsertQueryBuilder("Teams").set(player1_id=p1_id, player2_id=p2_id).build()
+            query += " RETURNING team_id"
+            result = db_manager.fetchone(query, params)
             team_ids.append(result[0] if result else None)
 
     return team_ids

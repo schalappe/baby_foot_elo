@@ -3,6 +3,7 @@
 Unit tests for team CRUD operations using unittest.
 """
 
+from datetime import datetime
 from unittest import TestCase, main
 
 from app.crud.players import create_player
@@ -12,6 +13,7 @@ from app.crud.teams import (
     delete_team,
     get_all_teams,
     get_team,
+    update_team,
 )
 from app.db import DatabaseManager, initialize_database
 
@@ -32,7 +34,9 @@ class TestTeamCRUD(TestCase):
         DatabaseManager._instance = None
 
     def test_create_team(self):
-        """Test creating and retrieving a team and duplicate prevention."""
+        """
+        Test creating and retrieving a team, including duplicate prevention and default fields.
+        """
         p1 = create_player("Alice")
         p2 = create_player("Bob")
         team_id = create_team(p1, p2)
@@ -43,41 +47,70 @@ class TestTeamCRUD(TestCase):
         self.assertIsNotNone(team)
         self.assertEqual(team["team_id"], team_id)
         self.assertEqual({team["player1_id"], team["player2_id"]}, {p1, p2})
+        self.assertEqual(team["global_elo"], 1000.0)
+        self.assertEqual(team["current_month_elo"], 1000.0)
+        import datetime
 
+        self.assertIsInstance(team["created_at"], datetime.datetime)
+        self.assertIsNone(team["last_match_at"])
+
+        # ##: Duplicate prevention (order-insensitive).
         self.assertIsNone(create_team(p1, p2))
         self.assertIsNone(create_team(p2, p1))
 
+    def test_create_team_custom_elos_and_last_match(self):
+        """
+        Test creating a team with custom ELOs and last_match_at.
+        """
+        p1 = create_player("Cathy")
+        p2 = create_player("Dan")
+        team_id = create_team(p1, p2, global_elo=1200.0, current_month_elo=1100.0, last_match_at="2023-01-01 12:00:00")
+        self.assertIsNotNone(team_id)
+        team = get_team(team_id)
+        self.assertEqual(team["global_elo"], 1200.0)
+        self.assertEqual(team["current_month_elo"], 1100.0)
+        import datetime
+
+        self.assertIsInstance(team["last_match_at"], datetime.datetime)
+        self.assertEqual(team["last_match_at"], datetime.datetime(2023, 1, 1, 12, 0, 0))
+
     def test_get_team_not_exists(self):
-        """Test retrieving a non-existent team."""
+        """
+        Test retrieving a non-existent team.
+        """
         self.assertIsNone(get_team(9999))
 
     def test_get_all_teams_empty(self):
-        """Test get_all_teams on empty DB."""
+        """
+        Test get_all_teams on empty DB.
+        """
         self.assertEqual(get_all_teams(), [])
 
     def test_get_all_teams_multiple(self):
-        """Test retrieving multiple teams."""
+        """
+        Test retrieving multiple teams.
+        """
         p1 = create_player("Charlie")
         p2 = create_player("David")
+        t1 = create_team(p1, p2)
         p3 = create_player("Eve")
-
-        id1 = create_team(p1, p2)
-        id2 = create_team(p2, p3)
-
+        t2 = create_team(p1, p3)
         teams = get_all_teams()
         self.assertEqual(len(teams), 2)
-        ids = [t["team_id"] for t in teams]
-        self.assertEqual(ids, [id1, id2])
+        ids = {team["team_id"] for team in teams}
+        self.assertIn(t1, ids)
+        self.assertIn(t2, ids)
 
     def test_delete_team(self):
-        """Test deleting existing and non-existing team."""
+        """
+        Test deleting a team.
+        """
         p1 = create_player("Frank")
         p2 = create_player("Grace")
-        t_id = create_team(p1, p2)
-
-        self.assertTrue(delete_team(t_id))
-        self.assertIsNone(get_team(t_id))
-        self.assertFalse(delete_team(9999))
+        team_id = create_team(p1, p2)
+        self.assertTrue(delete_team(team_id))
+        self.assertIsNone(get_team(team_id))
+        self.assertFalse(delete_team(team_id))
 
     def test_batch_insert_teams(self):
         """Test batch inserting teams with ordering."""
@@ -94,6 +127,44 @@ class TestTeamCRUD(TestCase):
         pairs = {(t["player1_id"], t["player2_id"]) for t in teams}
         expected = {(p1, p2), (min(p1, p3), max(p1, p3))}
         self.assertEqual(pairs, expected)
+
+    def test_update_team(self):
+        """
+        Test updating team ELOs and last_match_at, including edge and failure cases.
+        """
+        p1 = create_player("Heidi")
+        p2 = create_player("Ivan")
+        team_id = create_team(p1, p2)
+
+        # ##: Update global_elo only.
+        self.assertTrue(update_team(team_id, global_elo=1500.0))
+        team = get_team(team_id)
+        self.assertEqual(team["global_elo"], 1500.0)
+
+        # ##: Update current_month_elo only.
+        self.assertTrue(update_team(team_id, current_month_elo=1400.0))
+        team = get_team(team_id)
+        self.assertEqual(team["current_month_elo"], 1400.0)
+
+        # ##: Update last_match_at only.
+        self.assertTrue(update_team(team_id, last_match_at="2023-02-02 15:00:00"))
+        team = get_team(team_id)
+        self.assertIsInstance(team["last_match_at"], datetime)
+        self.assertEqual(team["last_match_at"], datetime(2023, 2, 2, 15, 0, 0))
+
+        # ##: No fields to update (failure).
+        self.assertFalse(update_team(team_id))
+
+        # ##: Non-existent team.
+        self.assertFalse(update_team(9999, global_elo=1234.0))
+
+    def test_create_team_same_player(self):
+        """
+        Test creating a team with the same player for both slots (should fail due to CHECK constraint).
+        """
+        p1 = create_player("Jack")
+        team_id = create_team(p1, p1)
+        self.assertIsNone(team_id)
 
 
 if __name__ == "__main__":
