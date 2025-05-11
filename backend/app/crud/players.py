@@ -9,7 +9,12 @@ from typing import Any, Dict, List, Optional
 from app.db.retry import with_retry
 from app.db.transaction import transaction
 
-from .builders import SelectQueryBuilder
+from .builders import (
+    DeleteQueryBuilder,
+    InsertQueryBuilder,
+    SelectQueryBuilder,
+    UpdateQueryBuilder,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -34,12 +39,17 @@ def create_player(name: str, global_elo: int = 1000, current_month_elo: int = 10
         ID of the newly created player, or None on failure.
     """
     try:
+        result = (
+            InsertQueryBuilder("Players")
+            .set(name=name, global_elo=global_elo, current_month_elo=current_month_elo)
+            .build()
+        )
+
+        query, params = result
+        query += " RETURNING player_id"
         with transaction() as db_manager:
-            result = db_manager.fetchone(
-                "INSERT INTO Players (name, global_elo, current_month_elo) VALUES (?, ?, ?) RETURNING player_id",
-                [name, global_elo, current_month_elo],
-            )
-        return result[0] if result else None
+            res = db_manager.fetchone(query, params)
+        return res[0] if res else None
     except Exception as exc:
         logger.error("Failed to create player '%s': %s", name, exc)
         return None
@@ -114,21 +124,20 @@ def update_player(
         True if the player was updated successfully, False otherwise.
     """
     try:
-        fields = []
-        params = []
+        update_builder = UpdateQueryBuilder("Players")
         if name is not None:
-            fields.append("name = ?")
-            params.append(name)
+            update_builder.set(name=name)
         if global_elo is not None:
-            fields.append("global_elo = ?")
-            params.append(global_elo)
+            update_builder.set(global_elo=global_elo)
         if current_month_elo is not None:
-            fields.append("current_month_elo = ?")
-            params.append(current_month_elo)
-        if not fields:
+            update_builder.set(current_month_elo=current_month_elo)
+        if not update_builder.set_clauses:
             return False
-        params.append(player_id)
-        query = f"UPDATE Players SET {', '.join(fields)} WHERE player_id = ? RETURNING player_id"
+
+        update_builder.where("player_id = ?", player_id)
+        query, params = update_builder.build()
+        query += " RETURNING player_id"
+
         with transaction() as db_manager:
             result = db_manager.fetchone(query, params)
             return result is not None
@@ -153,8 +162,11 @@ def delete_player(player_id: int) -> bool:
         True if the player was deleted successfully, False otherwise
     """
     try:
+        delete_builder = DeleteQueryBuilder("Players").where("player_id = ?", player_id)
+        query, params = delete_builder.build()
+        query += " RETURNING player_id"
         with transaction() as db_manager:
-            result = db_manager.fetchone("DELETE FROM Players WHERE player_id = ? RETURNING player_id", [player_id])
+            result = db_manager.fetchone(query, params)
             return result is not None
     except Exception as exc:
         logger.error("Failed to delete player ID %d: %s", player_id, exc)
@@ -183,10 +195,12 @@ def batch_insert_players(players: List[Dict[str, Any]]) -> List[Optional[int]]:
                 name = player["name"]
                 global_elo = player.get("global_elo", 1000)
                 current_month_elo = player.get("current_month_elo", 1000)
-                result = db_manager.fetchone(
-                    "INSERT INTO Players (name, global_elo, current_month_elo) VALUES (?, ?, ?) RETURNING player_id",
-                    [name, global_elo, current_month_elo],
+                builder = InsertQueryBuilder("Players").set(
+                    name=name, global_elo=global_elo, current_month_elo=current_month_elo
                 )
+                query, params = builder.build()
+                query += " RETURNING player_id"
+                result = db_manager.fetchone(query, params)
                 player_ids.append(result[0] if result else None)
         return player_ids
     except Exception as exc:
