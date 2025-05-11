@@ -5,12 +5,10 @@ Query builder for constructing SQL queries.
 
 from __future__ import annotations
 
-from logging import getLogger
+from loguru import logger
 from typing import Any, List, Optional, Tuple, Union
 
 from app.db import transaction
-
-logger = getLogger(__name__)
 
 
 class BaseQueryBuilder:

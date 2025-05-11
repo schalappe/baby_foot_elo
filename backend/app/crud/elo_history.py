@@ -3,18 +3,25 @@
 Operations related to ELO history.
 """
 
-from logging import getLogger
+from datetime import datetime
 from typing import Any, Dict, List, Optional
+
+from loguru import logger
 
 from app.db import transaction, with_retry
 
-from .builders import SelectQueryBuilder
-
-logger = getLogger(__name__)
+from .builders import InsertQueryBuilder, SelectQueryBuilder
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def record_elo_update(player_id: int, match_id: int, elo_score: float) -> Optional[int]:
+def record_elo_update(
+    player_id: int,
+    match_id: int,
+    old_elo: int,
+    new_elo: int,
+    elo_type: str = "global",
+    date: Optional[datetime] = None,
+) -> Optional[int]:
     """
     Record an ELO score update after a match.
 
@@ -24,26 +31,54 @@ def record_elo_update(player_id: int, match_id: int, elo_score: float) -> Option
         ID of the player
     match_id : int
         ID of the match
-    elo_score : float
+    old_elo : int
+        Previous ELO score before the match
+    new_elo : int
         New ELO score after the match
+    elo_type : str, optional
+        Type of ELO update ('global' or 'monthly'), by default 'global'
+    date : Optional[datetime], optional
+        Date of the update, by default current time
 
     Returns
     -------
     Optional[int]
         ID of the newly created ELO history record, or None on failure
     """
-    with transaction() as db:
-        result = db.fetchone(
-            "INSERT INTO ELO_History (player_id, match_id, elo_score) VALUES (?, ?, ?) RETURNING history_id",
-            [player_id, match_id, elo_score],
-        )
-        if result and result[0]:
-            return result[0]
+    try:
+        if date is None:
+            date = datetime.now()
+
+        with transaction() as db:
+            query, params = (
+                InsertQueryBuilder("ELO_History")
+                .set(
+                    player_id=player_id,
+                    match_id=match_id,
+                    type=elo_type,
+                    old_elo=old_elo,
+                    new_elo=new_elo,
+                    difference=new_elo - old_elo,
+                    date=date,
+                    year=date.year,
+                    month=date.month,
+                    day=date.day,
+                )
+                .build()
+            )
+
+            result = db.fetchone(f"{query} RETURNING history_id", params)
+
+            if result and result[0]:
+                return result[0]
+            return None
+    except Exception as e:
+        logger.error(f"Failed to record ELO update: {e}")
         return None
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_current_elo(player_id: int) -> Optional[float]:
+def get_current_elo(player_id: int, elo_type: str = "global") -> Optional[int]:
     """
     Get the current ELO score for a player.
 
@@ -51,24 +86,27 @@ def get_current_elo(player_id: int) -> Optional[float]:
     ----------
     player_id : int
         ID of the player
+    elo_type : str, optional
+        Type of ELO update ('global' or 'monthly'), by default 'global'
 
     Returns
     -------
-    Optional[float]
+    Optional[int]
         Current ELO score, or None if no history exists
     """
     try:
         result = (
             SelectQueryBuilder("ELO_History")
-            .select("elo_score")
+            .select("new_elo")
             .where("player_id = ?", player_id)
+            .where("type = ?", elo_type)
             .order_by_clause("history_id DESC")
             .limit(1)
             .execute(fetch_all=False)
         )
         return result[0] if result else None
     except Exception as e:
-        logger.error("Failed to get current ELO for player ID %d: %s", player_id, e)
+        logger.error(f"Failed to get current ELO for player ID {player_id}: {e}")
         return None
 
 
@@ -80,20 +118,222 @@ def batch_record_elo_updates(elo_updates: List[Dict[str, Any]]) -> List[Optional
     Parameters
     ----------
     elo_updates : List[Dict[str, Any]]
-        List of ELO update dictionaries, each with 'player_id', 'match_id', and 'elo_score' keys
+        List of ELO update dictionaries, each with required keys:
+        - 'player_id': int - ID of the player
+        - 'match_id': int - ID of the match
+        - 'old_elo': int - Previous ELO score
+        - 'new_elo': int - New ELO score
+        Optional keys:
+        - 'type': str - Type of ELO update ('global' or 'monthly')
+        - 'date': datetime - Date of the update
 
     Returns
     -------
     List[Optional[int]]
         List of IDs for the newly created ELO history records, or None for failures
     """
-    history_ids = []
-    with transaction() as db:
-        for update in elo_updates:
-            result = db.fetchone(
-                "INSERT INTO ELO_History (player_id, match_id, elo_score) VALUES (?, ?, ?) RETURNING history_id",
-                [update["player_id"], update["match_id"], update["elo_score"]],
-            )
-            history_ids.append(result[0] if result else None)
+    if not elo_updates:
+        return []
 
-    return history_ids
+    history_ids = []
+    try:
+        with transaction() as db:
+            for update in elo_updates:
+                # ##: Get date from update or use current time.
+                date = update.get("date", datetime.now())
+                year = date.year
+                month = date.month
+                day = date.day
+
+                query, params = (
+                    InsertQueryBuilder("ELO_History")
+                    .set(
+                        player_id=update["player_id"],
+                        match_id=update["match_id"],
+                        type=update.get("type", "global"),
+                        old_elo=update["old_elo"],
+                        new_elo=update["new_elo"],
+                        difference=update["new_elo"] - update["old_elo"],
+                        date=date,
+                        year=year,
+                        month=month,
+                        day=day,
+                    )
+                    .build()
+                )
+
+                result = db.fetchone(f"{query} RETURNING history_id", params)
+                if result and result[0] is not None:
+                    history_ids.append(result[0])
+
+        return history_ids
+    except Exception as e:
+        logger.error(f"Failed to batch record ELO updates: {e}")
+        return []
+
+
+@with_retry(max_retries=3, retry_delay=0.5)
+def get_player_elo_history(
+    player_id: int,
+    limit: int = 100,
+    offset: int = 0,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    elo_type: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Get the ELO history for a player with optional filtering.
+
+    Parameters
+    ----------
+    player_id : int
+        ID of the player
+    limit : int, optional
+        Maximum number of records to return, by default 100
+    offset : int, optional
+        Number of records to skip, by default 0
+    start_date : Optional[datetime], optional
+        Filter by start date, by default None
+    end_date : Optional[datetime], optional
+        Filter by end date, by default None
+    elo_type : Optional[str], optional
+        Filter by ELO type ('global' or 'monthly'), by default None
+
+    Returns
+    -------
+    List[Dict[str, Any]]
+        List of ELO history records
+    """
+    try:
+        builder = SelectQueryBuilder("ELO_History").select("*").where("player_id = ?", player_id)
+
+        if start_date:
+            builder = builder.where("date >= ?", start_date)
+
+        if end_date:
+            builder = builder.where("date <= ?", end_date)
+
+        if elo_type:
+            builder = builder.where("type = ?", elo_type)
+
+        results = builder.order_by_clause("date DESC").limit(limit).offset(offset).execute(fetch_all=True)
+
+        if not results:
+            return []
+
+        history_records = []
+        for record in results:
+            history_records.append(
+                {
+                    "history_id": record[0],
+                    "player_id": record[1],
+                    "match_id": record[2],
+                    "type": record[3],
+                    "old_elo": record[4],
+                    "new_elo": record[5],
+                    "difference": record[6],
+                    "date": record[7],
+                    "year": record[8],
+                    "month": record[9],
+                    "day": record[10],
+                }
+            )
+
+        return history_records
+    except Exception as e:
+        logger.error(f"Failed to get ELO history for player ID {player_id}: {e}")
+        return []
+
+
+@with_retry(max_retries=3, retry_delay=0.5)
+def get_elo_by_date(player_id: int, target_date: datetime, elo_type: str = "global") -> Optional[int]:
+    """
+    Get the ELO score for a player at a specific date.
+
+    Parameters
+    ----------
+    player_id : int
+        ID of the player
+    target_date : datetime
+        The date to get the ELO score for
+    elo_type : str, optional
+        Type of ELO to retrieve ('global' or 'monthly'), by default 'global'
+
+    Returns
+    -------
+    Optional[int]
+        ELO score at the specified date, or None if no record exists
+    """
+    try:
+        result = (
+            SelectQueryBuilder("ELO_History")
+            .select("new_elo")
+            .where("player_id = ?", player_id)
+            .where("type = ?", elo_type)
+            .where("date <= ?", target_date)
+            .order_by_clause("date DESC")
+            .limit(1)
+            .execute(fetch_all=False)
+        )
+        return result[0] if result else None
+    except Exception as e:
+        logger.error(f"Failed to get ELO by date for player ID {player_id}: {e}")
+        return None
+
+
+@with_retry(max_retries=3, retry_delay=0.5)
+def get_monthly_elo_history(player_id: int, year: int, month: int, elo_type: str = "global") -> List[Dict[str, Any]]:
+    """
+    Get the monthly ELO history for a player for a specific year and month.
+
+    Parameters
+    ----------
+    player_id : int
+        ID of the player
+    year : int
+        Year to filter by
+    month : int
+        Month to filter by
+
+    Returns
+    -------
+    List[Dict[str, Any]]
+        List of ELO history records for the specified month
+    """
+    try:
+        results = (
+            SelectQueryBuilder("ELO_History")
+            .select("*")
+            .where("player_id = ?", player_id)
+            .where("year = ?", year)
+            .where("month = ?", month)
+            .where("type = ?", elo_type)
+            .order_by_clause("date ASC")
+            .execute(fetch_all=True)
+        )
+
+        if not results:
+            return []
+
+        history_records = []
+        for record in results:
+            history_records.append(
+                {
+                    "history_id": record[0],
+                    "player_id": record[1],
+                    "match_id": record[2],
+                    "type": record[3],
+                    "old_elo": record[4],
+                    "new_elo": record[5],
+                    "difference": record[6],
+                    "date": record[7],
+                    "year": record[8],
+                    "month": record[9],
+                    "day": record[10],
+                }
+            )
+
+        return history_records
+    except Exception as e:
+        logger.error(f"Failed to get monthly ELO history for player ID {player_id}: {e}")
+        return []
