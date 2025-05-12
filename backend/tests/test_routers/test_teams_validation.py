@@ -4,13 +4,11 @@ Unit tests for team router validation and error handling.
 """
 
 from unittest import TestCase, main
-from unittest.mock import patch
 
 from fastapi import status
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.utils.validation import ValidationErrorResponse
 
 
 class TestTeamsRouterValidation(TestCase):
@@ -25,11 +23,11 @@ class TestTeamsRouterValidation(TestCase):
         self.client = TestClient(app)
         self.invalid_team_data = {
             "player1_id": 1,
-            "player2_id": 1,  # Same player ID, should fail validation
+            "player2_id": 1,
             "global_elo": 1200.0,
         }
         self.negative_id_team_data = {
-            "player1_id": -1,  # Negative ID, should fail validation
+            "player1_id": -1,
             "player2_id": 2,
             "global_elo": 1200.0,
         }
@@ -38,10 +36,10 @@ class TestTeamsRouterValidation(TestCase):
         """
         Test team creation with validation error.
         """
-        # Make request with invalid data (same player IDs)
+        # ##: Make request with invalid data (same player IDs).
         response = self.client.post("/api/v1/teams", json=self.invalid_team_data)
 
-        # Verify response
+        # ##: Verify response.
         self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
         self.assertEqual(response.json()["status"], "error")
         self.assertEqual(response.json()["message"], "Input validation error")
@@ -51,12 +49,12 @@ class TestTeamsRouterValidation(TestCase):
         """
         Test getting a team with invalid ID format.
         """
-        # Test with negative ID
+        # ##: Test with negative ID.
         response = self.client.get("/api/v1/teams/-1")
         self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
         self.assertIn("error", response.json()["status"].lower())
 
-        # Test with non-integer ID
+        # ##: Test with non-integer ID.
         response = self.client.get("/api/v1/teams/abc")
         self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
         self.assertIn("error", response.json()["status"].lower())
@@ -65,12 +63,12 @@ class TestTeamsRouterValidation(TestCase):
         """
         Test getting team matches with invalid parameters.
         """
-        # Test with invalid limit (too high)
+        # ##: Test with invalid limit (too high).
         response = self.client.get("/api/v1/teams/1/matches?limit=101")
         self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
         self.assertIn("error", response.json()["status"].lower())
 
-        # Test with invalid skip (negative)
+        # ##: Test with invalid skip (negative).
         response = self.client.get("/api/v1/teams/1/matches?skip=-1")
         self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
         self.assertIn("error", response.json()["status"].lower())
@@ -79,12 +77,12 @@ class TestTeamsRouterValidation(TestCase):
         """
         Test getting teams list with invalid parameters.
         """
-        # Test with invalid min_elo (negative)
+        # ##: Test with invalid min_elo (negative).
         response = self.client.get("/api/v1/teams?min_elo=-100")
         self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
         self.assertIn("error", response.json()["status"].lower())
 
-        # Test with invalid player_id (zero)
+        # ##: Test with invalid player_id (zero).
         response = self.client.get("/api/v1/teams?player_id=0")
         self.assertEqual(response.status_code, status.HTTP_422_UNPROCESSABLE_ENTITY)
         self.assertIn("error", response.json()["status"].lower())
