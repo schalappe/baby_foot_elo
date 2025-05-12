@@ -20,11 +20,10 @@ class TestPlayerModels(TestCase):
         """
         Test PlayerCreate with valid data.
         """
-        data = {"name": "Valid Player", "global_elo": 1200, "current_month_elo": 1100}
+        data = {"name": "Valid Player", "global_elo": 1200}
         player = PlayerCreate(**data)
         self.assertEqual(player.name, "Valid Player")
         self.assertEqual(player.global_elo, 1200)
-        self.assertEqual(player.current_month_elo, 1100)
 
     def test_player_create_default_elo(self):
         """
@@ -33,14 +32,13 @@ class TestPlayerModels(TestCase):
         player = PlayerCreate(name="Default Elo Player")
         self.assertEqual(player.name, "Default Elo Player")
         self.assertEqual(player.global_elo, 1000)
-        self.assertEqual(player.current_month_elo, 1000)
 
     def test_player_create_invalid_name_short(self):
         """
         Test PlayerCreate with a name that is too short.
         """
         with self.assertRaises(ValidationError) as context:
-            PlayerCreate(name="", global_elo=1000, current_month_elo=1000)
+            PlayerCreate(name="", global_elo=1000)
 
         errors = context.exception.errors()
         self.assertEqual(len(errors), 1)
@@ -62,9 +60,6 @@ class TestPlayerModels(TestCase):
         """
         with self.assertRaises(ValidationError):
             PlayerCreate(name="Negative Elo", global_elo=-100)
-
-        with self.assertRaises(ValidationError):
-            PlayerCreate(name="Negative Elo", current_month_elo=-50)
 
     def test_player_update_valid(self):
         """
@@ -98,7 +93,6 @@ class TestPlayerModels(TestCase):
             "id": 1,
             "name": "Response Player",
             "global_elo": 1500,
-            "current_month_elo": 1400,
             "creation_date": now,
             "matches_played": 10,
             "wins": 5,
@@ -108,7 +102,6 @@ class TestPlayerModels(TestCase):
         self.assertEqual(player_response.id, 1)
         self.assertEqual(player_response.name, "Response Player")
         self.assertEqual(player_response.global_elo, 1500)
-        self.assertEqual(player_response.current_month_elo, 1400)
         self.assertEqual(player_response.creation_date, now)
         self.assertEqual(player_response.matches_played, 10)
         self.assertEqual(player_response.wins, 5)
@@ -127,7 +120,6 @@ class TestPlayerModels(TestCase):
                 id,
                 name,
                 global_elo,
-                current_month_elo,
                 creation_date,
                 matches_played=0,
                 wins=0,
@@ -136,7 +128,6 @@ class TestPlayerModels(TestCase):
                 self.id = id
                 self.name = name
                 self.global_elo = global_elo
-                self.current_month_elo = current_month_elo
                 self.creation_date = creation_date
                 self.matches_played = matches_played
                 self.wins = wins
@@ -147,7 +138,6 @@ class TestPlayerModels(TestCase):
             id=2,
             name="Orm Player",
             global_elo=1600,
-            current_month_elo=1550,
             creation_date=now,
             matches_played=20,
             wins=15,
@@ -159,7 +149,6 @@ class TestPlayerModels(TestCase):
         self.assertEqual(player_response.id, 2)
         self.assertEqual(player_response.name, "Orm Player")
         self.assertEqual(player_response.global_elo, 1600)
-        self.assertEqual(player_response.current_month_elo, 1550)
         self.assertEqual(player_response.creation_date, now)
         self.assertEqual(player_response.matches_played, 20)
         self.assertEqual(player_response.wins, 15)
@@ -175,7 +164,6 @@ class TestPlayerModels(TestCase):
                 id=0,
                 name="Invalid ID Player",
                 global_elo=1000,
-                current_month_elo=1000,
                 creation_date=now,
             )
 
@@ -189,18 +177,9 @@ class TestPlayerModels(TestCase):
                 id=1,
                 name="Invalid Elo Player",
                 global_elo=-100,
-                current_month_elo=1000,
                 creation_date=now,
             )
 
-        with self.assertRaises(ValidationError):
-            PlayerResponse(
-                id=1,
-                name="Invalid Elo Player",
-                global_elo=1000,
-                current_month_elo=-100,
-                creation_date=now,
-            )
 
 
 if __name__ == "__main__":

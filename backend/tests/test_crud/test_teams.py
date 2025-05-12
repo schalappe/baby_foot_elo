@@ -49,7 +49,6 @@ class TestTeamCRUD(TestCase):
         self.assertEqual(team["team_id"], team_id)
         self.assertEqual({team["player1_id"], team["player2_id"]}, {p1, p2})
         self.assertEqual(team["global_elo"], 1000.0)
-        self.assertEqual(team["current_month_elo"], 1000.0)
         import datetime
 
         self.assertIsInstance(team["created_at"], datetime.datetime)
@@ -65,11 +64,10 @@ class TestTeamCRUD(TestCase):
         """
         p1 = create_player("Cathy")
         p2 = create_player("Dan")
-        team_id = create_team(p1, p2, global_elo=1200.0, current_month_elo=1100.0, last_match_at="2023-01-01 12:00:00")
+        team_id = create_team(p1, p2, global_elo=1200.0, last_match_at="2023-01-01 12:00:00")
         self.assertIsNotNone(team_id)
         team = get_team(team_id)
         self.assertEqual(team["global_elo"], 1200.0)
-        self.assertEqual(team["current_month_elo"], 1100.0)
         import datetime
 
         self.assertIsInstance(team["last_match_at"], datetime.datetime)
@@ -141,11 +139,6 @@ class TestTeamCRUD(TestCase):
         self.assertTrue(update_team(team_id, global_elo=1500.0))
         team = get_team(team_id)
         self.assertEqual(team["global_elo"], 1500.0)
-
-        # ##: Update current_month_elo only.
-        self.assertTrue(update_team(team_id, current_month_elo=1400.0))
-        team = get_team(team_id)
-        self.assertEqual(team["current_month_elo"], 1400.0)
 
         # ##: Update last_match_at only.
         self.assertTrue(update_team(team_id, last_match_at="2023-02-02 15:00:00"))

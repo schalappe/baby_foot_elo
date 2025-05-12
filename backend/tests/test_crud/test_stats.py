@@ -11,7 +11,7 @@ from loguru import logger
 from app.crud.elo_history import record_elo_update
 from app.crud.matches import create_match
 from app.crud.players import create_player, update_player
-from app.crud.stats import get_player_elo_history, get_player_stats
+from app.crud.stats import get_player_stats
 from app.crud.teams import create_team
 from app.db import DatabaseManager, initialize_database
 
@@ -45,7 +45,6 @@ class TestStatsCRUD(TestCase):
         self.assertEqual(stats["player_id"], p1)
         self.assertEqual(stats["name"], "Alice")
         self.assertEqual(stats["global_elo"], 1000)
-        self.assertEqual(stats["current_month_elo"], 1000)
         self.assertEqual(stats["matches_played"], 0)
         self.assertEqual(stats["wins"], 0)
         self.assertEqual(stats["losses"], 0)
@@ -72,7 +71,7 @@ class TestStatsCRUD(TestCase):
         update_player(p1, global_elo=1500)
 
         # ##: Record ELO update for p1.
-        record_elo_update(player_id=p1, match_id=m1, old_elo=1000, new_elo=1500, elo_type="global")
+        record_elo_update(player_id=p1, match_id=m1, old_elo=1000, new_elo=1500)
 
         # ##: Get player stats.
         stats = get_player_stats(p1)
@@ -81,32 +80,6 @@ class TestStatsCRUD(TestCase):
         self.assertEqual(stats["losses"], 0)
         self.assertEqual(stats["win_rate"], 100)
         self.assertEqual(stats["global_elo"], 1500)
-        self.assertEqual(stats["current_month_elo"], 1000)
-
-    def test_get_player_elo_history(self):
-        """
-        Test retrieving a player's ELO history with filtering.
-        """
-        # ##: Create players, teams, matches, and history.
-        p1 = create_player("Ivy")
-        p2 = create_player("Judy")
-        t1 = create_team(p1, p2)
-        t2 = create_team(create_player("K"), create_player("L"))
-        date1 = datetime(2025, 2, 1, 10, 0, 0)
-        date2 = datetime(2025, 2, 2, 11, 0, 0)
-        m1 = create_match(winner_team_id=t1, loser_team_id=t2, is_fanny=False, played_at=date1)
-        m2 = create_match(winner_team_id=t1, loser_team_id=t2, is_fanny=False, played_at=date2)
-        record_elo_update(player_id=p1, match_id=m1, old_elo=1000, new_elo=1200, elo_type="global")
-        record_elo_update(player_id=p1, match_id=m2, old_elo=1200, new_elo=1300, elo_type="global")
-
-        history = get_player_elo_history(p1)
-        self.assertEqual(len(history), 2)
-        self.assertEqual(history[0]["match_date"], date2)
-        self.assertEqual(history[1]["match_date"], date1)
-        self.assertEqual(history[0]["new_elo"], 1300)
-        self.assertEqual(history[1]["new_elo"], 1200)
-        self.assertEqual(history[0]["old_elo"], 1200)
-        self.assertEqual(history[1]["old_elo"], 1000)
 
 
 if __name__ == "__main__":

@@ -35,7 +35,7 @@ from app.crud.players import (
     get_player,
     update_player,
 )
-from app.crud.stats import get_player_elo_history, get_player_stats
+from app.crud.stats import get_player_stats
 from app.crud.teams import get_teams_by_player
 from app.models.elo_history import EloHistoryResponse
 from app.models.match import MatchResponse
@@ -676,7 +676,7 @@ async def get_player_statistics_endpoint(
             )
 
         # ##: Get ELO history for additional stats.
-        elo_history = get_player_elo_history(player_id, 1000, 0, None, None, "global")
+        elo_history = get_player_elo_history(player_id, 1000, 0, None, None)
 
         # ##: Calculate win rate.
         matches_played = stats["matches_played"]

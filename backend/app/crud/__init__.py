@@ -14,6 +14,7 @@ from .builders import (
 )
 from .elo_history import (
     batch_record_elo_updates,
+    get_player_elo_history,
     record_elo_update,
 )
 from .matches import (
@@ -31,7 +32,7 @@ from .players import (
     search_players,
     update_player,
 )
-from .stats import get_player_elo_history, get_player_stats
+from .stats import get_player_stats
 from .teams import (
     batch_insert_teams,
     create_team,
@@ -65,9 +66,9 @@ __all__ = [
     # ELO
     "record_elo_update",
     "batch_record_elo_updates",
+    "get_player_elo_history",
     # Stats
     "get_player_stats",
-    "get_player_elo_history",
     # Query Builders
     "SelectQueryBuilder",
     "InsertQueryBuilder",

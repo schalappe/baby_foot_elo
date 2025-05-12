@@ -34,12 +34,11 @@ class TestTeamModels(TestCase):
         """
         Test TeamCreate with valid data.
         """
-        data = {"player1_id": 1, "player2_id": 2, "global_elo": 1200.0, "current_month_elo": 1100.0}
+        data = {"player1_id": 1, "player2_id": 2, "global_elo": 1200.0}
         team = TeamCreate(**data)
         self.assertEqual(team.player1_id, 1)
         self.assertEqual(team.player2_id, 2)
         self.assertEqual(team.global_elo, 1200.0)
-        self.assertEqual(team.current_month_elo, 1100.0)
 
     def test_team_create_default_elo(self):
         """
@@ -49,7 +48,6 @@ class TestTeamModels(TestCase):
         self.assertEqual(team.player1_id, 3)
         self.assertEqual(team.player2_id, 4)
         self.assertEqual(team.global_elo, 1000.0)
-        self.assertEqual(team.current_month_elo, 1000.0)
 
     def test_team_create_player_ids_swapped(self):
         """
@@ -96,7 +94,6 @@ class TestTeamModels(TestCase):
             "player1_id": 1,
             "player2_id": 2,
             "global_elo": 1500.0,
-            "current_month_elo": 1400.0,
             "created_at": now,
             "last_match_at": now,
         }
@@ -105,7 +102,6 @@ class TestTeamModels(TestCase):
         self.assertEqual(team_response.player1_id, 1)
         self.assertEqual(team_response.player2_id, 2)
         self.assertEqual(team_response.global_elo, 1500.0)
-        self.assertEqual(team_response.current_month_elo, 1400.0)
         self.assertEqual(team_response.created_at, now)
         self.assertEqual(team_response.last_match_at, now)
         self.assertIsNone(team_response.player1)
@@ -128,7 +124,6 @@ class TestTeamModels(TestCase):
             "player1_id": 1,
             "player2_id": 2,
             "global_elo": 1250.0,
-            "current_month_elo": 1200.0,
             "created_at": now,
             "last_match_at": None,
             "player1": player1_data,
@@ -188,7 +183,6 @@ class TestTeamModels(TestCase):
         self.assertEqual(team_response.player1_id, 10)
         self.assertEqual(team_response.player2_id, 20)
         self.assertEqual(team_response.global_elo, 1600.0)
-        self.assertEqual(team_response.current_month_elo, 1550.0)
         self.assertEqual(team_response.created_at, now)
         self.assertEqual(team_response.last_match_at, now)
         self.assertIsNone(team_response.player1)

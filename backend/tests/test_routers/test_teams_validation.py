@@ -27,13 +27,11 @@ class TestTeamsRouterValidation(TestCase):
             "player1_id": 1,
             "player2_id": 1,  # Same player ID, should fail validation
             "global_elo": 1200.0,
-            "current_month_elo": 1200.0,
         }
         self.negative_id_team_data = {
             "player1_id": -1,  # Negative ID, should fail validation
             "player2_id": 2,
             "global_elo": 1200.0,
-            "current_month_elo": 1200.0,
         }
 
     def test_create_team_validation_error(self):

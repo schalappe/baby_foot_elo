@@ -100,9 +100,9 @@ class TestELOHistoryCRUD(TestCase):
         m3 = create_match(t1, t2, date3)
 
         # ##: Record ELO updates.
-        record_elo_update(p1, m1, 1000, 1050, "global", date1)
-        record_elo_update(p1, m2, 1050, 1075, "global", date2)
-        record_elo_update(p1, m3, 1075, 1100, "global", date3)
+        record_elo_update(p1, m1, 1000, 1050, date1)
+        record_elo_update(p1, m2, 1050, 1075, date2)
+        record_elo_update(p1, m3, 1075, 1100, date3)
 
         # ##: Test getting all history.
         history = get_player_elo_history(p1)
@@ -141,9 +141,9 @@ class TestELOHistoryCRUD(TestCase):
         m3 = create_match(t1, t2, date3)
 
         # ##: Record ELO updates.
-        record_elo_update(p1, m1, 1000, 1050, "global", date1)
-        record_elo_update(p1, m2, 1050, 1075, "global", date2)
-        record_elo_update(p1, m3, 1075, 1100, "global", date3)
+        record_elo_update(p1, m1, 1000, 1050, date1)
+        record_elo_update(p1, m2, 1050, 1075, date2)
+        record_elo_update(p1, m3, 1075, 1100, date3)
 
         # ##: Test getting ELO at different dates.
         self.assertEqual(get_elo_by_date(p1, datetime(2023, 5, 2)), 1050)  # Exactly on date1
@@ -174,9 +174,9 @@ class TestELOHistoryCRUD(TestCase):
         m3 = create_match(t1, t2, date3)
 
         # ##: Record ELO updates.
-        record_elo_update(p1, m1, 1000, 1050, "global", date1)
-        record_elo_update(p1, m2, 1050, 1075, "global", date2)
-        record_elo_update(p1, m3, 1075, 1100, "global", date3)
+        record_elo_update(p1, m1, 1000, 1050, date1)
+        record_elo_update(p1, m2, 1050, 1075, date2)
+        record_elo_update(p1, m3, 1075, 1100, date3)
 
         # ##: Test getting monthly history.
         june_history = get_monthly_elo_history(p1, 2023, 6)
