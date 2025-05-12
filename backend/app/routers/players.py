@@ -104,9 +104,7 @@ async def create_player_endpoint(player: PlayerCreate):
             )
 
         # ##: Create the player.
-        player_id = create_player(
-            player.name, global_elo=player.global_elo, current_month_elo=player.current_month_elo
-        )
+        player_id = create_player(player.name, global_elo=player.global_elo)
 
         if not player_id:
             logger.error(f"Failed to create player with name: {player.name}")
@@ -120,10 +118,8 @@ async def create_player_endpoint(player: PlayerCreate):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch player after creation"
             )
 
-        # ##: Calculate losses.
-        losses = stats["matches_played"] - stats["wins"]
-
         # ##: Return player response.
+        # ##: TODO: Use operator ** to unpack stats.
         return PlayerResponse(
             id=stats["player_id"],
             name=stats["name"],
@@ -131,7 +127,8 @@ async def create_player_endpoint(player: PlayerCreate):
             creation_date=stats.get("created_at"),
             matches_played=stats["matches_played"],
             wins=stats["wins"],
-            losses=losses,
+            losses=stats["losses"],
+            win_rate=stats["win_rate"],
         )
     except HTTPException:
         # ##: Re-raise HTTP exceptions.
@@ -510,14 +507,15 @@ async def get_player_matches_endpoint(
         for match in matches:
             response.append(
                 MatchResponse(
-                    id=match["match_id"],
-                    team1_id=match["team1_id"],
-                    team2_id=match["team2_id"],
-                    team1_score=match["team1_score"],
-                    team2_score=match["team2_score"],
-                    team1_elo_change=match["team1_elo_change"],
-                    team2_elo_change=match["team2_elo_change"],
-                    match_date=match["match_date"],
+                    match_id=match["match_id"],
+                    winner_team_id=match["winner_team_id"],
+                    loser_team_id=match["loser_team_id"],
+                    is_fanny=match["is_fanny"],
+                    played_at=match["played_at"],
+                    year=match["year"],
+                    month=match["month"],
+                    day=match["day"],
+                    won=match["won"],
                 )
             )
 
@@ -602,13 +600,16 @@ async def get_player_elo_history_endpoint(
         for record in history:
             response.append(
                 EloHistoryResponse(
-                    id=record["history_id"],
+                    history_id=record["history_id"],
                     player_id=record["player_id"],
-                    elo_value=record["elo_value"],
-                    elo_change=record["elo_change"],
+                    old_elo=record["old_elo"],
+                    new_elo=record["new_elo"],
+                    difference=record["difference"],
                     match_id=record["match_id"],
-                    elo_type=record["elo_type"],
-                    timestamp=record["timestamp"],
+                    date=record["date"],
+                    year=record["year"],
+                    month=record["month"],
+                    day=record["day"],
                 )
             )
 
@@ -695,8 +696,8 @@ async def get_player_statistics_endpoint(
         elo_values = []
 
         if elo_history:
-            elo_changes = [record["elo_change"] for record in elo_history if record["elo_change"] is not None]
-            elo_values = [record["elo_value"] for record in elo_history if record["elo_value"] is not None]
+            elo_changes = [record["difference"] for record in elo_history if record["difference"] is not None]
+            elo_values = [record["new_elo"] for record in elo_history if record["new_elo"] is not None]
 
         avg_elo_change = sum(elo_changes) / len(elo_changes) if elo_changes else 0
         highest_elo = max(elo_values) if elo_values else stats.get("global_elo", 1000)

@@ -86,7 +86,7 @@ def create_team(
 def update_team(
     team_id: int,
     global_elo: Optional[float] = None,
-    last_match_at: Optional[str] = None,
+    last_match_at: Optional[str] = None,  # ##: TODO: Why str not datetime?
 ) -> bool:
     """
     Update a team's ELO ratings or last match timestamp.

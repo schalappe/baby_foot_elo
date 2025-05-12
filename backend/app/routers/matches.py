@@ -110,7 +110,6 @@ async def record_match_endpoint(match_data: MatchCreate):
     if not all([winner_player1, winner_player2, loser_player1, loser_player2]):
         raise HTTPException(status_code=404, detail="One or more players not found")
 
-    # ##: Use a transaction to ensure atomicity.
     try:
         # ##: Record the match.
         match_id = create_match(
@@ -151,7 +150,6 @@ async def record_match_endpoint(match_data: MatchCreate):
                     "match_id": match_id,
                     "old_elo": old_elo,
                     "new_elo": new_elo,
-                    "type": "global",
                     "date": played_at,
                 }
             )
@@ -177,6 +175,7 @@ async def record_match_endpoint(match_data: MatchCreate):
         match_data = get_match(match_id)
 
         # ##: Create response with ELO changes.
+        # ##: TODO: Add TeamResponse models.
         response = MatchWithEloResponse(
             match_id=match_id,
             winner_team_id=match_data["winner_team_id"],
@@ -250,6 +249,7 @@ async def list_matches(
         matches_data = get_all_matches(limit=limit, offset=skip)
 
     # ##: Convert to response model.
+    # ##: TODO: Add TeamResponse models.
     result = []
     for match in matches_data:
         match_response = MatchResponse(
@@ -324,6 +324,7 @@ async def get_match_details(match_id: int):
     winner_team_response = None
     loser_team_response = None
 
+    # ##: TODO: Use operator ** unpacking.
     if winner_team:
         winner_team_response = TeamResponse(
             team_id=winner_team["team_id"],
@@ -377,10 +378,11 @@ async def export_matches():
     List[MatchResponse]
         List of all matches in the system
     """
-    # Get all matches without pagination limits
+    # ##: Get all matches without pagination limits.
     matches_data = get_all_matches(limit=10000, offset=0)
 
-    # Convert to response model
+    # ##: Convert to response model.
+    # ##: TODO: Use operator ** unpacking.
     result = []
     for match in matches_data:
         match_response = MatchResponse(
