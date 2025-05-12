@@ -98,4 +98,5 @@ class EloHistoryResponse(EloHistoryBase):
     month: int = Field(..., ge=1, le=12, description="Month of ELO change")
     day: int = Field(..., ge=1, le=31, description="Day of ELO change")
 
-    model_config = {"from_attributes": True}
+    class Config:
+        from_attributes = True

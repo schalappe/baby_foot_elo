@@ -8,7 +8,7 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field, model_validator
 
-from .player import PlayerResponse
+from app.models.player import PlayerResponse
 
 
 class TeamBase(BaseModel):
@@ -109,4 +109,5 @@ class TeamResponse(TeamBase):
     player2: Optional[PlayerResponse] = Field(default=None, description="Details for player 2")
     rank: Optional[int] = Field(default=None, description="Ranking position based on ELO")
 
-    model_config = {"from_attributes": True}
+    class Config:
+        from_attributes = True

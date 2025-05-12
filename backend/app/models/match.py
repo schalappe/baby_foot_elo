@@ -10,7 +10,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, model_validator
 
-from .team import TeamResponse
+from app.models.team import TeamResponse
 
 
 class MatchBase(BaseModel):

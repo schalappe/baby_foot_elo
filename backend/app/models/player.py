@@ -81,4 +81,5 @@ class PlayerResponse(PlayerBase):
     wins: int = Field(default=0, ge=0, description="Total matches won by the player")
     losses: int = Field(default=0, ge=0, description="Total matches lost by the player")
 
-    model_config = {"from_attributes": True}
+    class Config:
+        from_attributes = True
