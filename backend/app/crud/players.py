@@ -10,7 +10,7 @@ from loguru import logger
 from app.db.retry import with_retry
 from app.db.transaction import transaction
 
-from .builders import (
+from app.crud.builders import (
     DeleteQueryBuilder,
     InsertQueryBuilder,
     SelectQueryBuilder,

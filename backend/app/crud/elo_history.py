@@ -10,7 +10,7 @@ from loguru import logger
 
 from app.db import transaction, with_retry
 
-from .builders import InsertQueryBuilder, SelectQueryBuilder
+from app.crud.builders import InsertQueryBuilder, SelectQueryBuilder
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -183,14 +183,13 @@ def get_player_elo_history(
                     "history_id": record[0],
                     "player_id": record[1],
                     "match_id": record[2],
-                    "type": record[3],
-                    "old_elo": record[4],
-                    "new_elo": record[5],
-                    "difference": record[6],
-                    "date": record[7],
-                    "year": record[8],
-                    "month": record[9],
-                    "day": record[10],
+                    "old_elo": record[3],
+                    "new_elo": record[4],
+                    "difference": record[5],
+                    "date": record[6],
+                    "year": record[7],
+                    "month": record[8],
+                    "day": record[9],
                 }
             )
 
@@ -273,13 +272,13 @@ def get_monthly_elo_history(player_id: int, year: int, month: int) -> List[Dict[
                     "history_id": record[0],
                     "player_id": record[1],
                     "match_id": record[2],
-                    "old_elo": record[4],
-                    "new_elo": record[5],
-                    "difference": record[6],
-                    "date": record[7],
-                    "year": record[8],
-                    "month": record[9],
-                    "day": record[10],
+                    "old_elo": record[3],
+                    "new_elo": record[4],
+                    "difference": record[5],
+                    "date": record[6],
+                    "year": record[7],
+                    "month": record[8],
+                    "day": record[9],
                 }
             )
 
@@ -317,13 +316,13 @@ def get_elo_history_by_match(match_id: int) -> List[Dict[str, Any]]:
                     "history_id": record[0],
                     "player_id": record[1],
                     "match_id": record[2],
-                    "old_elo": record[4],
-                    "new_elo": record[5],
-                    "difference": record[6],
-                    "date": record[7],
-                    "year": record[8],
-                    "month": record[9],
-                    "day": record[10],
+                    "old_elo": record[3],
+                    "new_elo": record[4],
+                    "difference": record[5],
+                    "date": record[6],
+                    "year": record[7],
+                    "month": record[8],
+                    "day": record[9],
                 }
             )
         return history_records

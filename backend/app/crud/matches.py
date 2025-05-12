@@ -10,7 +10,7 @@ from loguru import logger
 
 from app.db import transaction, with_retry
 
-from .builders import DeleteQueryBuilder, InsertQueryBuilder, SelectQueryBuilder
+from app.crud.builders import DeleteQueryBuilder, InsertQueryBuilder, SelectQueryBuilder
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
