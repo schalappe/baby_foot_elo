@@ -374,7 +374,9 @@ async def get_team_rankings_endpoint(
 
     # ##: Populate player details for each team.
     result = [
-        TeamResponse(**team_data, player1=get_player(team_data["player1_id"]), player2=get_player(team_data["player2_id"]))
+        TeamResponse(
+            **team_data, player1=get_player(team_data["player1_id"]), player2=get_player(team_data["player2_id"])
+        )
         for team_data in teams_data
     ]
 
