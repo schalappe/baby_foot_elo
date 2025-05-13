@@ -58,7 +58,7 @@ class PlayerResponse(PlayerBase):
 
     Attributes
     ----------
-    id : int
+    player_id : int
         Unique identifier for the player.
     name : str
         The name of the player (inherited from PlayerBase).
@@ -74,7 +74,7 @@ class PlayerResponse(PlayerBase):
         The number of matches the player has lost (default is 0).
     """
 
-    id: int = Field(..., gt=0, description="Unique identifier for the player")
+    player_id: int = Field(..., gt=0, description="Unique identifier for the player")
     global_elo: int = Field(..., ge=0, description="Current global ELO rating of the player")
     creation_date: datetime = Field(..., description="Timestamp of player creation")
     matches_played: int = Field(default=0, ge=0, description="Total matches played by the player")

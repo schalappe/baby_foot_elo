@@ -119,17 +119,7 @@ async def create_player_endpoint(player: PlayerCreate):
             )
 
         # ##: Return player response.
-        # ##: TODO: Use operator ** to unpack stats.
-        return PlayerResponse(
-            id=stats["player_id"],
-            name=stats["name"],
-            global_elo=int(stats.get("global_elo", 1000)),
-            creation_date=stats.get("created_at"),
-            matches_played=stats["matches_played"],
-            wins=stats["wins"],
-            losses=stats["losses"],
-            win_rate=stats["win_rate"],
-        )
+        return PlayerResponse(**stats)
     except HTTPException:
         # ##: Re-raise HTTP exceptions.
         raise
@@ -208,16 +198,16 @@ async def list_players_endpoint(
             if not stats:
                 continue
 
-            losses = stats["matches_played"] - stats["wins"]
             response.append(
                 PlayerResponse(
-                    id=pid,
+                    player_id=pid,
                     name=stats["name"],
                     global_elo=int(stats.get("global_elo", 1000)),
                     creation_date=stats.get("created_at"),
                     matches_played=stats["matches_played"],
                     wins=stats["wins"],
-                    losses=losses,
+                    losses=stats["losses"],
+                    win_rate=stats["win_rate"],
                 )
             )
 
@@ -277,18 +267,16 @@ async def get_player_endpoint(player_id: int = Path(..., gt=0, description="The 
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch player statistics"
             )
 
-        # ##: Calculate losses.
-        losses = stats["matches_played"] - stats["wins"]
-
         # ##: Return player response.
         return PlayerResponse(
-            id=stats["player_id"],
+            player_id=stats["player_id"],
             name=stats["name"],
             global_elo=int(stats.get("global_elo", 1000)),
             creation_date=stats.get("created_at"),
             matches_played=stats["matches_played"],
             wins=stats["wins"],
-            losses=losses,
+            losses=stats["losses"],
+            win_rate=stats["win_rate"],
         )
     except HTTPException:
         raise
@@ -364,18 +352,16 @@ async def update_player_endpoint(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch player after update"
             )
 
-        # ##: Calculate losses.
-        losses = stats["matches_played"] - stats["wins"]
-
         # ##: Return updated player response.
         return PlayerResponse(
-            id=stats["player_id"],
+            player_id=stats["player_id"],
             name=stats["name"],
             global_elo=int(stats.get("global_elo", 1000)),
             creation_date=stats.get("created_at"),
             matches_played=stats["matches_played"],
             wins=stats["wins"],
-            losses=losses,
+            losses=stats["losses"],
+            win_rate=stats["win_rate"],
         )
     except HTTPException:
         raise
@@ -503,21 +489,7 @@ async def get_player_matches_endpoint(
         matches = matches[offset : offset + limit]
 
         # ##: Convert to response model.
-        response = []
-        for match in matches:
-            response.append(
-                MatchResponse(
-                    match_id=match["match_id"],
-                    winner_team_id=match["winner_team_id"],
-                    loser_team_id=match["loser_team_id"],
-                    is_fanny=match["is_fanny"],
-                    played_at=match["played_at"],
-                    year=match["year"],
-                    month=match["month"],
-                    day=match["day"],
-                    won=match["won"],
-                )
-            )
+        response = [MatchResponse(**match) for match in matches]
 
         return response
     except HTTPException:
@@ -596,22 +568,7 @@ async def get_player_elo_history_endpoint(
             return []
 
         # ##: Convert to response model.
-        response = []
-        for record in history:
-            response.append(
-                EloHistoryResponse(
-                    history_id=record["history_id"],
-                    player_id=record["player_id"],
-                    old_elo=record["old_elo"],
-                    new_elo=record["new_elo"],
-                    difference=record["difference"],
-                    match_id=record["match_id"],
-                    date=record["date"],
-                    year=record["year"],
-                    month=record["month"],
-                    day=record["day"],
-                )
-            )
+        response = [EloHistoryResponse(**record) for record in history]
 
         return response
     except HTTPException:
@@ -681,10 +638,10 @@ async def get_player_statistics_endpoint(
         # ##: Calculate win rate.
         matches_played = stats["matches_played"]
         wins = stats["wins"]
-        losses = matches_played - wins
+        losses = stats["losses"]
         win_rate = (wins / matches_played) * 100 if matches_played > 0 else 0
 
-        # ##: TODO: Calculate streaks and ELO stats.
+        # TODO: Calculate streaks and ELO stats.
         current_streak = 0
         best_streak = 0
         worst_streak = 0

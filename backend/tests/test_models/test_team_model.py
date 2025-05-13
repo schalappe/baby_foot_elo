@@ -13,10 +13,9 @@ from app.models.team import TeamCreate, TeamResponse, TeamUpdate
 
 
 class MockPlayerForTeam(BaseModel):
-    id: int
+    player_id: int
     name: str
     global_elo: int
-    current_month_elo: int
     creation_date: datetime
     matches_played: int = 0
     wins: int = 0
@@ -112,12 +111,8 @@ class TestTeamModels(TestCase):
         Test TeamResponse with valid data, including nested player objects.
         """
         now = datetime.now(timezone.utc)
-        player1_data = MockPlayerForTeam(
-            id=1, name="Player One", global_elo=1200, current_month_elo=1150, creation_date=now
-        )
-        player2_data = MockPlayerForTeam(
-            id=2, name="Player Two", global_elo=1300, current_month_elo=1250, creation_date=now
-        )
+        player1_data = MockPlayerForTeam(player_id=1, name="Player One", global_elo=1200, creation_date=now)
+        player2_data = MockPlayerForTeam(player_id=2, name="Player Two", global_elo=1300, creation_date=now)
 
         data = {
             "team_id": 2,

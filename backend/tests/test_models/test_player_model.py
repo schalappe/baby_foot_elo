@@ -90,7 +90,7 @@ class TestPlayerModels(TestCase):
         """
         now = datetime.now(timezone.utc)
         data = {
-            "id": 1,
+            "player_id": 1,
             "name": "Response Player",
             "global_elo": 1500,
             "creation_date": now,
@@ -99,7 +99,7 @@ class TestPlayerModels(TestCase):
             "losses": 5,
         }
         player_response = PlayerResponse(**data)
-        self.assertEqual(player_response.id, 1)
+        self.assertEqual(player_response.player_id, 1)
         self.assertEqual(player_response.name, "Response Player")
         self.assertEqual(player_response.global_elo, 1500)
         self.assertEqual(player_response.creation_date, now)
@@ -117,7 +117,7 @@ class TestPlayerModels(TestCase):
         class MockPlayerDB:
             def __init__(
                 self,
-                id,
+                player_id,
                 name,
                 global_elo,
                 creation_date,
@@ -125,7 +125,7 @@ class TestPlayerModels(TestCase):
                 wins=0,
                 losses=0,
             ):
-                self.id = id
+                self.player_id = player_id
                 self.name = name
                 self.global_elo = global_elo
                 self.creation_date = creation_date
@@ -135,7 +135,7 @@ class TestPlayerModels(TestCase):
 
         now = datetime.now(timezone.utc)
         mock_db_player = MockPlayerDB(
-            id=2,
+            player_id=2,
             name="Orm Player",
             global_elo=1600,
             creation_date=now,
@@ -146,7 +146,7 @@ class TestPlayerModels(TestCase):
 
         player_response = PlayerResponse.model_validate(mock_db_player)
 
-        self.assertEqual(player_response.id, 2)
+        self.assertEqual(player_response.player_id, 2)
         self.assertEqual(player_response.name, "Orm Player")
         self.assertEqual(player_response.global_elo, 1600)
         self.assertEqual(player_response.creation_date, now)
@@ -161,7 +161,7 @@ class TestPlayerModels(TestCase):
         now = datetime.now(timezone.utc)
         with self.assertRaises(ValidationError):
             PlayerResponse(
-                id=0,
+                player_id=0,
                 name="Invalid ID Player",
                 global_elo=1000,
                 creation_date=now,
@@ -174,7 +174,7 @@ class TestPlayerModels(TestCase):
         now = datetime.now(timezone.utc)
         with self.assertRaises(ValidationError):
             PlayerResponse(
-                id=1,
+                player_id=1,
                 name="Invalid Elo Player",
                 global_elo=-100,
                 creation_date=now,

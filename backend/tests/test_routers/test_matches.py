@@ -263,11 +263,9 @@ class TestMatchesRouter(TestCase):
 
     @patch("app.routers.matches.get_all_matches")
     @patch("app.routers.matches.get_matches_by_team")
-    @patch("app.routers.matches.get_matches_by_date_range")
-    @patch("app.routers.matches.get_fanny_matches")
-    def test_list_matches(
-        self, mock_get_fanny_matches, mock_get_matches_by_date_range, mock_get_matches_by_team, mock_get_all_matches
-    ):
+    @patch("app.routers.matches.get_team")
+    @patch("app.routers.matches.get_player")
+    def test_list_matches(self, mock_get_player, mock_get_team, mock_get_matches_by_team, mock_get_all_matches):
         """
         Test listing matches with pagination and filtering.
         """
@@ -294,6 +292,24 @@ class TestMatchesRouter(TestCase):
                 "day": 10,
             },
         ]
+
+        # ##: Mock team data.
+        mock_get_team.return_value = {
+            "team_id": 1,
+            "player1_id": 1,
+            "player2_id": 2,
+            "global_elo": 1200,
+            "created_at": datetime.now(),
+            "last_match_at": datetime.now(),
+        }
+
+        # ##: Mock player data.
+        mock_get_player.return_value = {
+            "player_id": 1,
+            "name": "John",
+            "global_elo": 1200,
+            "creation_date": datetime.now(),
+        }
 
         # ##: Test API endpoint.
         response = self.client.get("/api/v1/matches?skip=0&limit=10")

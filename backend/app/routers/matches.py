@@ -175,7 +175,6 @@ async def record_match_endpoint(match_data: MatchCreate):
         match_data = get_match(match_id)
 
         # ##: Create response with ELO changes.
-        # ##: TODO: Add TeamResponse models.
         response = MatchWithEloResponse(
             match_id=match_id,
             winner_team_id=match_data["winner_team_id"],
@@ -186,6 +185,16 @@ async def record_match_endpoint(match_data: MatchCreate):
             month=match_data["month"],
             day=match_data["day"],
             elo_changes=elo_changes,
+            winner_team=TeamResponse(
+                **winner_team,
+                player1=get_player(winner_team["player1_id"]),
+                player2=get_player(winner_team["player2_id"]),
+            ),
+            loser_team=TeamResponse(
+                **loser_team,
+                player1=get_player(loser_team["player1_id"]),
+                player2=get_player(loser_team["player2_id"]),
+            ),
         )
 
         return response
@@ -249,18 +258,22 @@ async def list_matches(
         matches_data = get_all_matches(limit=limit, offset=skip)
 
     # ##: Convert to response model.
-    # ##: TODO: Add TeamResponse models.
     result = []
     for match in matches_data:
-        match_response = MatchResponse(
-            match_id=match["match_id"],
-            winner_team_id=match["winner_team_id"],
-            loser_team_id=match["loser_team_id"],
-            is_fanny=match["is_fanny"],
-            played_at=match["played_at"],
-            year=match["year"],
-            month=match["month"],
-            day=match["day"],
+        # ##: Get team details.
+        winner_team = get_team(match["winner_team_id"])
+        loser_team = get_team(match["loser_team_id"])
+
+        match_response = MatchResponse(**match)
+        match_response.winner_team = TeamResponse(
+            **winner_team,
+            player1=get_player(winner_team["player1_id"]),
+            player2=get_player(winner_team["player2_id"]),
+        )
+        match_response.loser_team = TeamResponse(
+            **loser_team,
+            player1=get_player(loser_team["player1_id"]),
+            player2=get_player(loser_team["player2_id"]),
         )
         result.append(match_response)
 
@@ -324,40 +337,24 @@ async def get_match_details(match_id: int):
     winner_team_response = None
     loser_team_response = None
 
-    # ##: TODO: Use operator ** unpacking.
     if winner_team:
-        winner_team_response = TeamResponse(
-            team_id=winner_team["team_id"],
-            player1_id=winner_team["player1_id"],
-            player2_id=winner_team["player2_id"],
-            global_elo=winner_team["global_elo"],
-            created_at=winner_team["created_at"],
-            last_match_at=winner_team["last_match_at"],
-        )
+        winner_team_response = TeamResponse(**winner_team)
+        winner_team_response.player1 = get_player(winner_team["player1_id"])
+        winner_team_response.player2 = get_player(winner_team["player2_id"])
 
     if loser_team:
-        loser_team_response = TeamResponse(
-            team_id=loser_team["team_id"],
-            player1_id=loser_team["player1_id"],
-            player2_id=loser_team["player2_id"],
-            global_elo=loser_team["global_elo"],
-            created_at=loser_team["created_at"],
-            last_match_at=loser_team["last_match_at"],
-        )
+        loser_team_response = TeamResponse(**loser_team)
+        loser_team_response.player1 = get_player(loser_team["player1_id"])
+        loser_team_response.player2 = get_player(loser_team["player2_id"])
 
-    return MatchWithEloResponse(
-        match_id=match_data["match_id"],
-        winner_team_id=match_data["winner_team_id"],
-        loser_team_id=match_data["loser_team_id"],
-        is_fanny=match_data["is_fanny"],
-        played_at=match_data["played_at"],
-        year=match_data["year"],
-        month=match_data["month"],
-        day=match_data["day"],
+    match_with_elo_response = MatchWithEloResponse(
+        **match_data,
         winner_team=winner_team_response,
         loser_team=loser_team_response,
         elo_changes=elo_changes,
     )
+
+    return match_with_elo_response
 
 
 @router.get(
@@ -382,19 +379,6 @@ async def export_matches():
     matches_data = get_all_matches(limit=10000, offset=0)
 
     # ##: Convert to response model.
-    # ##: TODO: Use operator ** unpacking.
-    result = []
-    for match in matches_data:
-        match_response = MatchResponse(
-            match_id=match["match_id"],
-            winner_team_id=match["winner_team_id"],
-            loser_team_id=match["loser_team_id"],
-            is_fanny=match["is_fanny"],
-            played_at=match["played_at"],
-            year=match["year"],
-            month=match["month"],
-            day=match["day"],
-        )
-        result.append(match_response)
+    result = [MatchResponse(**match) for match in matches_data]
 
     return result

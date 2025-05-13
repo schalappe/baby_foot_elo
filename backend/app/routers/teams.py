@@ -114,11 +114,7 @@ async def create_team_endpoint(team: TeamCreate):
     team.global_elo = calculate_team_elo(player1["global_elo"], player2["global_elo"])
 
     # ##: Create the team.
-    team_id = create_team(
-        player1_id=team.player1_id,
-        player2_id=team.player2_id,
-        global_elo=team.global_elo,
-    )
+    team_id = create_team(player1_id=team.player1_id, player2_id=team.player2_id, global_elo=team.global_elo)
 
     if not team_id:
         raise HTTPException(
@@ -328,20 +324,7 @@ async def get_team_matches_endpoint(
     matches = matches[skip : skip + limit]
 
     # ##: Convert to response model.
-    # ##: TODO: Use operator ** to unpack match.
-    result = []
-    for match in matches:
-        match_response = MatchResponse(
-            match_id=match["match_id"],
-            winner_team_id=match["winner_team_id"],
-            loser_team_id=match["loser_team_id"],
-            is_fanny=match["is_fanny"],
-            played_at=match["played_at"],
-            year=match["year"],
-            month=match["month"],
-            day=match["day"],
-        )
-        result.append(match_response)
+    result = [MatchResponse(**match) for match in matches]
 
     return result
 
@@ -390,12 +373,10 @@ async def get_team_rankings_endpoint(
     teams_data = get_team_rankings(limit=limit, use_monthly_elo=use_monthly_elo)
 
     # ##: Populate player details for each team.
-    result = []
-    for team_data in teams_data:
-        team = TeamResponse(**team_data)
-        team.player1 = get_player(team.player1_id)
-        team.player2 = get_player(team.player2_id)
-        result.append(team)
+    result = [
+        TeamResponse(**team_data, player1=get_player(team_data["player1_id"]), player2=get_player(team_data["player2_id"]))
+        for team_data in teams_data
+    ]
 
     return result
 
