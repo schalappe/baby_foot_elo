@@ -67,7 +67,7 @@ router = APIRouter(
 @router.post(
     "/",
     response_model=MatchWithEloResponse,
-    status_code=201,
+    status_code=status.HTTP_201_CREATED,
     summary="Record a new match",
     description="Records a new match between two teams and updates ELO ratings for all involved players.",
 )
@@ -294,6 +294,33 @@ async def list_matches(
 
 
 @router.get(
+    "/export",
+    response_model=List[MatchResponse],
+    summary="Export all matches",
+    description="Exports all matches in the system as a JSON array for backup or analysis purposes.",
+)
+async def export_matches():
+    """
+    Export all matches as JSON.
+
+    This endpoint retrieves all matches from the database without pagination limits,
+    making it suitable for data export, backup, or external analysis.
+
+    Returns
+    -------
+    List[MatchResponse]
+        List of all matches in the system
+    """
+    # ##: Get all matches without pagination limits.
+    matches_data = get_all_matches(limit=10000, offset=0)
+
+    # ##: Convert to response model.
+    result = [MatchResponse(**match) for match in matches_data]
+
+    return result
+
+
+@router.get(
     "/{match_id}",
     response_model=MatchWithEloResponse,
     summary="Get match details",
@@ -368,30 +395,3 @@ async def get_match_details(match_id: int):
     )
 
     return match_with_elo_response
-
-
-@router.get(
-    "/export",
-    response_model=List[MatchResponse],
-    summary="Export all matches",
-    description="Exports all matches in the system as a JSON array for backup or analysis purposes.",
-)
-async def export_matches():
-    """
-    Export all matches as JSON.
-
-    This endpoint retrieves all matches from the database without pagination limits,
-    making it suitable for data export, backup, or external analysis.
-
-    Returns
-    -------
-    List[MatchResponse]
-        List of all matches in the system
-    """
-    # ##: Get all matches without pagination limits.
-    matches_data = get_all_matches(limit=10000, offset=0)
-
-    # ##: Convert to response model.
-    result = [MatchResponse(**match) for match in matches_data]
-
-    return result

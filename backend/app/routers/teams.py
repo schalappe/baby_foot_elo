@@ -231,7 +231,7 @@ async def get_teams_endpoint(
     description="Get teams sorted by ELO rating (global) with rank information.",
 )
 async def get_team_rankings_endpoint(
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of teams to return"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of teams to return")
 ):
     """
     Get teams sorted by ELO rating for rankings display.
