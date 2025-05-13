@@ -24,7 +24,6 @@ from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Path, Query, status
 from loguru import logger
-from utils.error_handlers import ErrorResponse
 
 from app.crud.matches import get_matches_by_team
 from app.crud.players import get_player
@@ -39,6 +38,7 @@ from app.crud.teams import (
 from app.models.match import MatchResponse
 from app.models.team import TeamCreate, TeamResponse
 from app.services.elo import calculate_team_elo
+from app.utils.error_handlers import ErrorResponse
 from app.utils.validation import ValidationErrorResponse, validate_team_players
 
 router = APIRouter(

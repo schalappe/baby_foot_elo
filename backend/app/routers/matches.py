@@ -23,7 +23,6 @@ from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Query, status
 from loguru import logger
-from utils.error_handlers import ErrorResponse
 
 from app.crud.elo_history import batch_record_elo_updates, get_elo_history_by_match
 from app.crud.matches import (
@@ -39,6 +38,7 @@ from app.crud.teams import get_team, update_team
 from app.models.match import MatchCreate, MatchResponse, MatchWithEloResponse
 from app.models.team import TeamResponse
 from app.services.elo.calculator import calculate_team_elo, process_match_result
+from app.utils.error_handlers import ErrorResponse
 
 router = APIRouter(
     prefix="/api/v1/matches",
