@@ -7,15 +7,14 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
-from app.db.retry import with_retry
-from app.db.transaction import transaction
-
 from app.crud.builders import (
     DeleteQueryBuilder,
     InsertQueryBuilder,
     SelectQueryBuilder,
     UpdateQueryBuilder,
 )
+from app.db.retry import with_retry
+from app.db.transaction import transaction
 
 
 @with_retry(max_retries=3, retry_delay=0.5)

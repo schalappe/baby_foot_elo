@@ -7,10 +7,9 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
-from app.db.retry import with_retry
-
 from app.crud.builders import SelectQueryBuilder
 from app.crud.players import get_player
+from app.db.retry import with_retry
 
 
 @with_retry(max_retries=3, retry_delay=0.5)

@@ -3,12 +3,11 @@
 Operations related to the Teams table.
 """
 
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Union
 
 from duckdb import ConstraintException
 from loguru import logger
-
-from app.db import transaction, with_retry
 
 from app.crud.builders import (
     DeleteQueryBuilder,
@@ -16,6 +15,7 @@ from app.crud.builders import (
     SelectQueryBuilder,
     UpdateQueryBuilder,
 )
+from app.db import transaction, with_retry
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -23,7 +23,7 @@ def create_team(
     player1_id: int,
     player2_id: int,
     global_elo: float = 1000.0,
-    last_match_at: Optional[str] = None,
+    last_match_at: Optional[Union[str, datetime]] = None,
 ) -> Optional[int]:
     """
     Create a new team in the database.
@@ -36,7 +36,7 @@ def create_team(
         ID of the second player.
     global_elo : float, optional
         Initial global ELO rating, by default 1000.0.
-    last_match_at : Optional[str], optional
+    last_match_at : Optional[Union[str, datetime]], optional
         Timestamp of the last match, by default None.
 
     Returns
@@ -65,6 +65,9 @@ def create_team(
                 global_elo=global_elo,
             )
             if last_match_at is not None:
+                last_match_at = (
+                    datetime.fromisoformat(last_match_at) if isinstance(last_match_at, str) else last_match_at
+                )
                 builder.set(last_match_at=last_match_at)
 
             query, params = builder.build()
@@ -86,7 +89,7 @@ def create_team(
 def update_team(
     team_id: int,
     global_elo: Optional[float] = None,
-    last_match_at: Optional[str] = None,  # TODO: Why str not datetime?
+    last_match_at: Optional[Union[str, datetime]] = None,
 ) -> bool:
     """
     Update a team's ELO ratings or last match timestamp.
@@ -97,7 +100,7 @@ def update_team(
         ID of the team to update.
     global_elo : Optional[float], optional
         New global ELO value.
-    last_match_at : Optional[str], optional
+    last_match_at : Optional[Union[str, datetime]], optional
         New last match timestamp.
 
     Returns
@@ -113,6 +116,7 @@ def update_team(
     if global_elo is not None:
         builder.set(global_elo=global_elo)
     if last_match_at is not None:
+        last_match_at = datetime.fromisoformat(last_match_at) if isinstance(last_match_at, str) else last_match_at
         builder.set(last_match_at=last_match_at)
 
     builder.where("team_id = ?", team_id)
