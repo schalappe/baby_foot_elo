@@ -212,6 +212,55 @@ async def get_teams_endpoint(
 
 
 @router.get(
+    "/rankings",
+    response_model=List[TeamResponse],
+    summary="Get team rankings",
+    description="Get teams sorted by ELO rating (global) with rank information.",
+)
+async def get_team_rankings_endpoint(
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of teams to return"),
+):
+    """
+    Get teams sorted by ELO rating for rankings display.
+
+    This endpoint retrieves teams sorted by ELO rating with support for:
+    - Limiting the number of results
+    - Automatic inclusion of player details for each team
+    - Rank information for each team
+
+    Parameters
+    ----------
+    limit : int, optional
+        Maximum number of teams to return, by default 100 (max 1000).
+
+    Returns
+    -------
+    List[TeamResponse]
+        List of teams sorted by ELO in descending order with rank information.
+        Each team includes complete player details and ELO ratings.
+
+    Notes
+    -----
+    - Teams are sorted in descending order by global ELO
+    - Each team includes a 'rank' field indicating its position in the rankings
+    - The endpoint automatically fetches player details for both team members
+    - This is useful for leaderboard displays and ranking tables
+    """
+    # ##: Get ranked teams from database.
+    teams_data = get_team_rankings(limit=limit)
+
+    # ##: Populate player details for each team.
+    result = []
+    for team_data in teams_data:
+        team = TeamResponse(**team_data)
+        team.player1 = get_player(team_data["player1_id"])
+        team.player2 = get_player(team_data["player2_id"])
+        result.append(team)
+
+    return result
+
+
+@router.get(
     "/{team_id}",
     response_model=TeamResponse,
     summary="Get team details",
@@ -325,60 +374,6 @@ async def get_team_matches_endpoint(
 
     # ##: Convert to response model.
     result = [MatchResponse(**match) for match in matches]
-
-    return result
-
-
-@router.get(
-    "/rankings",
-    response_model=List[TeamResponse],
-    summary="Get team rankings",
-    description="Get teams sorted by ELO rating (global or monthly) with rank information.",
-)
-async def get_team_rankings_endpoint(
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of teams to return"),
-    use_monthly_elo: bool = Query(False, description="If True, sort by current month ELO instead of global ELO"),
-):
-    """
-    Get teams sorted by ELO rating for rankings display.
-
-    This endpoint retrieves teams sorted by ELO rating with support for:
-    - Limiting the number of results
-    - Choosing between global (all-time) or monthly ELO for ranking
-    - Automatic inclusion of player details for each team
-    - Rank information for each team
-
-    Parameters
-    ----------
-    limit : int, optional
-        Maximum number of teams to return, by default 100 (max 1000).
-    use_monthly_elo : bool, optional
-        If True, sort by current_month_elo instead of global_elo, by default False.
-        This allows viewing rankings for the current month only.
-
-    Returns
-    -------
-    List[TeamResponse]
-        List of teams sorted by ELO in descending order with rank information.
-        Each team includes complete player details and ELO ratings.
-
-    Notes
-    -----
-    - Teams are sorted in descending order by the selected ELO type
-    - Each team includes a 'rank' field indicating its position in the rankings
-    - The endpoint automatically fetches player details for both team members
-    - This is useful for leaderboard displays and ranking tables
-    """
-    # ##: Get ranked teams from database.
-    teams_data = get_team_rankings(limit=limit, use_monthly_elo=use_monthly_elo)
-
-    # ##: Populate player details for each team.
-    result = [
-        TeamResponse(
-            **team_data, player1=get_player(team_data["player1_id"]), player2=get_player(team_data["player2_id"])
-        )
-        for team_data in teams_data
-    ]
 
     return result
 

@@ -324,16 +324,14 @@ def get_teams_by_player(player_id: int) -> List[Dict[str, Any]]:
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_team_rankings(limit: int = 100, use_monthly_elo: bool = False) -> List[Dict[str, Any]]:
+def get_team_rankings(limit: int = 100) -> List[Dict[str, Any]]:
     """
-    Get teams sorted by ELO rating (global or monthly).
+    Get teams sorted by ELO rating (global).
 
     Parameters
     ----------
     limit : int, optional
         Maximum number of teams to return, by default 100
-    use_monthly_elo : bool, optional
-        If True, sort by current_month_elo instead of global_elo, by default False
 
     Returns
     -------
@@ -341,8 +339,6 @@ def get_team_rankings(limit: int = 100, use_monthly_elo: bool = False) -> List[D
         List of team dictionaries sorted by ELO in descending order
     """
     try:
-        elo_field = "current_month_elo" if use_monthly_elo else "global_elo"
-
         rows = (
             SelectQueryBuilder("Teams")
             .select(
@@ -353,7 +349,7 @@ def get_team_rankings(limit: int = 100, use_monthly_elo: bool = False) -> List[D
                 "created_at",
                 "last_match_at",
             )
-            .order_by_clause(f"{elo_field} DESC")
+            .order_by_clause("global_elo DESC")
             .limit(limit)
             .execute()
         )

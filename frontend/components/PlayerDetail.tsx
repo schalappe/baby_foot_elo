@@ -91,7 +91,7 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
         <section>
           <h3 className="text-xl font-semibold mb-2 border-b pb-1">Statistiques</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><strong>ELO:</strong> {player.elo}</div>
+            <div><strong>ELO:</strong> {player.global_elo}</div>
             <div><strong>Matchs:</strong> {player.matches_played}</div>
             <div><strong>Victoires:</strong> {player.wins}</div>
             <div><strong>Défaites:</strong> {player.losses}</div>

@@ -17,14 +17,14 @@ import {
 } from "@/components/ui/dialog";
 import { PlayerRegistrationForm } from "./PlayerRegistrationForm";
 
-type SortKey = keyof Pick<Player, 'name' | 'elo' | 'matches_played'>;
+type SortKey = keyof Pick<Player, 'name' | 'global_elo' | 'matches_played'>;
 
 const PlayersList: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [sortKey, setSortKey] = useState<SortKey>('elo');
+  const [sortKey, setSortKey] = useState<SortKey>('global_elo');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState<boolean>(false);
@@ -157,8 +157,8 @@ const PlayersList: React.FC = () => {
                 <TableHead onClick={() => handleSort('name')} className="cursor-pointer hover:bg-muted/50">
                   Nom{getSortIcon('name')}
                 </TableHead>
-                <TableHead onClick={() => handleSort('elo')} className="cursor-pointer hover:bg-muted/50">
-                  ELO{getSortIcon('elo')}
+                <TableHead onClick={() => handleSort('global_elo')} className="cursor-pointer hover:bg-muted/50">
+                  ELO{getSortIcon('global_elo')}
                 </TableHead>
                 <TableHead onClick={() => handleSort('matches_played')} className="cursor-pointer hover:bg-muted/50">
                   Matchs Joués{getSortIcon('matches_played')}
@@ -175,7 +175,7 @@ const PlayersList: React.FC = () => {
                       {player.name}
                     </Link>
                   </TableCell>
-                  <TableCell>{player.elo}</TableCell>
+                  <TableCell>{player.global_elo}</TableCell>
                   <TableCell>{player.matches_played}</TableCell>
                   <TableCell className="text-green-500 dark:text-green-400">{player.wins}</TableCell>
                   <TableCell className="text-red-500 dark:text-red-400">{player.losses}</TableCell>

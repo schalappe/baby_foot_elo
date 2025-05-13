@@ -6,7 +6,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export interface Player {
   id: number;
   name: string;
-  elo: number;
+  global_elo: number;
   matches_played: number;
   wins: number;
   losses: number;
@@ -39,6 +39,23 @@ export const createPlayer = async (name: string): Promise<Player> => {
     return response.data;
   } catch (error) {
     console.error('Error creating player:', error);
+    throw error;
+  }
+};
+
+// Fetch player rankings (sorted by Elo descending)
+export const getPlayerRankings = async (): Promise<Player[]> => {
+  try {
+    const response = await axios.get<Player[]>(`${API_URL}/players`, {
+      params: {
+        sort_by: 'global_elo',
+        order: 'desc',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching player rankings:', error);
+    // Re-throw or handle error as needed for SWR
     throw error;
   }
 };

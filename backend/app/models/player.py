@@ -76,7 +76,7 @@ class PlayerResponse(PlayerBase):
 
     player_id: int = Field(..., gt=0, description="Unique identifier for the player")
     global_elo: int = Field(..., ge=0, description="Current global ELO rating of the player")
-    creation_date: datetime = Field(..., description="Timestamp of player creation")
+    created_at: datetime = Field(..., description="Timestamp of player creation")
     matches_played: int = Field(default=0, ge=0, description="Total matches played by the player")
     wins: int = Field(default=0, ge=0, description="Total matches won by the player")
     losses: int = Field(default=0, ge=0, description="Total matches lost by the player")

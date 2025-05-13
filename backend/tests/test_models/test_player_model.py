@@ -93,7 +93,7 @@ class TestPlayerModels(TestCase):
             "player_id": 1,
             "name": "Response Player",
             "global_elo": 1500,
-            "creation_date": now,
+            "created_at": now,
             "matches_played": 10,
             "wins": 5,
             "losses": 5,
@@ -102,7 +102,7 @@ class TestPlayerModels(TestCase):
         self.assertEqual(player_response.player_id, 1)
         self.assertEqual(player_response.name, "Response Player")
         self.assertEqual(player_response.global_elo, 1500)
-        self.assertEqual(player_response.creation_date, now)
+        self.assertEqual(player_response.created_at, now)
         self.assertEqual(player_response.matches_played, 10)
         self.assertEqual(player_response.wins, 5)
         self.assertEqual(player_response.losses, 5)
@@ -149,7 +149,7 @@ class TestPlayerModels(TestCase):
         self.assertEqual(player_response.player_id, 2)
         self.assertEqual(player_response.name, "Orm Player")
         self.assertEqual(player_response.global_elo, 1600)
-        self.assertEqual(player_response.creation_date, now)
+        self.assertEqual(player_response.created_at, now)
         self.assertEqual(player_response.matches_played, 20)
         self.assertEqual(player_response.wins, 15)
         self.assertEqual(player_response.losses, 5)
@@ -164,7 +164,7 @@ class TestPlayerModels(TestCase):
                 player_id=0,
                 name="Invalid ID Player",
                 global_elo=1000,
-                creation_date=now,
+                created_at=now,
             )
 
     def test_player_response_invalid_elo(self):
@@ -177,7 +177,7 @@ class TestPlayerModels(TestCase):
                 player_id=1,
                 name="Invalid Elo Player",
                 global_elo=-100,
-                creation_date=now,
+                created_at=now,
             )
 
 
