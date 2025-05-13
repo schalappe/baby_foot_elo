@@ -8,7 +8,7 @@ import { PlayerRankingTable } from '@/components/rankings/PlayerRankingTable';
 import { TeamRankingTable } from '@/components/rankings/TeamRankingTable';
 
 // Define a generic fetcher for SWR
-const fetcher = (url: string) => url; // The service function itself will handle the actual fetching
+const fetcher = (url: string) => url;
 
 export default function Home() {
   // Fetch Player Rankings

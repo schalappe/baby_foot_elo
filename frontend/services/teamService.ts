@@ -9,11 +9,11 @@ export interface Team {
   player1_id: number;
   player2_id: number;
   global_elo: number;
-  created_at: string; // Corresponds to backend datetime
-  last_match_at?: string | null; // Corresponds to backend Optional[datetime]
-  player1?: Player | null; // Optional nested Player details
-  player2?: Player | null; // Optional nested Player details
-  rank?: number | null; // Optional rank
+  created_at: string;
+  last_match_at?: string | null;
+  player1?: Player | null;
+  player2?: Player | null;
+  rank?: number | null;
 }
 
 // Fetch team rankings (sorted by Elo descending)
