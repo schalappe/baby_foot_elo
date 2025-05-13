@@ -3,9 +3,7 @@
 import Image from "next/image";
 import useSWR from 'swr';
 import { getPlayerRankings } from '@/services/playerService';
-import { getTeamRankings } from '@/services/teamService';
 import { PlayerRankingTable } from '@/components/rankings/PlayerRankingTable';
-import { TeamRankingTable } from '@/components/rankings/TeamRankingTable';
 
 // Define a generic fetcher for SWR
 const fetcher = (url: string) => url;
@@ -14,10 +12,6 @@ export default function Home() {
   // Fetch Player Rankings
   const { data: players, error: playersError, isLoading: playersLoading } =
     useSWR('/api/v1/players?sort_by=global_elo&order=desc&limit=100', getPlayerRankings);
-
-  // Fetch Team Rankings
-  const { data: teams, error: teamsError, isLoading: teamsLoading } =
-    useSWR('/api/v1/teams/rankings?limit=100', getTeamRankings);
 
   return (
     <>
@@ -33,16 +27,6 @@ export default function Home() {
             data={players ?? []}
             isLoading={playersLoading}
             error={playersError}
-          />
-        </div>
-
-        {/* Team Ranking Section */}
-        <div className="w-full max-w-4xl bg-card dark:bg-card rounded-xl shadow-lg p-6 md:p-8 flex flex-col gap-6">
-          <h2 className="text-2xl font-bold text-primary mb-4 drop-shadow">Top Équipes</h2>
-          <TeamRankingTable
-            data={teams ?? []}
-            isLoading={teamsLoading}
-            error={teamsError}
           />
         </div>
 

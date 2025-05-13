@@ -33,6 +33,13 @@ export default function Header() {
             </Link>
           </NavigationMenuItem>
           <NavigationMenuItem>
+            <Link href="/teams" legacyBehavior passHref>
+              <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                Équipes
+              </NavigationMenuLink>
+            </Link>
+          </NavigationMenuItem>
+          <NavigationMenuItem>
             <Link href="/about" legacyBehavior passHref> 
               <NavigationMenuLink className={navigationMenuTriggerStyle()}>
                 À propos
