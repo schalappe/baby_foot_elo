@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-// import { TeamRegistrationForm } from '@/components/TeamRegistrationForm'; 
+import { TeamRegistrationForm } from '@/components/TeamRegistrationForm'; 
 import { toast } from 'sonner';
 import Link from 'next/link'; 
 
@@ -51,15 +51,12 @@ export default function TeamRankingsPage() {
               <DialogHeader>
                 <DialogTitle>Enregistrer une nouvelle équipe</DialogTitle>
               </DialogHeader>
-              {/* <TeamRegistrationForm onTeamRegistered={handleTeamRegistered} /> */}
-              <p className='py-4'>Le formulaire d'enregistrement d'équipe sera implémenté ici.</p>
+              <TeamRegistrationForm onTeamRegistered={handleTeamRegistered} />
             </DialogContent>
           </Dialog>
-          {/* Optionally, add a button to create a new match if relevant for teams page 
           <Link href="/matches/new" passHref>
             <Button variant="outline" size="lg">Ajouter une Partie</Button>
           </Link> 
-          */}
         </div>
       </div>
       <TeamRankingsDisplay 

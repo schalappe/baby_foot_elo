@@ -32,4 +32,32 @@ export const getTeamRankings = async (): Promise<Team[]> => {
   }
 };
 
+// Interface for creating a team, based on backend's TeamCreate model
+export interface TeamCreatePayload {
+  player1_id: number;
+  player2_id: number;
+  // global_elo is optional and will be calculated by backend if not provided
+}
+
+// Create a new team
+export const createTeam = async (teamData: TeamCreatePayload): Promise<Team> => {
+  try {
+    // Ensure player1_id is less than player2_id for canonical representation
+    const orderedTeamData = {
+      player1_id: Math.min(teamData.player1_id, teamData.player2_id),
+      player2_id: Math.max(teamData.player1_id, teamData.player2_id),
+    };
+
+    const response = await axios.post<Team>(`${API_URL}/teams/`, orderedTeamData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating team:', error);
+    if (axios.isAxiosError(error) && error.response) {
+      // Re-throw with more specific error information if available
+      throw new Error(error.response.data.detail || 'Failed to create team');
+    }
+    throw error; // Re-throw original error if not an Axios error or no response
+  }
+};
+
 // Placeholder for future API functions like getTeams

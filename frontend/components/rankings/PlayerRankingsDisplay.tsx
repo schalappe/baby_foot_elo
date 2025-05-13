@@ -95,7 +95,6 @@ export function PlayerRankingsDisplay({ players = [], isLoading, error }: Player
             } else if (index === 2) {
               cardClasses += " border-orange-500"; // Bronze (using orange for a bronze hue)
             }
-            console.log(player.player_id);
 
             return (
               <Card key={player.player_id} className={cardClasses}>

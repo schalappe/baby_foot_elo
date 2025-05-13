@@ -1,5 +1,5 @@
 // frontend/services/playerService.ts
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -13,12 +13,29 @@ export interface Player {
   creation_date: string;
 }
 
-export const getPlayers = async (): Promise<Player[]> => {
+export interface GetPlayersParams {
+  limit?: number;
+  skip?: number;
+  sort_by?: string;
+  order?: 'asc' | 'desc';
+  // Add other potential query parameters if needed by the backend
+}
+
+export const getPlayers = async (params?: GetPlayersParams): Promise<Player[]> => {
   try {
-    const response = await axios.get(`${API_URL}/players`);
+
+    let url = `${API_URL}/players`;
+
+    if (params && Object.keys(params).length > 0) {
+      // @ts-ignore TODO: Fix this type issue if possible, URLSearchParams expects Record<string, string>
+      const queryParams = new URLSearchParams(params as Record<string, string>).toString();
+      url += `?${queryParams}`;
+    }
+
+    const response = await axios.get(url);
     return response.data;
+
   } catch (error) {
-    console.error('Error fetching players:', error);
     throw error;
   }
 };
