@@ -21,8 +21,9 @@ Notes
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, status
 from loguru import logger
+from utils.error_handlers import ErrorResponse
 
 from app.crud.elo_history import batch_record_elo_updates, get_elo_history_by_match
 from app.crud.matches import (
@@ -43,10 +44,22 @@ router = APIRouter(
     prefix="/api/v1/matches",
     tags=["matches"],
     responses={
-        400: {"description": "Bad request"},
-        404: {"description": "Resource not found"},
-        422: {"description": "Validation error"},
-        500: {"description": "Internal server error"},
+        status.HTTP_400_BAD_REQUEST: {
+            "model": ErrorResponse,
+            "description": "Bad request",
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "model": ErrorResponse,
+            "description": "Resource not found",
+        },
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+            "model": ErrorResponse,
+            "description": "Validation error",
+        },
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {
+            "model": ErrorResponse,
+            "description": "Internal server error",
+        },
     },
 )
 
