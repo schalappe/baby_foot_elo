@@ -2,7 +2,7 @@
 
 import useSWR from 'swr';
 import { getTeamRankings } from '@/services/teamService';
-import { TeamRankingTable } from '@/components/rankings/TeamRankingTable';
+import { TeamRankingsDisplay } from '@/components/rankings/TeamRankingsDisplay';
 
 // Define a generic fetcher for SWR
 const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -20,10 +20,10 @@ export default function TeamRankingsPage() {
         </div>
 
         {/* Team Ranking Section */}
-        <div className="w-full max-w-4xl bg-card dark:bg-card rounded-xl shadow-lg p-6 md:p-8 flex flex-col gap-6">
-          <h2 className="text-2xl font-bold text-primary mb-4 drop-shadow">Top Équipes</h2>
-          <TeamRankingTable 
-            data={teams ?? []} 
+        <div className="w-full max-w-5xl p-4 md:p-6 flex flex-col gap-6">
+          <h2 className="text-3xl font-bold text-primary mb-6 text-center drop-shadow">Top Équipes</h2>
+          <TeamRankingsDisplay 
+            teams={teams ?? []} 
             isLoading={teamsLoading} 
             error={teamsError} 
           />

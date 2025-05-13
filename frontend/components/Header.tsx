@@ -26,13 +26,6 @@ export default function Header() {
             </Link>
           </NavigationMenuItem>
           <NavigationMenuItem>
-            <Link href="/players" legacyBehavior passHref>
-              <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                Joueurs
-              </NavigationMenuLink>
-            </Link>
-          </NavigationMenuItem>
-          <NavigationMenuItem>
             <Link href="/teams" legacyBehavior passHref>
               <NavigationMenuLink className={navigationMenuTriggerStyle()}>
                 Équipes

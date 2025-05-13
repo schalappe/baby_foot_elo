@@ -169,9 +169,9 @@ const PlayersList: React.FC = () => {
             </TableHeader>
             <TableBody>
               {paginatedPlayers.map((player) => (
-                <TableRow key={player.id}>
+                <TableRow key={player.player_id}>
                   <TableCell className="font-medium">
-                    <Link href={`/players/${player.id}`} className="hover:underline text-blue-600 dark:text-blue-400">
+                    <Link href={`/players/${player.player_id}`} className="hover:underline text-blue-600 dark:text-blue-400">
                       {player.name}
                     </Link>
                   </TableCell>

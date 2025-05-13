@@ -4,7 +4,7 @@ import axios from 'axios';
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export interface Player {
-  id: number;
+  player_id: number;
   name: string;
   global_elo: number;
   matches_played: number;

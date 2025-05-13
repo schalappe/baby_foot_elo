@@ -1,39 +1,76 @@
 'use client';
 
-import Image from "next/image";
-import useSWR from 'swr';
-import { getPlayerRankings } from '@/services/playerService';
-import { PlayerRankingTable } from '@/components/rankings/PlayerRankingTable';
+import { useState, useEffect } from 'react';
+import useSWR, { mutate } from 'swr';
+import { Player } from '@/services/playerService'; 
+import { getPlayers } from '@/services/playerService'; 
+import { PlayerRankingsDisplay } from '@/components/rankings/PlayerRankingsDisplay';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link'; 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { PlayerRegistrationForm } from '@/components/PlayerRegistrationForm';
+import { toast } from 'sonner';
 
-// Define a generic fetcher for SWR
-const fetcher = (url: string) => url;
+// SWR key, assuming this is what getPlayers (or getPlayerRankings) uses implicitly or explicitly
+const PLAYERS_API_ENDPOINT = '/api/v1/players?sort_by=global_elo&order=desc&limit=100';
 
 export default function Home() {
-  // Fetch Player Rankings
-  const { data: players, error: playersError, isLoading: playersLoading } =
-    useSWR('/api/v1/players?sort_by=global_elo&order=desc&limit=100', getPlayerRankings);
+  // Using SWR for data fetching as in the original diff
+  const { data: players, error: playersError, isLoading: playersLoading } = 
+    useSWR<Player[]>(PLAYERS_API_ENDPOINT, getPlayers); 
+
+  const [isAddPlayerDialogOpen, setIsAddPlayerDialogOpen] = useState(false);
+
+  const handlePlayerRegistered = async () => {
+    setIsAddPlayerDialogOpen(false); // Close dialog
+    // Revalidate the SWR cache for players to refresh the list
+    await mutate(PLAYERS_API_ENDPOINT); 
+    toast.success("Nouveau joueur ajouté avec succès !"); // Added success toast
+  };
+  
+  // Handle SWR error state
+  useEffect(() => {
+    if (playersError) {
+      toast.error("Erreur lors de la récupération des joueurs.");
+    }
+  }, [playersError]);
 
   return (
-    <>
-      <section className="w-full flex flex-col items-center gap-12 py-12">
-        <div className="text-center">
-          <h1 className="text-4xl sm:text-5xl font-extrabold mb-4 text-primary dark:text-primary drop-shadow-lg">Classement Baby Foot Elo</h1>
-        </div>
+    <main className="container mx-auto p-4 md:p-8">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-6 md:mb-10">
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-4 md:mb-0">
+          Classement des Joueurs
+        </h1>
+        <div className="flex space-x-2">
+          <Dialog open={isAddPlayerDialogOpen} onOpenChange={setIsAddPlayerDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="default" size="lg">Ajouter un Joueur</Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Enregistrer un nouveau joueur</DialogTitle>
+              </DialogHeader>
+              <PlayerRegistrationForm onPlayerRegistered={handlePlayerRegistered} />
+            </DialogContent>
+          </Dialog>
 
-        {/* Player Ranking Section */}
-        <div className="w-full max-w-4xl bg-card dark:bg-card rounded-xl shadow-lg p-6 md:p-8 flex flex-col gap-6">
-          <h2 className="text-2xl font-bold text-primary mb-4 drop-shadow">Top Joueurs</h2>
-          <PlayerRankingTable
-            data={players ?? []}
-            isLoading={playersLoading}
-            error={playersError}
-          />
+          {/* Restored "Ajouter une Partie" button */}
+          <Link href="/matches/new" passHref>
+            <Button variant="outline" size="lg">Ajouter une Partie</Button>
+          </Link>
         </div>
-
-        <div className="mt-8">
-        <a href="#" className="inline-block px-8 py-3 rounded-full bg-primary text-primary-foreground text-lg font-bold shadow-lg border border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition">Ajouter une partie</a>
-        </div>
-      </section>
-    </>
+      </div>
+      <PlayerRankingsDisplay 
+        players={players || []} 
+        isLoading={playersLoading} 
+        error={playersError ? (playersError instanceof Error ? playersError : new Error(String(playersError))) : null} 
+      />
+    </main>
   );
 }
