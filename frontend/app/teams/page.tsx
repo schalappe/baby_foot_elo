@@ -1,34 +1,72 @@
 'use client';
 
-import useSWR from 'swr';
-import { getTeamRankings } from '@/services/teamService';
+import { useState, useEffect } from 'react';
+import useSWR, { mutate } from 'swr';
+import { getTeamRankings, Team } from '@/services/teamService'; 
 import { TeamRankingsDisplay } from '@/components/rankings/TeamRankingsDisplay';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+// import { TeamRegistrationForm } from '@/components/TeamRegistrationForm'; 
+import { toast } from 'sonner';
+import Link from 'next/link'; 
 
-// Define a generic fetcher for SWR
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+const TEAMS_API_ENDPOINT = '/api/v1/teams/rankings?limit=100';
 
 export default function TeamRankingsPage() {
-  // Fetch Team Rankings
   const { data: teams, error: teamsError, isLoading: teamsLoading } = 
-    useSWR('/api/v1/teams/rankings?limit=100', getTeamRankings);
+    useSWR<Team[]>(TEAMS_API_ENDPOINT, getTeamRankings);
+
+  const [isAddTeamDialogOpen, setIsAddTeamDialogOpen] = useState(false);
+
+  const handleTeamRegistered = async () => {
+    setIsAddTeamDialogOpen(false); 
+    await mutate(TEAMS_API_ENDPOINT);
+    toast.success("Nouvelle équipe ajoutée avec succès !"); 
+  };
+
+  useEffect(() => {
+    if (teamsError) {
+      toast.error("Erreur lors de la récupération des équipes.");
+    }
+  }, [teamsError]);
 
   return (
-    <>
-      <section className="w-full flex flex-col items-center gap-12 py-12">
-        <div className="text-center">
-          <h1 className="text-4xl sm:text-5xl font-extrabold mb-4 text-primary dark:text-primary drop-shadow-lg">Classement des Équipes</h1>
+    <main className="container mx-auto p-4 md:p-8">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-6 md:mb-10">
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-4 md:mb-0">
+          Classement des Équipes
+        </h1>
+        <div className="flex space-x-2">
+          <Dialog open={isAddTeamDialogOpen} onOpenChange={setIsAddTeamDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="default" size="lg">Ajouter une Équipe</Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Enregistrer une nouvelle équipe</DialogTitle>
+              </DialogHeader>
+              {/* <TeamRegistrationForm onTeamRegistered={handleTeamRegistered} /> */}
+              <p className='py-4'>Le formulaire d'enregistrement d'équipe sera implémenté ici.</p>
+            </DialogContent>
+          </Dialog>
+          {/* Optionally, add a button to create a new match if relevant for teams page 
+          <Link href="/matches/new" passHref>
+            <Button variant="outline" size="lg">Ajouter une Partie</Button>
+          </Link> 
+          */}
         </div>
-
-        {/* Team Ranking Section */}
-        <div className="w-full max-w-5xl p-4 md:p-6 flex flex-col gap-6">
-          <h2 className="text-3xl font-bold text-primary mb-6 text-center drop-shadow">Top Équipes</h2>
-          <TeamRankingsDisplay 
-            teams={teams ?? []} 
-            isLoading={teamsLoading} 
-            error={teamsError} 
-          />
-        </div>
-      </section>
-    </>
+      </div>
+      <TeamRankingsDisplay 
+        teams={teams ?? []} 
+        isLoading={teamsLoading} 
+        error={teamsError ? (teamsError instanceof Error ? teamsError : new Error(String(teamsError))) : null} 
+      />
+    </main>
   );
 }
