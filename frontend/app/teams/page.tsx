@@ -5,14 +5,6 @@ import useSWR, { mutate } from 'swr';
 import { getTeamRankings, Team } from '@/services/teamService'; 
 import { TeamRankingsDisplay } from '@/components/rankings/TeamRankingsDisplay';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { TeamRegistrationForm } from '@/components/TeamRegistrationForm'; 
 import { toast } from 'sonner';
 import Link from 'next/link'; 
 
@@ -21,14 +13,6 @@ const TEAMS_API_ENDPOINT = '/api/v1/teams/rankings?limit=100';
 export default function TeamRankingsPage() {
   const { data: teams, error: teamsError, isLoading: teamsLoading } = 
     useSWR<Team[]>(TEAMS_API_ENDPOINT, getTeamRankings);
-
-  const [isAddTeamDialogOpen, setIsAddTeamDialogOpen] = useState(false);
-
-  const handleTeamRegistered = async () => {
-    setIsAddTeamDialogOpen(false); 
-    await mutate(TEAMS_API_ENDPOINT);
-    toast.success("Nouvelle équipe ajoutée avec succès !"); 
-  };
 
   useEffect(() => {
     if (teamsError) {
@@ -43,17 +27,6 @@ export default function TeamRankingsPage() {
           Classement des Équipes
         </h1>
         <div className="flex space-x-2">
-          <Dialog open={isAddTeamDialogOpen} onOpenChange={setIsAddTeamDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="default" size="lg">Ajouter une Équipe</Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Enregistrer une nouvelle équipe</DialogTitle>
-              </DialogHeader>
-              <TeamRegistrationForm onTeamRegistered={handleTeamRegistered} />
-            </DialogContent>
-          </Dialog>
           <Link href="/matches/new" passHref>
             <Button variant="outline" size="lg">Ajouter une Partie</Button>
           </Link> 
