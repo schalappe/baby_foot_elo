@@ -11,6 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { CalendarIcon, AlertCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -32,18 +33,18 @@ import {
 } from '@/lib/eloCalculator';
 
 const matchFormSchema = z.object({
-  teamAPlayer1: z.string().min(1, { message: "Player 1 for Team A is required." }),
-  teamAPlayer2: z.string().optional(),
-  teamBPlayer1: z.string().min(1, { message: "Player 1 for Team B is required." }),
-  teamBPlayer2: z.string().optional(),
-  winningTeam: z.enum(['A', 'B'], { required_error: "Please select the winning team." }),
+  teamAPlayer1: z.string().min(1, { message: "Joueur 1 de l'équipe A est requis." }),
+  teamAPlayer2: z.string().min(1, { message: "Joueur 2 de l'équipe A est requis." }),
+  teamBPlayer1: z.string().min(1, { message: "Joueur 1 de l'équipe B est requis." }),
+  teamBPlayer2: z.string().min(1, { message: "Joueur 2 de l'équipe B est requis." }),
+  winningTeam: z.enum(['A', 'B'], { required_error: "Veuillez sélectionner l'équipe gagnante." }),
   isFanny: z.boolean(),
-  matchDate: z.date({ required_error: "Match date is required." }),
+  matchDate: z.date({ required_error: "La date du match est requise." }),
   notes: z.string().optional(),
 }).refine(data => {
   const players = [data.teamAPlayer1, data.teamAPlayer2, data.teamBPlayer1, data.teamBPlayer2].filter(Boolean);
   return new Set(players).size === players.length;
-}, { message: "Each player can only be selected once.", path: ["teamAPlayer1"] 
+}, { message: "Chaque joueur peut être sélectionné une seule fois.", path: ["teamAPlayer1"] 
 });
 
 type MatchFormValues = z.infer<typeof matchFormSchema>;
@@ -75,14 +76,14 @@ const NewMatchPage = () => {
 
   const { watch, control, getValues } = form; 
 
-  // Watched values for ELO calculation useEffect dependencies
+  // Watched values for ELO calculation useEffect dependencies.
   const p1AId_dep = watch('teamAPlayer1');
   const p2AId_dep = watch('teamAPlayer2');
   const p1BId_dep = watch('teamBPlayer1');
   const p2BId_dep = watch('teamBPlayer2');
   const winningTeam_dep = watch('winningTeam');
 
-  // selectedPlayerIds is used for getAvailablePlayers filter
+  // selectedPlayerIds is used for getAvailablePlayers filter.
   const selectedPlayerIds = [
     p1AId_dep,
     p2AId_dep,
@@ -107,9 +108,8 @@ const NewMatchPage = () => {
     fetchPlayersList();
   }, []);
 
-  // useEffect for ELO Preview Calculation
+  // useEffect for ELO Preview Calculation.
   useEffect(() => {
-    // Use the watched dependency values directly
     const p1AId = p1AId_dep;
     const p2AId = p2AId_dep;
     const p1BId = p1BId_dep;
@@ -196,10 +196,8 @@ const NewMatchPage = () => {
     const p1B = parseInt(data.teamBPlayer1, 10);
     const p2B_str = data.teamBPlayer2;
 
-    // Backend expects two players per team for team creation via /api/v1/teams/
-    // TeamCreate model requires player1_id and player2_id.
     if (!p2A_str || !p2B_str) {
-        setSubmissionStatus({ type: 'error', message: 'Both Team A and Team B must have two players selected.' });
+        setSubmissionStatus({ type: 'error', message: 'Les deux équipes doivent avoir deux joueurs sélectionnés.' });
         setIsSubmitting(false);
         return;
     }
@@ -208,19 +206,17 @@ const NewMatchPage = () => {
     const p2B = parseInt(p2B_str, 10);
 
     try {
-      // Step 1: Get or create Team A
+      // Step 1: Get or create Team A?
       const teamA = await findOrCreateTeam(p1A, p2A);
-      console.log('Team A:', teamA);
 
-      // Step 2: Get or create Team B
+      // Step 2: Get or create Team B?
       const teamB = await findOrCreateTeam(p1B, p2B);
-      console.log('Team B:', teamB);
 
       if (!teamA || !teamB || !teamA.team_id || !teamB.team_id) {
-        throw new Error('Failed to retrieve or create one or both teams.');
+        throw new Error('Échec de la récupération ou de la création d\'une ou des deux équipes.');
       }
 
-      // Step 3: Determine winner and loser team IDs
+      // Step 3: Determine winner and loser team IDs.
       let winner_team_id: number;
       let loser_team_id: number;
 
@@ -232,7 +228,7 @@ const NewMatchPage = () => {
         loser_team_id = teamA.team_id;
       }
 
-      // Step 4: Construct payload for creating the match
+      // Step 4: Construct payload for creating the match.
       const matchPayload: BackendMatchCreatePayload = {
         winner_team_id,
         loser_team_id,
@@ -240,15 +236,15 @@ const NewMatchPage = () => {
         played_at: data.matchDate.toISOString(),
       };
 
-      // Step 5: Call API to create the match
+      // Step 5: Call API to create the match.
       const createdMatch = await createMatch(matchPayload);
-      setSubmissionStatus({ type: 'success', message: `Match created successfully! ID: ${createdMatch.match_id}` });
-      form.reset(); // Reset form on success
-      setEloPreview([]); // Clear ELO preview
+      setSubmissionStatus({ type: 'success', message: 'Match créé avec succès!' });
+      form.reset();
+      setEloPreview([]);
 
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
-      setSubmissionStatus({ type: 'error', message: `Failed to create match: ${errorMessage}` });
+      const errorMessage = err instanceof Error ? err.message : 'Une erreur inconnue est survenue.';
+      setSubmissionStatus({ type: 'error', message: `Échec de la création du match: ${errorMessage}` });
     } finally {
       setIsSubmitting(false);
     }
@@ -300,14 +296,14 @@ const NewMatchPage = () => {
           </CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="teamAPlayer1">Joueur 1*</Label>
+              <Label htmlFor="teamAPlayer1">Joueur 1</Label>
               <Select onValueChange={(value: string) => form.setValue('teamAPlayer1', value)} value={form.watch('teamAPlayer1')}>
                 <SelectTrigger id="teamAPlayer1">
                   <SelectValue placeholder="Select Player 1" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectLabel>Available Players</SelectLabel>
+                    <SelectLabel>Joueurs disponibles</SelectLabel>
                     {getAvailablePlayers(allPlayers, selectedPlayerIds, form.watch('teamAPlayer1')).map(player => (
                       <SelectItem key={player.player_id} value={player.player_id.toString()}>
                         {player.name} (Elo: {player.global_elo})
@@ -319,14 +315,14 @@ const NewMatchPage = () => {
               {form.formState.errors.teamAPlayer1 && <p className="text-sm text-red-500">{form.formState.errors.teamAPlayer1.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="teamAPlayer2">Joueur 2 (Optionnel)</Label>
+              <Label htmlFor="teamAPlayer2">Joueur 2</Label>
               <Select onValueChange={(value: string) => form.setValue('teamAPlayer2', value)} value={form.watch('teamAPlayer2')}>
                 <SelectTrigger id="teamAPlayer2">
                   <SelectValue placeholder="Select Player 2" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectLabel>Available Players</SelectLabel>
+                    <SelectLabel>Joueurs disponibles</SelectLabel>
                     {getAvailablePlayers(allPlayers, selectedPlayerIds, form.watch('teamAPlayer2')).map(player => (
                       <SelectItem key={player.player_id} value={player.player_id.toString()}>
                         {player.name} (Elo: {player.global_elo})
@@ -347,14 +343,14 @@ const NewMatchPage = () => {
           </CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="teamBPlayer1">Joueur 1*</Label>
+              <Label htmlFor="teamBPlayer1">Joueur 1</Label>
               <Select onValueChange={(value: string) => form.setValue('teamBPlayer1', value)} value={form.watch('teamBPlayer1')}>
                 <SelectTrigger id="teamBPlayer1">
                   <SelectValue placeholder="Select Player 1" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectLabel>Available Players</SelectLabel>
+                    <SelectLabel>Joueurs disponibles</SelectLabel>
                     {getAvailablePlayers(allPlayers, selectedPlayerIds, form.watch('teamBPlayer1')).map(player => (
                       <SelectItem key={player.player_id} value={player.player_id.toString()}>
                         {player.name} (Elo: {player.global_elo})
@@ -366,14 +362,14 @@ const NewMatchPage = () => {
               {form.formState.errors.teamBPlayer1 && <p className="text-sm text-red-500">{form.formState.errors.teamBPlayer1.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="teamBPlayer2">Joueur 2 (Optionnel)</Label>
+              <Label htmlFor="teamBPlayer2">Joueur 2</Label>
               <Select onValueChange={(value: string) => form.setValue('teamBPlayer2', value)} value={form.watch('teamBPlayer2')}>
                 <SelectTrigger id="teamBPlayer2">
                   <SelectValue placeholder="Select Player 2" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectLabel>Available Players</SelectLabel>
+                    <SelectLabel>Joueurs disponibles</SelectLabel>
                     {getAvailablePlayers(allPlayers, selectedPlayerIds, form.watch('teamBPlayer2')).map(player => (
                       <SelectItem key={player.player_id} value={player.player_id.toString()}>
                         {player.name} (Elo: {player.global_elo})
@@ -454,7 +450,7 @@ const NewMatchPage = () => {
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {form.watch('matchDate') ? format(form.watch('matchDate')!, "PPP") : <span>Pick a date</span>}
+                    {form.watch('matchDate') ? format(form.watch('matchDate')!, "PPP", { locale: fr }) : <span>Choisissez une date</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -469,13 +465,13 @@ const NewMatchPage = () => {
               {form.formState.errors.matchDate && <p className="text-sm text-red-500">{form.formState.errors.matchDate.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes (Optional)</Label>
-              <Textarea id="notes" placeholder="Any notable events, disputes, etc." {...form.register('notes')} />
+              <Label htmlFor="notes">Notes (optionnel)</Label>
+              <Textarea id="notes" placeholder="Evénements notables, litiges, etc." {...form.register('notes')} />
               {form.formState.errors.notes && <p className="text-sm text-red-500">{form.formState.errors.notes.message}</p>}
             </div>
           </CardContent>
         </Card>
-        
+
         {(form.formState.errors.root || form.formState.errors.teamAPlayer1?.type === 'custom') && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
