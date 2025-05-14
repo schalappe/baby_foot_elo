@@ -31,10 +31,10 @@ export function PlayerRankingsDisplay({ players = [], isLoading, error }: Player
           {[...Array(3)].map((_, i) => (
             <Card key={i} className="flex flex-col items-center p-6">
               <Skeleton className="h-12 w-12 rounded-full mb-4" />
-              <Skeleton className="h-6 w-3/4 mb-2" /> {/* Name */}
-              <Skeleton className="h-4 w-1/2 mb-1" /> {/* Elo */}
-              <Skeleton className="h-4 w-1/2 mb-1" /> {/* Matches */}
-              <Skeleton className="h-4 w-3/4" />      {/* W-L (Winrate) */}
+              <Skeleton className="h-6 w-3/4 mb-2" />
+              <Skeleton className="h-4 w-1/2 mb-1" />
+              <Skeleton className="h-4 w-1/2 mb-1" />
+              <Skeleton className="h-4 w-3/4" />
             </Card>
           ))}
         </div>
@@ -47,12 +47,12 @@ export function PlayerRankingsDisplay({ players = [], isLoading, error }: Player
             {[...Array(5)].map((_, i) => (
               <div key={i} className="flex justify-between items-center py-3 border-b last:border-b-0">
                 <div className="flex items-center gap-4">
-                  <Skeleton className="h-8 w-8" />   {/* Rank */}
-                  <Skeleton className="h-5 w-24" />  {/* Name */}
+                  <Skeleton className="h-8 w-8" />
+                  <Skeleton className="h-5 w-24" />
                 </div>
-                <Skeleton className="h-5 w-12" /> {/* Elo */}
-                <Skeleton className="h-5 w-12" /> {/* Matches */}
-                <Skeleton className="h-5 w-20" /> {/* W-L (Winrate) */}
+                <Skeleton className="h-5 w-12" />
+                <Skeleton className="h-5 w-12" />
+                <Skeleton className="h-5 w-20" />
               </div>
             ))}
           </CardContent>
@@ -77,8 +77,11 @@ export function PlayerRankingsDisplay({ players = [], isLoading, error }: Player
     return <p>Aucun joueur trouvé.</p>;
   }
 
+  console.log(players);
   const topPlayers = players.slice(0, 3);
+  console.log(topPlayers);
   const otherPlayers = players.slice(3);
+  console.log(otherPlayers);
 
   return (
     <div className="w-full space-y-8">

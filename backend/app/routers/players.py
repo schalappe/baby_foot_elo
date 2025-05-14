@@ -141,10 +141,6 @@ async def create_player_endpoint(player: PlayerCreate):
 async def list_players_endpoint(
     limit: int = Query(50, ge=1, le=100, description="Maximum number of players to return"),
     offset: int = Query(0, ge=0, description="Number of players to skip"),
-    sort_by: Optional[str] = Query(
-        None, description="Field to sort by (name, global_elo, current_month_elo, matches_played, wins, losses)"
-    ),
-    order: str = Query("asc", description="Sort order (asc or desc)"),
 ):
     """
     List all players with their details and statistics.
@@ -155,10 +151,6 @@ async def list_players_endpoint(
         Maximum number of players to return (default: 50, max: 100).
     offset : int, optional
         Number of players to skip for pagination (default: 0).
-    sort_by : Optional[str], optional
-        Field to sort by (default: None).
-    order : str, optional
-        Sort order, 'asc' or 'desc' (default: 'asc').
 
     Returns
     -------
@@ -168,22 +160,9 @@ async def list_players_endpoint(
     Raises
     ------
     HTTPException
-        If sorting or pagination fails.
+        If an error occurs while retrieving players.
     """
     try:
-        # ##: Validate sort parameters.
-        valid_sort_fields = ["name", "global_elo", "matches_played", "wins", "losses"]
-        if sort_by and sort_by not in valid_sort_fields:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid sort field. Must be one of: {', '.join(valid_sort_fields)}",
-            )
-
-        if order.lower() not in ["asc", "desc"]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid order. Must be 'asc' or 'desc'"
-            )
-
         # ##: Get all players.
         all_players = get_all_players()
         if not all_players:
@@ -211,20 +190,82 @@ async def list_players_endpoint(
                 )
             )
 
-        # ##: Sort the response if requested.
-        if sort_by:
-            reverse = order.lower() == "desc"
-            response.sort(key=lambda x: getattr(x, sort_by), reverse=reverse)
-
         # ##: Apply pagination.
         return response[offset : offset + limit]
-    except HTTPException:
-        raise
     except Exception as exc:
         logger.exception(f"Unexpected error listing players: {str(exc)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while listing players",
+        )
+
+
+@router.get(
+    "/rankings",
+    response_model=List[PlayerResponse],
+    summary="Get player rankings",
+    description="Retrieves a list of players sorted by global ELO rating.",
+)
+async def get_player_rankings_endpoint(
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of players to return")
+):
+    """
+    Get players sorted by ELO rating for rankings display.
+
+    Parameters
+    ----------
+    limit : int, optional
+        Maximum number of players to return (default: 100, max: 1000).
+
+    Returns
+    -------
+    List[PlayerResponse]
+        List of players sorted by ELO in descending order.
+        Each player includes complete details and ELO ratings.
+
+    Notes
+    -----
+    - Players are sorted in descending order by global ELO
+    - This is useful for leaderboard displays and ranking tables
+    """
+    try:
+        # ##: Get all players.
+        all_players = get_all_players()
+        if not all_players:
+            return []
+
+        # ##: Process players and get their stats.
+        response = []
+        for player in all_players:
+            pid = player.get("player_id")
+            stats = get_player_stats(pid)
+
+            if not stats:
+                continue
+
+            response.append(
+                PlayerResponse(
+                    player_id=pid,
+                    name=stats["name"],
+                    global_elo=int(stats.get("global_elo", 1000)),
+                    created_at=stats.get("created_at"),
+                    matches_played=stats["matches_played"],
+                    wins=stats["wins"],
+                    losses=stats["losses"],
+                    win_rate=stats["win_rate"],
+                )
+            )
+
+        # ##: Sort by global ELO in descending order.
+        response.sort(key=lambda x: x.global_elo, reverse=True)
+
+        # ##: Apply limit.
+        return response[:limit]
+    except Exception as exc:
+        logger.exception(f"Unexpected error getting player rankings: {str(exc)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while getting player rankings",
         )
 
 

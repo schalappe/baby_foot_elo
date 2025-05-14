@@ -45,7 +45,7 @@ export const getPlayerById = async (playerId: number): Promise<Player> => {
     const response = await axios.get(`${API_URL}/players/${playerId}`);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching player with id ${playerId}:`, error);
+    console.error(`Échec de la récupération du joueur avec l'ID ${playerId}:`, error);
     throw error;
   }
 };
@@ -55,7 +55,7 @@ export const createPlayer = async (name: string): Promise<Player> => {
     const response = await axios.post(`${API_URL}/players`, { name });
     return response.data;
   } catch (error) {
-    console.error('Error creating player:', error);
+    console.error('Échec de la création du joueur:', error);
     throw error;
   }
 };
@@ -63,16 +63,14 @@ export const createPlayer = async (name: string): Promise<Player> => {
 // Fetch player rankings (sorted by Elo descending)
 export const getPlayerRankings = async (): Promise<Player[]> => {
   try {
-    const response = await axios.get<Player[]>(`${API_URL}/players`, {
+    const response = await axios.get<Player[]>(`${API_URL}/players/rankings`, {
       params: {
-        sort_by: 'global_elo',
-        order: 'desc',
+        limit: 100,
       },
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching player rankings:', error);
-    // Re-throw or handle error as needed for SWR
+    console.error('Échec de la récupération des joueurs:', error);
     throw error;
   }
 };

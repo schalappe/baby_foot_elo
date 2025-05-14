@@ -72,8 +72,6 @@ export function TeamRankingsDisplay({ teams = [], isLoading, error }: TeamRankin
     return <p>Aucune équipe trouvée.</p>;
   }
 
-  // Assuming teams are pre-sorted by rank or ELO. If not, sort here.
-  // For now, we'll use the order from the API and assign rank based on index.
   const topTeams = teams.slice(0, 3);
   const otherTeams = teams.slice(3);
 

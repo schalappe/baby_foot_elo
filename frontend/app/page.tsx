@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import useSWR, { mutate } from 'swr';
 import { Player } from '@/services/playerService'; 
-import { getPlayers } from '@/services/playerService'; 
+import { getPlayerRankings } from '@/services/playerService'; 
 import { PlayerRankingsDisplay } from '@/components/rankings/PlayerRankingsDisplay';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link'; 
@@ -17,24 +17,21 @@ import {
 import { PlayerRegistrationForm } from '@/components/PlayerRegistrationForm';
 import { toast } from 'sonner';
 
-// SWR key, assuming this is what getPlayers (or getPlayerRankings) uses implicitly or explicitly
-const PLAYERS_API_ENDPOINT = '/api/v1/players?sort_by=global_elo&order=desc&limit=100';
+const PLAYERS_API_ENDPOINT = '/api/v1/players/rankings?limit=100';
 
 export default function Home() {
-  // Using SWR for data fetching as in the original diff
   const { data: players, error: playersError, isLoading: playersLoading } = 
-    useSWR<Player[]>(PLAYERS_API_ENDPOINT, getPlayers); 
+    useSWR<Player[]>(PLAYERS_API_ENDPOINT, getPlayerRankings); 
 
   const [isAddPlayerDialogOpen, setIsAddPlayerDialogOpen] = useState(false);
+  console.log(players);
 
   const handlePlayerRegistered = async () => {
-    setIsAddPlayerDialogOpen(false); // Close dialog
-    // Revalidate the SWR cache for players to refresh the list
+    setIsAddPlayerDialogOpen(false);
     await mutate(PLAYERS_API_ENDPOINT); 
-    toast.success("Nouveau joueur ajouté avec succès !"); // Added success toast
+    toast.success("Nouveau joueur ajouté avec succès !");
   };
   
-  // Handle SWR error state
   useEffect(() => {
     if (playersError) {
       toast.error("Erreur lors de la récupération des joueurs.");
