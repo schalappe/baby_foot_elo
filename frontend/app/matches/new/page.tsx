@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Player } from '@/services/playerService';
 import { getPlayers } from '@/services/playerService';
 import { findOrCreateTeam } from '@/services/teamService';
@@ -58,6 +59,7 @@ interface EloPreviewPlayer {
 }
 
 const NewMatchPage = () => {
+  const router = useRouter();
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -239,6 +241,7 @@ const NewMatchPage = () => {
       // Step 5: Call API to create the match.
       const createdMatch = await createMatch(matchPayload);
       setSubmissionStatus({ type: 'success', message: 'Match créé avec succès!' });
+      router.push('/');
       form.reset();
       setEloPreview([]);
 
