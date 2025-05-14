@@ -137,7 +137,7 @@ async def record_match_endpoint(match_data: MatchCreate):
 
         # ##: Calculate ELO changes.
         elo_changes = process_match_result(
-            winner_team=[
+            winning_team=[
                 {"id": winner_player1["player_id"], "elo": winner_player1["global_elo"]},
                 {"id": winner_player2["player_id"], "elo": winner_player2["global_elo"]},
             ],

@@ -42,7 +42,7 @@ def create_team(
     Returns
     -------
     Optional[int]
-        ID of the newly created team, or None on failure.
+        ID of the newly created team, or the existing team ID if a duplicate is found.
     """
     try:
         with transaction() as db_manager:
@@ -55,8 +55,10 @@ def create_team(
                 [player1_id, player2_id, player2_id, player1_id],
             )
             if existing_team:
-                logger.warning(f"Attempted to create duplicate team for players {player1_id} and {player2_id}")
-                return None
+                logger.warning(
+                    f"Attempted to create duplicate team for players {player1_id} and {player2_id}. Returning existing team ID: {existing_team[0]}"
+                )
+                return existing_team[0]
 
             builder = InsertQueryBuilder("Teams")
             builder.set(

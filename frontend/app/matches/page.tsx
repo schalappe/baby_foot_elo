@@ -92,7 +92,7 @@ const MatchHistoryPage = () => {
     if (!teamCompPlayer1IdFilter) {
       return allPlayers; 
     }
-    return allPlayers.filter(p => p.id.toString() !== teamCompPlayer1IdFilter);
+    return allPlayers.filter(p => p.player_id.toString() !== teamCompPlayer1IdFilter);
   }, [allPlayers, teamCompPlayer1IdFilter]);
 
   const filteredMatches = useMemo(() => {
@@ -110,8 +110,8 @@ const MatchHistoryPage = () => {
     if (selectedPlayerIdFilter) {
       const playerIdNum = parseInt(selectedPlayerIdFilter, 10);
       tempMatches = tempMatches.filter(match => {
-        const teamAPlayerIds = [match.team_a.player1.id, match.team_a.player2?.id].filter(Boolean);
-        const teamBPlayerIds = [match.team_b.player1.id, match.team_b.player2?.id].filter(Boolean);
+        const teamAPlayerIds = [match.team_a.player1.player_id, match.team_a.player2?.player_id].filter(Boolean);
+        const teamBPlayerIds = [match.team_b.player1.player_id, match.team_b.player2?.player_id].filter(Boolean);
         return teamAPlayerIds.includes(playerIdNum) || teamBPlayerIds.includes(playerIdNum);
       });
     }
@@ -122,17 +122,17 @@ const MatchHistoryPage = () => {
         const p2Id = parseInt(teamCompPlayer2IdFilter, 10);
         tempMatches = tempMatches.filter(match => {
           const teamAHasBoth = 
-            (match.team_a.player1.id === p1Id && match.team_a.player2?.id === p2Id) ||
-            (match.team_a.player1.id === p2Id && match.team_a.player2?.id === p1Id);
+            (match.team_a.player1.player_id === p1Id && match.team_a.player2?.player_id === p2Id) ||
+            (match.team_a.player1.player_id === p2Id && match.team_a.player2?.player_id === p1Id);
           const teamBHasBoth = 
-            (match.team_b.player1.id === p1Id && match.team_b.player2?.id === p2Id) ||
-            (match.team_b.player1.id === p2Id && match.team_b.player2?.id === p1Id);
+            (match.team_b.player1.player_id === p1Id && match.team_b.player2?.player_id === p2Id) ||
+            (match.team_b.player1.player_id === p2Id && match.team_b.player2?.player_id === p1Id);
           return teamAHasBoth || teamBHasBoth;
         });
       } else {
         tempMatches = tempMatches.filter(match => {
-          const p1SoloOnTeamA = match.team_a.player1.id === p1Id && !match.team_a.player2;
-          const p1SoloOnTeamB = match.team_b.player1.id === p1Id && !match.team_b.player2;
+          const p1SoloOnTeamA = match.team_a.player1.player_id === p1Id && !match.team_a.player2;
+          const p1SoloOnTeamB = match.team_b.player1.player_id === p1Id && !match.team_b.player2;
           return p1SoloOnTeamA || p1SoloOnTeamB;
         });
       }
@@ -143,9 +143,9 @@ const MatchHistoryPage = () => {
       const playerIdNum = parseInt(selectedPlayerIdFilter, 10);
       tempMatches = tempMatches.filter(match => {
         let playerTeam: 'A' | 'B' | null = null;
-        if (match.team_a.player1.id === playerIdNum || match.team_a.player2?.id === playerIdNum) {
+        if (match.team_a.player1.player_id === playerIdNum || match.team_a.player2?.player_id === playerIdNum) {
           playerTeam = 'A';
-        } else if (match.team_b.player1.id === playerIdNum || match.team_b.player2?.id === playerIdNum) {
+        } else if (match.team_b.player1.player_id === playerIdNum || match.team_b.player2?.player_id === playerIdNum) {
           playerTeam = 'B';
         }
 
@@ -248,9 +248,9 @@ const MatchHistoryPage = () => {
                 <SelectLabel>Joueurs</SelectLabel>
                 <SelectItem value="all">Tous les joueurs</SelectItem>
                 {allPlayers
-                  .filter(player => player && typeof player.id !== 'undefined' && player.name)
+                  .filter(player => player && typeof player.player_id !== 'undefined' && player.name)
                   .map((player) => (
-                    <SelectItem key={player.id} value={player.id.toString()}>
+                    <SelectItem key={player.player_id} value={player.player_id.toString()}>
                       {player.name}
                     </SelectItem>
                   ))}
@@ -267,9 +267,9 @@ const MatchHistoryPage = () => {
                 <SelectLabel>Joueur 1 du team</SelectLabel>
                 <SelectItem value="all">N'importe quel joueur 1</SelectItem>
                 {allPlayers
-                  .filter(player => player && typeof player.id !== 'undefined' && player.name)
+                  .filter(player => player && typeof player.player_id !== 'undefined' && player.name)
                   .map((player) => (
-                    <SelectItem key={player.id} value={player.id.toString()}>
+                    <SelectItem key={player.player_id} value={player.player_id.toString()}>
                       {player.name}
                     </SelectItem>
                   ))}
@@ -287,9 +287,9 @@ const MatchHistoryPage = () => {
                 <SelectLabel>Joueur 2 du team (Optionnel)</SelectLabel>
                 <SelectItem value="all">N'importe quel joueur 2 / Aucun</SelectItem>
                 {availableTeamCompPlayer2Options
-                  .filter(player => player && typeof player.id !== 'undefined' && player.name)
+                  .filter(player => player && typeof player.player_id !== 'undefined' && player.name)
                   .map((player) => (
-                    <SelectItem key={player.id} value={player.id.toString()}>
+                    <SelectItem key={player.player_id} value={player.player_id.toString()}>
                       {player.name}
                     </SelectItem>
                   ))}
@@ -357,9 +357,9 @@ const MatchHistoryPage = () => {
               <SelectLabel>Joueurs</SelectLabel>
               <SelectItem value="all">Tous les joueurs</SelectItem>
               {allPlayers
-                .filter(player => player && typeof player.id !== 'undefined' && player.name)
+                .filter(player => player && typeof player.player_id !== 'undefined' && player.name)
                 .map((player) => (
-                  <SelectItem key={player.id} value={player.id.toString()}>
+                  <SelectItem key={player.player_id} value={player.player_id.toString()}>
                     {player.name}
                   </SelectItem>
                 ))}
@@ -376,9 +376,9 @@ const MatchHistoryPage = () => {
               <SelectLabel>Joueur 1 du team</SelectLabel>
               <SelectItem value="all">N'importe quel joueur 1</SelectItem>
               {allPlayers
-                .filter(player => player && typeof player.id !== 'undefined' && player.name)
+                .filter(player => player && typeof player.player_id !== 'undefined' && player.name)
                 .map((player) => (
-                  <SelectItem key={player.id} value={player.id.toString()}>
+                  <SelectItem key={player.player_id} value={player.player_id.toString()}>
                     {player.name}
                   </SelectItem>
                 ))}
@@ -396,9 +396,9 @@ const MatchHistoryPage = () => {
               <SelectLabel>Joueur 2 du team (Optionnel)</SelectLabel>
               <SelectItem value="all">N'importe quel joueur 2 / Aucun</SelectItem>
               {availableTeamCompPlayer2Options
-                .filter(player => player && typeof player.id !== 'undefined' && player.name)
+                .filter(player => player && typeof player.player_id !== 'undefined' && player.name)
                 .map((player) => (
-                  <SelectItem key={player.id} value={player.id.toString()}>
+                  <SelectItem key={player.player_id} value={player.player_id.toString()}>
                     {player.name}
                   </SelectItem>
                 ))}
@@ -446,8 +446,8 @@ const MatchHistoryPage = () => {
             </TableHeader>
             <TableBody>
               {filteredMatches.map((match) => {
-                if (!match || typeof match.id === 'undefined' || match.id === null) {
-                  console.error('Match object or match.id is invalid:', match);
+                if (!match || typeof match.match_id === 'undefined' || match.match_id === null) {
+                  console.error('Match object or match.match_id is invalid:', match);
                   return (
                     <TableRow key={Math.random().toString()}> {/* Use a random key for invalid items */}
                       <TableCell colSpan={6}> {/* Adjusted to 6 columns */}
@@ -463,7 +463,7 @@ const MatchHistoryPage = () => {
                   );
                 }
                 return (
-                  <TableRow key={match.id}>
+                  <TableRow key={match.match_id}>
                     <TableCell>{format(new Date(match.match_date), 'MMM d, yyyy - HH:mm')}</TableCell>
                     <TableCell>
                       <div>{match.team_a.player1.name}</div>
@@ -494,7 +494,7 @@ const MatchHistoryPage = () => {
                       {match.is_fanny && <Badge variant="destructive" className="ml-2">Fanny!</Badge>}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link href={`/matches/${match.id}`} passHref>
+                      <Link href={`/matches/${match.match_id}`} passHref>
                         <Button variant="outline" size="sm">
                           <Eye className="mr-2 h-4 w-4" /> Voir les détails
                         </Button>

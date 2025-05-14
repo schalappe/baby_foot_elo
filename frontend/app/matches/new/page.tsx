@@ -4,6 +4,8 @@
 import React, { useEffect, useState } from 'react';
 import { Player } from '@/services/playerService';
 import { getPlayers } from '@/services/playerService';
+import { findOrCreateTeam } from '@/services/teamService';
+import { createMatch, BackendMatchCreatePayload } from '@/services/matchService';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -47,7 +49,7 @@ const matchFormSchema = z.object({
 type MatchFormValues = z.infer<typeof matchFormSchema>;
 
 interface EloPreviewPlayer {
-  id: string;
+  playerId: string;
   name: string;
   oldElo: number;
   newElo: number;
@@ -59,6 +61,8 @@ const NewMatchPage = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [eloPreview, setEloPreview] = useState<EloPreviewPlayer[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [submissionStatus, setSubmissionStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const form = useForm<MatchFormValues>({
     resolver: zodResolver(matchFormSchema),
@@ -94,8 +98,8 @@ const NewMatchPage = () => {
         setAllPlayers(fetchedPlayers);
         setError(null);
       } catch (err) {
-        setError('Failed to fetch players. Please ensure the backend is running and accessible.');
-        console.error('Error fetching players:', err);
+        setError('Échec de la récupération des joueurs.');
+        console.error('Échec de la récupération des joueurs:', err);
       } finally {
         setLoading(false);
       }
@@ -117,7 +121,7 @@ const NewMatchPage = () => {
       return;
     }
 
-    const getPlayerById = (id: string): Player | undefined => allPlayers.find(p => p.id.toString() === id);
+    const getPlayerById = (id: string): Player | undefined => allPlayers.find(p => p.player_id.toString() === id);
 
     const teamAPlayers: Player[] = [];
     if (p1AId) {
@@ -152,7 +156,7 @@ const NewMatchPage = () => {
       const result = winningTeam === 'A' ? 1 : 0;
       const change = calculateEloChange(player.global_elo, probA, result as 0 | 1);
       previewData.push({
-        id: player.id.toString(),
+        playerId: player.player_id.toString(),
         name: player.name,
         oldElo: player.global_elo,
         newElo: player.global_elo + change,
@@ -164,7 +168,7 @@ const NewMatchPage = () => {
       const result = winningTeam === 'B' ? 1 : 0;
       const change = calculateEloChange(player.global_elo, probB, result as 0 | 1);
       previewData.push({
-        id: player.id.toString(),
+        playerId: player.player_id.toString(),
         name: player.name,
         oldElo: player.global_elo,
         newElo: player.global_elo + change,
@@ -175,42 +179,87 @@ const NewMatchPage = () => {
 
   }, [p1AId_dep, p2AId_dep, p1BId_dep, p2BId_dep, winningTeam_dep, allPlayers]);
 
-  const onSubmit = (data: MatchFormValues) => {
-    console.log('Raw form data:', data);
+  const onSubmit = async (data: MatchFormValues) => {
+    setIsSubmitting(true);
+    setSubmissionStatus(null);
 
-    // Placeholder for team ID generation and winner/loser determination
-    // const teamA = { id: 'teamA_id_placeholder', players: [data.teamAPlayer1, data.teamAPlayer2].filter(Boolean) };
-    // const teamB = { id: 'teamB_id_placeholder', players: [data.teamBPlayer1, data.teamBPlayer2].filter(Boolean) };
+    // Validate that all selected players are unique and primary players for teams are selected.
+    if (!data.teamAPlayer1 || !data.teamBPlayer1) {
+      setSubmissionStatus({ type: 'error', message: 'Player 1 for both teams must be selected.' });
+      setIsSubmitting(false);
+      return;
+    }
+    
+    // Convert player IDs from string to number. Handle optional players.
+    const p1A = parseInt(data.teamAPlayer1, 10);
+    const p2A_str = data.teamAPlayer2;
+    const p1B = parseInt(data.teamBPlayer1, 10);
+    const p2B_str = data.teamBPlayer2;
 
-    // let winner_team_id: string | undefined;
-    // let loser_team_id: string | undefined;
+    // Backend expects two players per team for team creation via /api/v1/teams/
+    // TeamCreate model requires player1_id and player2_id.
+    if (!p2A_str || !p2B_str) {
+        setSubmissionStatus({ type: 'error', message: 'Both Team A and Team B must have two players selected.' });
+        setIsSubmitting(false);
+        return;
+    }
 
-    // if (data.winningTeam === 'A') {
-    //   winner_team_id = teamA.id;
-    //   loser_team_id = teamB.id;
-    // } else {
-    //   winner_team_id = teamB.id;
-    //   loser_team_id = teamA.id;
-    // }
+    const p2A = parseInt(p2A_str, 10);
+    const p2B = parseInt(p2B_str, 10);
 
-    // const backendPayload = {
-    //   winner_team_id,
-    //   loser_team_id,
-    //   is_fanny: data.isFanny,
-    //   played_at: data.matchDate.toISOString(),
-    //   notes: data.notes
-    // };
-    // console.log('Backend payload (conceptual):', backendPayload);
+    try {
+      // Step 1: Get or create Team A
+      const teamA = await findOrCreateTeam(p1A, p2A);
+      console.log('Team A:', teamA);
+
+      // Step 2: Get or create Team B
+      const teamB = await findOrCreateTeam(p1B, p2B);
+      console.log('Team B:', teamB);
+
+      if (!teamA || !teamB || !teamA.team_id || !teamB.team_id) {
+        throw new Error('Failed to retrieve or create one or both teams.');
+      }
+
+      // Step 3: Determine winner and loser team IDs
+      let winner_team_id: number;
+      let loser_team_id: number;
+
+      if (data.winningTeam === 'A') {
+        winner_team_id = teamA.team_id;
+        loser_team_id = teamB.team_id;
+      } else {
+        winner_team_id = teamB.team_id;
+        loser_team_id = teamA.team_id;
+      }
+
+      // Step 4: Construct payload for creating the match
+      const matchPayload: BackendMatchCreatePayload = {
+        winner_team_id,
+        loser_team_id,
+        is_fanny: data.isFanny,
+        played_at: data.matchDate.toISOString(),
+      };
+
+      // Step 5: Call API to create the match
+      const createdMatch = await createMatch(matchPayload);
+      setSubmissionStatus({ type: 'success', message: `Match created successfully! ID: ${createdMatch.match_id}` });
+      form.reset(); // Reset form on success
+      setEloPreview([]); // Clear ELO preview
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+      setSubmissionStatus({ type: 'error', message: `Failed to create match: ${errorMessage}` });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const getAvailablePlayers = (currentPlayerSlot?: string) => {
-    return allPlayers.filter(p => {
-      if (!p || typeof p.id === 'undefined') {
-        return false; 
-      }
-      const playerIdStr = p.id.toString();
-      return !selectedPlayerIds.includes(playerIdStr) || playerIdStr === currentPlayerSlot; 
-    });
+  const getAvailablePlayers = (allPlayersList: Player[], currentlySelectedIds: string[], currentPlayerSlotValue?: string): Player[] => {
+    return allPlayersList.filter(
+      player => 
+        (player.player_id.toString() === currentPlayerSlotValue) || 
+        !currentlySelectedIds.includes(player.player_id.toString())
+    );
   };
 
   if (loading) {
@@ -258,9 +307,11 @@ const NewMatchPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectLabel>Joueurs disponibles</SelectLabel>
-                    {getAvailablePlayers(form.watch('teamAPlayer1')).map(p => (
-                      <SelectItem key={`tA-p1-${p.id}`} value={p.id.toString()}>{p.name}</SelectItem>
+                    <SelectLabel>Available Players</SelectLabel>
+                    {getAvailablePlayers(allPlayers, selectedPlayerIds, form.watch('teamAPlayer1')).map(player => (
+                      <SelectItem key={player.player_id} value={player.player_id.toString()}>
+                        {player.name} (Elo: {player.global_elo})
+                      </SelectItem>
                     ))}
                   </SelectGroup>
                 </SelectContent>
@@ -275,9 +326,11 @@ const NewMatchPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectLabel>Joueurs disponibles</SelectLabel>
-                    {getAvailablePlayers(form.watch('teamAPlayer2')).map(p => (
-                      <SelectItem key={`tA-p2-${p.id}`} value={p.id.toString()}>{p.name}</SelectItem>
+                    <SelectLabel>Available Players</SelectLabel>
+                    {getAvailablePlayers(allPlayers, selectedPlayerIds, form.watch('teamAPlayer2')).map(player => (
+                      <SelectItem key={player.player_id} value={player.player_id.toString()}>
+                        {player.name} (Elo: {player.global_elo})
+                      </SelectItem>
                     ))}
                   </SelectGroup>
                 </SelectContent>
@@ -301,9 +354,11 @@ const NewMatchPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectLabel>Joueurs disponibles</SelectLabel>
-                    {getAvailablePlayers(form.watch('teamBPlayer1')).map(p => (
-                      <SelectItem key={`tB-p1-${p.id}`} value={p.id.toString()}>{p.name}</SelectItem>
+                    <SelectLabel>Available Players</SelectLabel>
+                    {getAvailablePlayers(allPlayers, selectedPlayerIds, form.watch('teamBPlayer1')).map(player => (
+                      <SelectItem key={player.player_id} value={player.player_id.toString()}>
+                        {player.name} (Elo: {player.global_elo})
+                      </SelectItem>
                     ))}
                   </SelectGroup>
                 </SelectContent>
@@ -318,9 +373,11 @@ const NewMatchPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectLabel>Joueurs disponibles</SelectLabel>
-                    {getAvailablePlayers(form.watch('teamBPlayer2')).map(p => (
-                      <SelectItem key={`tB-p2-${p.id}`} value={p.id.toString()}>{p.name}</SelectItem>
+                    <SelectLabel>Available Players</SelectLabel>
+                    {getAvailablePlayers(allPlayers, selectedPlayerIds, form.watch('teamBPlayer2')).map(player => (
+                      <SelectItem key={player.player_id} value={player.player_id.toString()}>
+                        {player.name} (Elo: {player.global_elo})
+                      </SelectItem>
                     ))}
                   </SelectGroup>
                 </SelectContent>
@@ -438,7 +495,7 @@ const NewMatchPage = () => {
             </CardHeader>
             <CardContent className="space-y-3">
               {eloPreview.map(player => (
-                <div key={player.id} className="flex justify-between items-center p-2 border rounded-md">
+                <div key={player.playerId} className="flex justify-between items-center p-2 border rounded-md">
                   <div>
                     <p className="font-semibold">{player.name}</p>
                     <p className="text-sm text-muted-foreground">Ancien ELO: {player.oldElo}</p>
@@ -455,9 +512,18 @@ const NewMatchPage = () => {
           </Card>
         )}
 
-        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer le match'}
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? 'Enregistrement...' : 'Enregistrer le match'}
         </Button>
+        {submissionStatus && (
+          <Alert variant={submissionStatus.type === 'error' ? 'destructive' : 'default'} className="mt-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>{submissionStatus.type === 'error' ? 'Error' : 'Success'}</AlertTitle>
+            <AlertDescription>
+              {submissionStatus.message}
+            </AlertDescription>
+          </Alert>
+        )}
       </form>
     </div>
   );

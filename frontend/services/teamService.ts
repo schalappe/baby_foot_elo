@@ -1,7 +1,6 @@
 import { Player } from './playerService';
 import axios from 'axios';
 
-// Assuming axios is configured with a base URL or proxy handles '/api/v1'
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export interface Team {
@@ -16,7 +15,7 @@ export interface Team {
   rank?: number | null;
 }
 
-// Fetch team rankings (sorted by Elo descending)
+// Fetch team rankings (sorted by Elo descending).
 export const getTeamRankings = async (): Promise<Team[]> => {
   try {
     const response = await axios.get<Team[]>(`${API_URL}/teams/rankings`, {
@@ -26,10 +25,23 @@ export const getTeamRankings = async (): Promise<Team[]> => {
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching team rankings:', error);
-    // Re-throw or handle error as needed for SWR
+    console.error('Échec de la récupération des équipes:', error);
     throw error;
   }
 };
 
-// Placeholder for future API functions like getTeams
+// Function to find an existing team or create a new one.
+export const findOrCreateTeam = async (player1_id: number, player2_id: number): Promise<Team> => {
+  try {
+    const response = await axios.post<Team>(`${API_URL}/teams/`, {
+      player1_id,
+      player2_id,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Échec de la recherche ou de la création de l'équipe pour les joueurs ${player1_id} et ${player2_id}:`, error);
+    if (axios.isAxiosError(error) && error.response && error.response.data) {
+    }
+    throw error;
+  }
+};
