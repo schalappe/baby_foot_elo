@@ -7,12 +7,12 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export interface MatchPlayerInfo {
   player_id: number;
   name: string;
-  elo_before_match: number;
-  elo_after_match: number;
-  elo_change: number;
+  global_elo: number;
 }
 
 export interface MatchTeamInfo {
+  team_id: number;
+  global_elo: number;
   player1: MatchPlayerInfo;
   player2?: MatchPlayerInfo;
 }
@@ -20,6 +20,8 @@ export interface MatchTeamInfo {
 export interface Match {
   match_id: number;
   played_at: string;
+  winner_team_id: number;
+  loser_team_id: number;
   winner_team: MatchTeamInfo;
   loser_team: MatchTeamInfo;
   is_fanny: boolean;

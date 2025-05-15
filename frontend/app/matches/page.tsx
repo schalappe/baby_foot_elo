@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link'; 
-import { Match, getMatches, MatchPlayerInfo } from '@/services/matchService';
+import { Match, getMatches, MatchPlayerInfo, MatchTeamInfo } from '@/services/matchService';
 import { Player, getPlayers as getPlayerList } from '@/services/playerService'; 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button'; 
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertCircle, CalendarDays, UserSearch, Users, Trophy, Eye, Download } from 'lucide-react'; 
+import { AlertCircle, CalendarDays, UserSearch, Users, Trophy, Eye, Download, Skull, MessageSquareText } from 'lucide-react'; 
 import { format, startOfDay, endOfDay } from 'date-fns'; 
 import { DateRange } from 'react-day-picker'; 
 import { DateRangePicker } from '@/components/ui/date-range-picker'; 
@@ -151,8 +151,8 @@ const MatchHistoryPage = () => {
 
         if (!playerTeam) return false; // Should not happen if player filter is applied correctly before
 
-        const teamAScore = match.winner_team.player1.elo_after_match;
-        const teamBScore = match.loser_team.player1.elo_after_match;
+        const teamAScore = match.winner_team.global_elo;
+        const teamBScore = match.loser_team.global_elo;
 
         if (matchOutcomeFilter === 'win') {
           return (playerTeam === 'A' && teamAScore > teamBScore) || (playerTeam === 'B' && teamBScore > teamAScore);
@@ -170,28 +170,11 @@ const MatchHistoryPage = () => {
     return tempMatches;
   }, [matches, dateRangeFilter, selectedPlayerIdFilter, teamCompPlayer1IdFilter, teamCompPlayer2IdFilter, matchOutcomeFilter]);
 
-  const renderPlayerEloChange = (player: MatchPlayerInfo) => {
-    if (!player || 
-        typeof player.name !== 'string' || // Ensure name is a string
-        typeof player.elo_before_match !== 'number' || 
-        typeof player.elo_after_match !== 'number' || 
-        typeof player.elo_change !== 'number'
-        ) {
-      return <span>{player?.name || 'Player Data Incomplete'}</span>;
+  const renderPlayerName = (player?: MatchPlayerInfo) => {
+    if (!player || typeof player.name !== 'string') {
+      return <span className="text-red-500">Joueur Inconnu</span>;
     }
-    const eloChangeText = `${player.elo_change >= 0 ? '+' : ''}${player.elo_change.toFixed(0)}`;
-    return (
-      <div className="text-xs">
-        <span>{player.elo_before_match}</span>
-        <Badge 
-          variant={player.elo_change >= 0 ? 'default' : 'destructive'}
-          className="ml-1 mr-1 text-xs p-0.5 h-auto leading-tight"
-        >
-          {eloChangeText}
-        </Badge>
-        <span>➔ {player.elo_after_match}</span>
-      </div>
-    );
+    return <span>{player.name}</span>;
   };
 
   if (loading) {
@@ -437,20 +420,27 @@ const MatchHistoryPage = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
-                <TableHead>Équipe A</TableHead>
-                <TableHead>Score</TableHead>
-                <TableHead>Équipe B</TableHead>
-                <TableHead>Résultat</TableHead>
+                <TableHead>Équipe</TableHead>
+                <TableHead className="text-center">VS</TableHead>
+                <TableHead>Équipe</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredMatches.map((match) => {
-                if (!match || typeof match.match_id === 'undefined' || match.match_id === null) {
-                  console.error('Match object or match.match_id is invalid:', match);
+                if (
+                  !match || 
+                  typeof match.match_id === 'undefined' || 
+                  match.match_id === null || 
+                  !match.winner_team || 
+                  !match.winner_team.player1 ||
+                  !match.loser_team ||
+                  !match.loser_team.player1
+                  ) {
+                  console.error('Match object or essential winner/loser team data is invalid:', match);
                   return (
                     <TableRow key={Math.random().toString()}> {/* Use a random key for invalid items */}
-                      <TableCell colSpan={6}> {/* Adjusted to 6 columns */}
+                      <TableCell colSpan={5}> {/* Adjusted to 5 columns */}
                         <Alert variant="destructive">
                           <AlertCircle className="h-4 w-4" />
                           <AlertTitle>Erreur de données</AlertTitle>
@@ -472,46 +462,81 @@ const MatchHistoryPage = () => {
                     console.error('Invalid date string received for match_id ' + match?.match_id + ':', dateString);
                     return 'Invalid Date';
                   }
-                  return format(dateObj, 'MMM d, yyyy - HH:mm');
+                  return format(dateObj, 'dd/MM/yy');
                 };
 
-                return (
-                  <TableRow key={match.match_id}>
-                    <TableCell>{renderFormattedDate(match.played_at)}</TableCell>
-                    <TableCell>
-                      <div>{match.winner_team.player1.name}</div>
-                      <div>{renderPlayerEloChange(match.winner_team.player1)}</div>
-                      {match.winner_team.player2 && (
-                        <div className="mt-1 pt-1 border-t border-dashed">
-                          <div>{match.winner_team.player2.name}</div>
-                          <div>{renderPlayerEloChange(match.winner_team.player2)}</div>
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-semibold">
-                      {match.winner_team.player1.elo_after_match} - {match.loser_team.player1.elo_after_match}
-                    </TableCell>
-                    <TableCell>
-                      <div>{match.loser_team.player1.name}</div>
-                      <div>{renderPlayerEloChange(match.loser_team.player1)}</div>
-                      {match.loser_team.player2 && (
-                        <div className="mt-1 pt-1 border-t border-dashed">
-                          <div>{match.loser_team.player2.name}</div>
-                          <div>{renderPlayerEloChange(match.loser_team.player2)}</div>
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {match.is_fanny && <Badge variant="destructive" className="ml-2">Fanny!</Badge>}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Link href={`/matches/${match.match_id}`} passHref>
-                        <Button variant="outline" size="sm">
-                          <Eye className="mr-2 h-4 w-4" /> Voir les détails
-                        </Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
+                const renderTeamCell = (team: MatchTeamInfo, isWinner: boolean, isFannyLoser: boolean) => {
+                  let cellClasses = "flex items-center p-2 rounded-md"; // always apply p-2 and rounded-md
+                  let icon = null;
+
+                  if (isWinner) {
+                    cellClasses += " bg-green-100 text-green-800";
+                    icon = <Trophy className="h-4 w-4 mr-2 text-green-700" />;
+                  } else if (isFannyLoser) {
+                    cellClasses += " bg-red-100 text-red-800";
+                    icon = <Skull className="h-4 w-4 mr-2 text-red-700" />;
+                  }
+
+                  return (
+                    <div className={cellClasses}>
+                      {icon}
+                      <div>
+                        {renderPlayerName(team.player1)}
+                        {team.player2 && <span className="mx-1">,</span>}
+                        {team.player2 && renderPlayerName(team.player2)}
+                      </div>
+                      {isFannyLoser && <Badge variant="destructive" className="ml-2">Fanny!</Badge>}
+                    </div>
+                  );
+                };
+
+                let team_A_data: MatchTeamInfo;
+                let team_B_data: MatchTeamInfo;
+
+                if (match.winner_team.team_id < match.loser_team.team_id) {
+                  team_A_data = match.winner_team;
+                  team_B_data = match.loser_team;
+                } else {
+                  team_A_data = match.loser_team;
+                  team_B_data = match.winner_team;
+                }
+
+                const isTeamAWinner = team_A_data.team_id === match.winner_team.team_id;
+                const isTeamAFannyLoser = !isTeamAWinner && match.is_fanny && team_A_data.team_id === match.loser_team.team_id;
+                
+                const isTeamBWinner = team_B_data.team_id === match.winner_team.team_id;
+                const isTeamBFannyLoser = !isTeamBWinner && match.is_fanny && team_B_data.team_id === match.loser_team.team_id;
+
+return (
+                  <React.Fragment key={match.match_id}>
+                    <TableRow>
+                      <TableCell>{renderFormattedDate(match.played_at)}</TableCell>
+                      <TableCell>
+                        {renderTeamCell(team_A_data, isTeamAWinner, isTeamAFannyLoser)}
+                      </TableCell>
+                      <TableCell className="text-center font-semibold">VS</TableCell>
+                      <TableCell>
+                        {renderTeamCell(team_B_data, isTeamBWinner, isTeamBFannyLoser)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Link href={`/matches/${match.match_id}`} passHref>
+                          <Button variant="outline" size="sm">
+                            <Eye className="mr-2 h-4 w-4" /> Voir les détails
+                          </Button>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                    {match.notes && match.notes.trim() !== '' && (
+                      <TableRow key={`${match.match_id}-notes`} className="bg-slate-50 dark:bg-slate-800">
+                        <TableCell colSpan={5} className="py-2 px-4 text-sm text-slate-600 dark:text-slate-300">
+                          <div className="flex items-center">
+                            <MessageSquareText className="h-4 w-4 mr-2 flex-shrink-0" />
+                            <span className="italic">{match.notes}</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </TableBody>
