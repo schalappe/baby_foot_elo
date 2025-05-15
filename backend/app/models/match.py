@@ -33,6 +33,7 @@ class MatchBase(BaseModel):
     loser_team_id: int = Field(..., gt=0, description="ID of the losing team")
     is_fanny: bool = Field(default=False, description="Whether the match was a 'fanny'")
     played_at: datetime = Field(..., description="Timestamp when the match was played")
+    notes: Optional[str] = Field(default=None, description="Optional notes about the match")
 
 
 class MatchCreate(MatchBase):
@@ -105,9 +106,9 @@ class MatchResponse(MatchBase):
     year: int = Field(..., ge=1900, le=2200, description="Year the match was played")
     month: int = Field(..., ge=1, le=12, description="Month the match was played")
     day: int = Field(..., ge=1, le=31, description="Day the match was played")
-
     winner_team: Optional[TeamResponse] = Field(default=None, description="Details for the winning team")
     loser_team: Optional[TeamResponse] = Field(default=None, description="Details for the losing team")
+    notes: Optional[str] = Field(default=None, description="Optional notes about the match")
 
     class Config:
         from_attributes = True

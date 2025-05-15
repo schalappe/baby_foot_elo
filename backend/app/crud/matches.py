@@ -14,7 +14,11 @@ from app.db import transaction, with_retry
 
 @with_retry(max_retries=3, retry_delay=0.5)
 def create_match(
-    winner_team_id: int, loser_team_id: int, played_at: Union[datetime, str], is_fanny: bool = False
+    winner_team_id: int, 
+    loser_team_id: int, 
+    played_at: Union[datetime, str], 
+    is_fanny: bool = False,
+    notes: Optional[str] = None
 ) -> Optional[int]:
     """
     Record a new match in the database.
@@ -29,6 +33,8 @@ def create_match(
         Date and time when the match was played
     is_fanny : bool, optional
         Whether the match was a fanny (10-0), by default False
+    notes : Optional[str], optional
+        Optional notes about the match, by default None
 
     Returns
     -------
@@ -61,7 +67,11 @@ def create_match(
                 month=month,
                 day=day,
             )
-
+            
+            # ##: Add notes if provided
+            if notes is not None:
+                query_builder.set(notes=notes)
+                
             query, params = query_builder.build()
             result = db_manager.fetchone(f"{query} RETURNING match_id", params)
 
@@ -124,7 +134,7 @@ def get_match(match_id: int) -> Optional[Dict[str, Any]]:
     """
     result = (
         SelectQueryBuilder("Matches")
-        .select("match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "year", "month", "day")
+        .select("match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "year", "month", "day", "notes")
         .where("match_id = ?", match_id)
         .execute(fetch_all=False)
     )
@@ -138,6 +148,7 @@ def get_match(match_id: int) -> Optional[Dict[str, Any]]:
             "year": result[5],
             "month": result[6],
             "day": result[7],
+            "notes": result[8],
         }
     return None
 
@@ -159,7 +170,7 @@ def get_matches_by_team(team_id: int) -> List[Dict[str, Any]]:
     """
     rows = (
         SelectQueryBuilder("Matches")
-        .select("match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "year", "month", "day")
+        .select("match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "year", "month", "day", "notes")
         .where("winner_team_id = ? OR loser_team_id = ?", team_id, team_id)
         .order_by_clause("played_at DESC")
         .execute()
@@ -175,6 +186,7 @@ def get_matches_by_team(team_id: int) -> List[Dict[str, Any]]:
                 "year": r[5],
                 "month": r[6],
                 "day": r[7],
+                "notes": r[8],
                 "won": r[1] == team_id,
             }
             for r in rows
@@ -194,7 +206,7 @@ def get_all_matches_for_recalculation() -> List[Dict[str, Any]]:
     List[Dict[str, Any]]
         List of match data, each dictionary containing:
         'match_id', 'played_at', 'winner_p1_id', 'winner_p2_id',
-        'loser_p1_id', 'loser_p2_id', 'is_fanny'.
+        'loser_p1_id', 'loser_p2_id', 'is_fanny', 'notes'.
     """
     try:
         query = (
@@ -203,6 +215,7 @@ def get_all_matches_for_recalculation() -> List[Dict[str, Any]]:
                 "m.match_id",
                 "m.played_at",
                 "m.is_fanny",
+                "m.notes",
                 "wt.player1_id AS winner_p1_id",
                 "wt.player2_id AS winner_p2_id",
                 "lt.player1_id AS loser_p1_id",
@@ -266,7 +279,7 @@ def get_matches_by_date_range(
     try:
         rows = (
             SelectQueryBuilder("Matches")
-            .select("match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "year", "month", "day")
+            .select("match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "year", "month", "day", "notes")
             .where("played_at >= ? AND played_at <= ?", start_date, end_date)
             .order_by_clause("played_at ASC")
             .execute()
@@ -283,6 +296,7 @@ def get_matches_by_date_range(
                     "year": r[5],
                     "month": r[6],
                     "day": r[7],
+                    "notes": r[8],
                 }
                 for r in rows
             ]
@@ -308,7 +322,7 @@ def get_fanny_matches() -> List[Dict[str, Any]]:
     try:
         rows = (
             SelectQueryBuilder("Matches")
-            .select("match_id", "winner_team_id", "loser_team_id", "played_at", "year", "month", "day")
+            .select("match_id", "winner_team_id", "loser_team_id", "played_at", "year", "month", "day", "notes")
             .where("is_fanny = ?", True)
             .order_by_clause("played_at DESC")
             .execute()
@@ -324,6 +338,7 @@ def get_fanny_matches() -> List[Dict[str, Any]]:
                     "year": r[4],
                     "month": r[5],
                     "day": r[6],
+                    "notes": r[7],
                 }
                 for r in rows
             ]
@@ -355,7 +370,7 @@ def get_all_matches(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
     try:
         rows = (
             SelectQueryBuilder("Matches")
-            .select("match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "year", "month", "day")
+            .select("match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "year", "month", "day", "notes")
             .order_by_clause("played_at DESC")
             .limit(limit)
             .offset(offset)
@@ -373,6 +388,7 @@ def get_all_matches(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
                     "year": r[5],
                     "month": r[6],
                     "day": r[7],
+                    "notes": r[8],
                 }
                 for r in rows
             ]

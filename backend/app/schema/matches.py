@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS Matches (
     year INTEGER NOT NULL,
     month INTEGER NOT NULL,
     day INTEGER NOT NULL,
+    notes TEXT,
     FOREIGN KEY (winner_team_id) REFERENCES Teams(team_id),
     FOREIGN KEY (loser_team_id) REFERENCES Teams(team_id),
     CHECK (winner_team_id <> loser_team_id)

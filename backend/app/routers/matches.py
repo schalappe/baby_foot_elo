@@ -130,6 +130,7 @@ async def record_match_endpoint(match_data: MatchCreate):
             loser_team_id=match_data.loser_team_id,
             played_at=played_at,
             is_fanny=match_data.is_fanny,
+            notes=match_data.notes,
         )
 
         if not match_id:
@@ -198,6 +199,7 @@ async def record_match_endpoint(match_data: MatchCreate):
             month=match_data["month"],
             day=match_data["day"],
             elo_changes=elo_changes,
+            notes=match_data.get("notes"),
             winner_team=TeamResponse(
                 **winner_team,
                 player1=get_player(winner_team["player1_id"]),
