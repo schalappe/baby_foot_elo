@@ -19,12 +19,9 @@ export interface MatchTeamInfo {
 
 export interface Match {
   match_id: number;
-  match_date: string;
-  team_a: MatchTeamInfo;
-  team_b: MatchTeamInfo;
-  team_a_score: number;
-  team_b_score: number;
-  winning_team_id: 'A' | 'B' | null;
+  played_at: string;
+  winner_team: MatchTeamInfo;
+  loser_team: MatchTeamInfo;
   is_fanny: boolean;
   notes?: string;
 }

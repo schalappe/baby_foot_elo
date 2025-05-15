@@ -102,7 +102,7 @@ const MatchHistoryPage = () => {
       const fromDate = startOfDay(dateRangeFilter.from);
       const toDate = dateRangeFilter.to ? endOfDay(dateRangeFilter.to) : endOfDay(dateRangeFilter.from);
       tempMatches = tempMatches.filter(match => {
-        const matchDate = new Date(match.match_date);
+        const matchDate = new Date(match.played_at);
         return matchDate >= fromDate && matchDate <= toDate;
       });
     }
@@ -110,8 +110,8 @@ const MatchHistoryPage = () => {
     if (selectedPlayerIdFilter) {
       const playerIdNum = parseInt(selectedPlayerIdFilter, 10);
       tempMatches = tempMatches.filter(match => {
-        const teamAPlayerIds = [match.team_a.player1.player_id, match.team_a.player2?.player_id].filter(Boolean);
-        const teamBPlayerIds = [match.team_b.player1.player_id, match.team_b.player2?.player_id].filter(Boolean);
+        const teamAPlayerIds = [match.winner_team.player1.player_id, match.winner_team.player2?.player_id].filter(Boolean);
+        const teamBPlayerIds = [match.loser_team.player1.player_id, match.loser_team.player2?.player_id].filter(Boolean);
         return teamAPlayerIds.includes(playerIdNum) || teamBPlayerIds.includes(playerIdNum);
       });
     }
@@ -122,17 +122,17 @@ const MatchHistoryPage = () => {
         const p2Id = parseInt(teamCompPlayer2IdFilter, 10);
         tempMatches = tempMatches.filter(match => {
           const teamAHasBoth = 
-            (match.team_a.player1.player_id === p1Id && match.team_a.player2?.player_id === p2Id) ||
-            (match.team_a.player1.player_id === p2Id && match.team_a.player2?.player_id === p1Id);
+            (match.winner_team.player1.player_id === p1Id && match.winner_team.player2?.player_id === p2Id) ||
+            (match.winner_team.player1.player_id === p2Id && match.winner_team.player2?.player_id === p1Id);
           const teamBHasBoth = 
-            (match.team_b.player1.player_id === p1Id && match.team_b.player2?.player_id === p2Id) ||
-            (match.team_b.player1.player_id === p2Id && match.team_b.player2?.player_id === p1Id);
+            (match.loser_team.player1.player_id === p1Id && match.loser_team.player2?.player_id === p2Id) ||
+            (match.loser_team.player1.player_id === p2Id && match.loser_team.player2?.player_id === p1Id);
           return teamAHasBoth || teamBHasBoth;
         });
       } else {
         tempMatches = tempMatches.filter(match => {
-          const p1SoloOnTeamA = match.team_a.player1.player_id === p1Id && !match.team_a.player2;
-          const p1SoloOnTeamB = match.team_b.player1.player_id === p1Id && !match.team_b.player2;
+          const p1SoloOnTeamA = match.winner_team.player1.player_id === p1Id && !match.winner_team.player2;
+          const p1SoloOnTeamB = match.loser_team.player1.player_id === p1Id && !match.loser_team.player2;
           return p1SoloOnTeamA || p1SoloOnTeamB;
         });
       }
@@ -143,16 +143,16 @@ const MatchHistoryPage = () => {
       const playerIdNum = parseInt(selectedPlayerIdFilter, 10);
       tempMatches = tempMatches.filter(match => {
         let playerTeam: 'A' | 'B' | null = null;
-        if (match.team_a.player1.player_id === playerIdNum || match.team_a.player2?.player_id === playerIdNum) {
+        if (match.winner_team.player1.player_id === playerIdNum || match.winner_team.player2?.player_id === playerIdNum) {
           playerTeam = 'A';
-        } else if (match.team_b.player1.player_id === playerIdNum || match.team_b.player2?.player_id === playerIdNum) {
+        } else if (match.loser_team.player1.player_id === playerIdNum || match.loser_team.player2?.player_id === playerIdNum) {
           playerTeam = 'B';
         }
 
         if (!playerTeam) return false; // Should not happen if player filter is applied correctly before
 
-        const teamAScore = match.team_a_score;
-        const teamBScore = match.team_b_score;
+        const teamAScore = match.winner_team.player1.elo_after_match;
+        const teamBScore = match.loser_team.player1.elo_after_match;
 
         if (matchOutcomeFilter === 'win') {
           return (playerTeam === 'A' && teamAScore > teamBScore) || (playerTeam === 'B' && teamBScore > teamAScore);
@@ -462,35 +462,46 @@ const MatchHistoryPage = () => {
                     </TableRow>
                   );
                 }
+                const renderFormattedDate = (dateString: string | null | undefined): string => {
+                  if (!dateString) {
+                    // console.warn('Match date is null or undefined for match_id:', match?.match_id);
+                    return 'Date N/A';
+                  }
+                  const dateObj = new Date(dateString);
+                  if (isNaN(dateObj.getTime())) {
+                    console.error('Invalid date string received for match_id ' + match?.match_id + ':', dateString);
+                    return 'Invalid Date';
+                  }
+                  return format(dateObj, 'MMM d, yyyy - HH:mm');
+                };
+
                 return (
                   <TableRow key={match.match_id}>
-                    <TableCell>{format(new Date(match.match_date), 'MMM d, yyyy - HH:mm')}</TableCell>
+                    <TableCell>{renderFormattedDate(match.played_at)}</TableCell>
                     <TableCell>
-                      <div>{match.team_a.player1.name}</div>
-                      <div>{renderPlayerEloChange(match.team_a.player1)}</div>
-                      {match.team_a.player2 && (
+                      <div>{match.winner_team.player1.name}</div>
+                      <div>{renderPlayerEloChange(match.winner_team.player1)}</div>
+                      {match.winner_team.player2 && (
                         <div className="mt-1 pt-1 border-t border-dashed">
-                          <div>{match.team_a.player2.name}</div>
-                          <div>{renderPlayerEloChange(match.team_a.player2)}</div>
+                          <div>{match.winner_team.player2.name}</div>
+                          <div>{renderPlayerEloChange(match.winner_team.player2)}</div>
                         </div>
                       )}
                     </TableCell>
                     <TableCell className="font-semibold">
-                      {match.team_a_score} - {match.team_b_score}
+                      {match.winner_team.player1.elo_after_match} - {match.loser_team.player1.elo_after_match}
                     </TableCell>
                     <TableCell>
-                      <div>{match.team_b.player1.name}</div>
-                      <div>{renderPlayerEloChange(match.team_b.player1)}</div>
-                      {match.team_b.player2 && (
+                      <div>{match.loser_team.player1.name}</div>
+                      <div>{renderPlayerEloChange(match.loser_team.player1)}</div>
+                      {match.loser_team.player2 && (
                         <div className="mt-1 pt-1 border-t border-dashed">
-                          <div>{match.team_b.player2.name}</div>
-                          <div>{renderPlayerEloChange(match.team_b.player2)}</div>
+                          <div>{match.loser_team.player2.name}</div>
+                          <div>{renderPlayerEloChange(match.loser_team.player2)}</div>
                         </div>
                       )}
                     </TableCell>
                     <TableCell>
-                      {match.winning_team_id === 'A' && <Badge variant="default" className="bg-green-500 hover:bg-green-600">Équipe A Victoire</Badge>}
-                      {match.winning_team_id === 'B' && <Badge variant="default" className="bg-blue-500 hover:bg-blue-600">Équipe B Victoire</Badge>}
                       {match.is_fanny && <Badge variant="destructive" className="ml-2">Fanny!</Badge>}
                     </TableCell>
                     <TableCell className="text-right">
