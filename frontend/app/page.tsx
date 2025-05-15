@@ -24,7 +24,6 @@ export default function Home() {
     useSWR<Player[]>(PLAYERS_API_ENDPOINT, getPlayerRankings); 
 
   const [isAddPlayerDialogOpen, setIsAddPlayerDialogOpen] = useState(false);
-  console.log(players);
 
   const handlePlayerRegistered = async () => {
     setIsAddPlayerDialogOpen(false);

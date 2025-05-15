@@ -1,7 +1,7 @@
 // frontend/app/matches/new/page.tsx
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Player } from '@/services/playerService';
 import { getPlayers } from '@/services/playerService';
@@ -13,7 +13,7 @@ import * as z from 'zod';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { CalendarIcon, AlertCircle } from 'lucide-react';
+import { CalendarIcon, AlertCircle, Trophy, Loader2 } from 'lucide-react'; // Added Loader2
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -45,8 +45,7 @@ const matchFormSchema = z.object({
 }).refine(data => {
   const players = [data.teamAPlayer1, data.teamAPlayer2, data.teamBPlayer1, data.teamBPlayer2].filter(Boolean);
   return new Set(players).size === players.length;
-}, { message: "Chaque joueur peut être sélectionné une seule fois.", path: ["teamAPlayer1"] 
-});
+}, { message: "Chaque joueur ne peut être sélectionné qu'une seule fois.", path: ["teamAPlayer1"] });
 
 type MatchFormValues = z.infer<typeof matchFormSchema>;
 
@@ -61,8 +60,8 @@ interface EloPreviewPlayer {
 const NewMatchPage = () => {
   const router = useRouter();
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loadingPlayers, setLoadingPlayers] = useState<boolean>(true); // Renamed for clarity
+  const [pageError, setPageError] = useState<string | null>(null); // Renamed for clarity
   const [eloPreview, setEloPreview] = useState<EloPreviewPlayer[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submissionStatus, setSubmissionStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -73,83 +72,71 @@ const NewMatchPage = () => {
       matchDate: new Date(),
       isFanny: false,
       notes: '',
+      teamAPlayer1: '',
+      teamAPlayer2: '',
+      teamBPlayer1: '',
+      teamBPlayer2: '',
     },
   });
 
-  const { watch, control, getValues } = form; 
+  const { watch, control, getValues, setValue, reset, formState: { errors } } = form;
 
-  // Watched values for ELO calculation useEffect dependencies.
-  const p1AId_dep = watch('teamAPlayer1');
-  const p2AId_dep = watch('teamAPlayer2');
-  const p1BId_dep = watch('teamBPlayer1');
-  const p2BId_dep = watch('teamBPlayer2');
-  const winningTeam_dep = watch('winningTeam');
+  const watchedValues = watch(); // Watch all fields for ELO calculation & available players
 
-  // selectedPlayerIds is used for getAvailablePlayers filter.
-  const selectedPlayerIds = [
-    p1AId_dep,
-    p2AId_dep,
-    p1BId_dep,
-    p2BId_dep,
-  ].filter(Boolean) as string[];
+  const selectedPlayerIds = useCallback(() : string[] => {
+    return [
+      watchedValues.teamAPlayer1,
+      watchedValues.teamAPlayer2,
+      watchedValues.teamBPlayer1,
+      watchedValues.teamBPlayer2,
+    ].filter(Boolean) as string[];
+  }, [watchedValues.teamAPlayer1, watchedValues.teamAPlayer2, watchedValues.teamBPlayer1, watchedValues.teamBPlayer2]);
+
 
   useEffect(() => {
     const fetchPlayersList = async () => {
       try {
-        setLoading(true);
+        setLoadingPlayers(true);
         const fetchedPlayers = await getPlayers();
         setAllPlayers(fetchedPlayers);
-        setError(null);
+        setPageError(null);
       } catch (err) {
-        setError('Échec de la récupération des joueurs.');
+        setPageError('Échec de la récupération des joueurs.');
         console.error('Échec de la récupération des joueurs:', err);
       } finally {
-        setLoading(false);
+        setLoadingPlayers(false);
       }
     };
     fetchPlayersList();
   }, []);
 
-  // useEffect for ELO Preview Calculation.
   useEffect(() => {
-    const p1AId = p1AId_dep;
-    const p2AId = p2AId_dep;
-    const p1BId = p1BId_dep;
-    const p2BId = p2BId_dep;
-    const winningTeam = winningTeam_dep;
+    const { teamAPlayer1, teamAPlayer2, teamBPlayer1, teamBPlayer2, winningTeam } = watchedValues;
 
-    if (!allPlayers.length || !winningTeam) {
+    if (!allPlayers.length || !winningTeam || !teamAPlayer1 || !teamAPlayer2 || !teamBPlayer1 || !teamBPlayer2) {
       setEloPreview([]);
       return;
     }
 
     const getPlayerById = (id: string): Player | undefined => allPlayers.find(p => p.player_id.toString() === id);
 
-    const teamAPlayers: Player[] = [];
-    if (p1AId) {
-      const p = getPlayerById(p1AId); if (p) teamAPlayers.push(p);
-    }
-    if (p2AId) {
-      const p = getPlayerById(p2AId); if (p) teamAPlayers.push(p);
-    }
+    const pA1 = getPlayerById(teamAPlayer1);
+    const pA2 = getPlayerById(teamAPlayer2);
+    const pB1 = getPlayerById(teamBPlayer1);
+    const pB2 = getPlayerById(teamBPlayer2);
 
-    const teamBPlayers: Player[] = [];
-    if (p1BId) {
-      const p = getPlayerById(p1BId); if (p) teamBPlayers.push(p);
+    if (!pA1 || !pA2 || !pB1 || !pB2) {
+        setEloPreview([]);
+        return;
     }
-    if (p2BId) {
-      const p = getPlayerById(p2BId); if (p) teamBPlayers.push(p);
-    }
-
-    if (teamAPlayers.length === 0 || teamBPlayers.length === 0) {
-      setEloPreview([]);
-      return;
-    }
+    
+    const teamAPlayers = [pA1, pA2];
+    const teamBPlayers = [pB1, pB2];
     
     const teamAElo = calculateTeamElo(teamAPlayers[0].global_elo, teamAPlayers[1]?.global_elo);
     const teamBElo = calculateTeamElo(teamBPlayers[0].global_elo, teamBPlayers[1]?.global_elo);
 
-    const probA = calculateWinProbability(teamAElo, teamBElo); 
+    const probA = calculateWinProbability(teamAElo, teamBElo);
     const probB = 1 - probA;
 
     const previewData: EloPreviewPlayer[] = [];
@@ -161,8 +148,8 @@ const NewMatchPage = () => {
         playerId: player.player_id.toString(),
         name: player.name,
         oldElo: player.global_elo,
-        newElo: player.global_elo + change,
-        change: change,
+        newElo: Math.round(player.global_elo + change),
+        change: Math.round(change),
       });
     });
 
@@ -173,52 +160,37 @@ const NewMatchPage = () => {
         playerId: player.player_id.toString(),
         name: player.name,
         oldElo: player.global_elo,
-        newElo: player.global_elo + change,
-        change: change,
+        newElo: Math.round(player.global_elo + change),
+        change: Math.round(change),
       });
     });
     setEloPreview(previewData);
 
-  }, [p1AId_dep, p2AId_dep, p1BId_dep, p2BId_dep, winningTeam_dep, allPlayers]);
+  }, [watchedValues.teamAPlayer1, watchedValues.teamAPlayer2, watchedValues.teamBPlayer1, watchedValues.teamBPlayer2, watchedValues.winningTeam, allPlayers]);
 
   const onSubmit = async (data: MatchFormValues) => {
     setIsSubmitting(true);
     setSubmissionStatus(null);
 
-    // Validate that all selected players are unique and primary players for teams are selected.
-    if (!data.teamAPlayer1 || !data.teamBPlayer1) {
-      setSubmissionStatus({ type: 'error', message: 'Player 1 for both teams must be selected.' });
-      setIsSubmitting(false);
-      return;
-    }
-    
-    // Convert player IDs from string to number. Handle optional players.
-    const p1A = parseInt(data.teamAPlayer1, 10);
-    const p2A_str = data.teamAPlayer2;
-    const p1B = parseInt(data.teamBPlayer1, 10);
-    const p2B_str = data.teamBPlayer2;
-
-    if (!p2A_str || !p2B_str) {
-        setSubmissionStatus({ type: 'error', message: 'Les deux équipes doivent avoir deux joueurs sélectionnés.' });
+    if (!data.teamAPlayer1 || !data.teamAPlayer2 || !data.teamBPlayer1 || !data.teamBPlayer2) {
+        setSubmissionStatus({ type: 'error', message: 'Tous les joueurs doivent être sélectionnés.' });
         setIsSubmitting(false);
         return;
     }
 
-    const p2A = parseInt(p2A_str, 10);
-    const p2B = parseInt(p2B_str, 10);
+    const p1A = parseInt(data.teamAPlayer1, 10);
+    const p2A = parseInt(data.teamAPlayer2, 10);
+    const p1B = parseInt(data.teamBPlayer1, 10);
+    const p2B = parseInt(data.teamBPlayer2, 10);
 
     try {
-      // Step 1: Get or create Team A?
       const teamA = await findOrCreateTeam(p1A, p2A);
-
-      // Step 2: Get or create Team B?
       const teamB = await findOrCreateTeam(p1B, p2B);
 
       if (!teamA || !teamB || !teamA.team_id || !teamB.team_id) {
         throw new Error('Échec de la récupération ou de la création d\'une ou des deux équipes.');
       }
 
-      // Step 3: Determine winner and loser team IDs.
       let winner_team_id: number;
       let loser_team_id: number;
 
@@ -230,20 +202,19 @@ const NewMatchPage = () => {
         loser_team_id = teamA.team_id;
       }
 
-      // Step 4: Construct payload for creating the match.
       const matchPayload: BackendMatchCreatePayload = {
         winner_team_id,
         loser_team_id,
         is_fanny: data.isFanny,
         played_at: data.matchDate.toISOString(),
+        notes: data.notes || null,
       };
 
-      // Step 5: Call API to create the match.
-      const createdMatch = await createMatch(matchPayload);
-      setSubmissionStatus({ type: 'success', message: 'Match créé avec succès!' });
-      router.push('/');
-      form.reset();
+      await createMatch(matchPayload);
+      setSubmissionStatus({ type: 'success', message: 'Match créé avec succès! Redirection...' });
+      reset();
       setEloPreview([]);
+      setTimeout(() => router.push('/'), 1500);
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Une erreur inconnue est survenue.';
@@ -253,32 +224,41 @@ const NewMatchPage = () => {
     }
   };
 
-  const getAvailablePlayers = (allPlayersList: Player[], currentlySelectedIds: string[], currentPlayerSlotValue?: string): Player[] => {
+  const getAvailablePlayers = (allPlayersList: Player[], currentSelectedIds: string[], currentPlayerSlotValue?: string): Player[] => {
     return allPlayersList.filter(
-      player => 
-        (player.player_id.toString() === currentPlayerSlotValue) || 
-        !currentlySelectedIds.includes(player.player_id.toString())
+      player =>
+        (player.player_id.toString() === currentPlayerSlotValue) ||
+        !currentSelectedIds.includes(player.player_id.toString())
     );
   };
 
-  if (loading) {
+  if (loadingPlayers) {
     return (
       <div className="container mx-auto p-4 max-w-2xl space-y-6">
         <Skeleton className="h-10 w-1/2" />
-        <Skeleton className="h-8 w-3/4" />
-        {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-48 w-full" />)}
-        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-8 w-3/4 mb-6" />
+        <Card>
+            <CardHeader><Skeleton className="h-8 w-1/3" /></CardHeader>
+            <CardContent className="space-y-6">
+                <div className="flex space-x-4">
+                    <Skeleton className="h-10 w-1/2" /> <Skeleton className="h-10 w-1/4" />
+                </div>
+                {[1,2,3,4].map(i => <Skeleton key={i} className="h-10 w-full" />)}
+                 <Skeleton className="h-20 w-full" />
+                 <Skeleton className="h-10 w-full mt-4" />
+            </CardContent>
+        </Card>
       </div>
     );
   }
 
-  if (error) {
+  if (pageError) {
     return (
       <div className="container mx-auto p-4 max-w-md">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Erreur</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>{pageError}</AlertDescription>
         </Alert>
       </div>
     );
@@ -294,216 +274,198 @@ const NewMatchPage = () => {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <Card>
           <CardHeader>
-            <CardTitle>Equipe A</CardTitle>
-            <CardDescription>Sélectionnez les joueurs pour l'équipe A.</CardDescription>
+            <CardTitle>Ajouter un résultat</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="teamAPlayer1">Joueur 1</Label>
-              <Select onValueChange={(value: string) => form.setValue('teamAPlayer1', value)} value={form.watch('teamAPlayer1')}>
-                <SelectTrigger id="teamAPlayer1">
-                  <SelectValue placeholder="Select Player 1" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Joueurs disponibles</SelectLabel>
-                    {getAvailablePlayers(allPlayers, selectedPlayerIds, form.watch('teamAPlayer1')).map(player => (
-                      <SelectItem key={player.player_id} value={player.player_id.toString()}>
-                        {player.name} (Elo: {player.global_elo})
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              {form.formState.errors.teamAPlayer1 && <p className="text-sm text-red-500">{form.formState.errors.teamAPlayer1.message}</p>}
+          <CardContent className="space-y-6">
+            {/* Row 1: Date and Fanny */}
+            <div className="flex flex-col sm:flex-row sm:items-start sm:space-x-4 space-y-4 sm:space-y-0">
+              <div className="flex-grow space-y-1">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="matchDate"
+                      variant={"outline"}
+                      className={cn(
+                        "w-full sm:w-[240px] justify-start text-left font-normal",
+                        !watchedValues.matchDate && "text-muted-foreground"
+                      )}
+                      disabled={loadingPlayers || isSubmitting}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {watchedValues.matchDate ? format(watchedValues.matchDate, "dd/MM/yyyy", { locale: fr }) : <span>Date du match</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={watchedValues.matchDate}
+                      onSelect={(date) => setValue('matchDate', date || new Date())}
+                      initialFocus
+                      locale={fr}
+                      disabled={isSubmitting}
+                    />
+                  </PopoverContent>
+                </Popover>
+                {errors.matchDate && <p className="text-xs text-red-500 pt-1">{errors.matchDate.message}</p>}
+              </div>
+              <div className="flex items-center space-x-2 pt-2 sm:pt-2.5">
+                <Controller
+                  control={control}
+                  name="isFanny"
+                  render={({ field }) => (
+                    <Checkbox
+                      id="isFanny"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      aria-label="C'était une Fanny?"
+                      disabled={loadingPlayers || isSubmitting}
+                    />
+                  )}
+                />
+                <Label htmlFor="isFanny" className="text-sm font-normal">Fanny</Label>
+                {errors.isFanny && <p className="text-xs text-red-500 ">{errors.isFanny.message}</p>}
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="teamAPlayer2">Joueur 2</Label>
-              <Select onValueChange={(value: string) => form.setValue('teamAPlayer2', value)} value={form.watch('teamAPlayer2')}>
-                <SelectTrigger id="teamAPlayer2">
-                  <SelectValue placeholder="Select Player 2" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Joueurs disponibles</SelectLabel>
-                    {getAvailablePlayers(allPlayers, selectedPlayerIds, form.watch('teamAPlayer2')).map(player => (
-                      <SelectItem key={player.player_id} value={player.player_id.toString()}>
-                        {player.name} (Elo: {player.global_elo})
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              {form.formState.errors.teamAPlayer2 && <p className="text-sm text-red-500">{form.formState.errors.teamAPlayer2.message}</p>}
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Equipe B</CardTitle>
-            <CardDescription>Sélectionnez les joueurs pour l'équipe B.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="teamBPlayer1">Joueur 1</Label>
-              <Select onValueChange={(value: string) => form.setValue('teamBPlayer1', value)} value={form.watch('teamBPlayer1')}>
-                <SelectTrigger id="teamBPlayer1">
-                  <SelectValue placeholder="Select Player 1" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Joueurs disponibles</SelectLabel>
-                    {getAvailablePlayers(allPlayers, selectedPlayerIds, form.watch('teamBPlayer1')).map(player => (
-                      <SelectItem key={player.player_id} value={player.player_id.toString()}>
-                        {player.name} (Elo: {player.global_elo})
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              {form.formState.errors.teamBPlayer1 && <p className="text-sm text-red-500">{form.formState.errors.teamBPlayer1.message}</p>}
+            {/* Team A Selection */}
+            <div className="flex items-start space-x-3">
+              <Trophy className="h-6 w-6 text-blue-500 mt-1.5" />
+              <div className="flex-grow space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+                  {(['teamAPlayer1', 'teamAPlayer2'] as const).map((fieldName, idx) => (
+                    <div className="space-y-1" key={fieldName}>
+                      <Select onValueChange={(value) => setValue(fieldName, value)} value={watchedValues[fieldName]} disabled={loadingPlayers || isSubmitting}>
+                        <SelectTrigger id={fieldName}>
+                          <SelectValue placeholder={`Joueur ${idx + 1} (Équipe A)`} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>Joueurs disponibles</SelectLabel>
+                            {getAvailablePlayers(allPlayers, selectedPlayerIds(), watchedValues[fieldName]).map(player => (
+                              <SelectItem key={player.player_id} value={player.player_id.toString()}>
+                                {player.name} (Elo: {player.global_elo})
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                      {errors[fieldName] && <p className="text-xs text-red-500 pt-1">{errors[fieldName]?.message}</p>}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="teamBPlayer2">Joueur 2</Label>
-              <Select onValueChange={(value: string) => form.setValue('teamBPlayer2', value)} value={form.watch('teamBPlayer2')}>
-                <SelectTrigger id="teamBPlayer2">
-                  <SelectValue placeholder="Select Player 2" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Joueurs disponibles</SelectLabel>
-                    {getAvailablePlayers(allPlayers, selectedPlayerIds, form.watch('teamBPlayer2')).map(player => (
-                      <SelectItem key={player.player_id} value={player.player_id.toString()}>
-                        {player.name} (Elo: {player.global_elo})
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              {form.formState.errors.teamBPlayer2 && <p className="text-sm text-red-500">{form.formState.errors.teamBPlayer2.message}</p>}
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Résultat du match</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Equipe gagnante*</Label>
+            {/* VS Separator */}
+            <div className="flex justify-center items-center py-1">
+              <span className="text-base font-semibold text-muted-foreground">VS</span>
+            </div>
+
+            {/* Team B Selection */}
+            <div className="flex items-start space-x-3">
+              <Trophy className="h-6 w-6 text-red-500 mt-1.5" />
+              <div className="flex-grow space-y-3">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+                    {(['teamBPlayer1', 'teamBPlayer2'] as const).map((fieldName, idx) => (
+                        <div className="space-y-1" key={fieldName}>
+                        <Select onValueChange={(value) => setValue(fieldName, value)} value={watchedValues[fieldName]} disabled={loadingPlayers || isSubmitting}>
+                            <SelectTrigger id={fieldName}>
+                            <SelectValue placeholder={`Joueur ${idx + 1} (Équipe B)`} />
+                            </SelectTrigger>
+                            <SelectContent>
+                            <SelectGroup>
+                                <SelectLabel>Joueurs disponibles</SelectLabel>
+                                {getAvailablePlayers(allPlayers, selectedPlayerIds(), watchedValues[fieldName]).map(player => (
+                                <SelectItem key={player.player_id} value={player.player_id.toString()}>
+                                    {player.name} (Elo: {player.global_elo})
+                                </SelectItem>
+                                ))}
+                            </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                        {errors[fieldName] && <p className="text-xs text-red-500 pt-1">{errors[fieldName]?.message}</p>}
+                        </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+            
+            {/* Winning Team */}
+            <div className="space-y-2 pt-3">
+              <Label className="text-sm font-medium">Équipe gagnante*</Label>
               <Controller
                 control={control}
                 name="winningTeam"
                 render={({ field }) => (
                   <RadioGroup
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    className="flex space-x-4"
+                    value={field.value}
+                    className="flex items-center space-x-4 pt-1"
+                    disabled={loadingPlayers || isSubmitting}
                   >
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="A" id="teamAwin" />
-                      <Label htmlFor="teamAwin">Equipe A</Label>
+                      <RadioGroupItem value="A" id="teamAwin" disabled={loadingPlayers || isSubmitting} />
+                      <Label htmlFor="teamAwin" className="font-normal">Équipe A</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="B" id="teamBwin" />
-                      <Label htmlFor="teamBwin">Equipe B</Label>
+                      <RadioGroupItem value="B" id="teamBwin" disabled={loadingPlayers || isSubmitting} />
+                      <Label htmlFor="teamBwin" className="font-normal">Équipe B</Label>
                     </div>
                   </RadioGroup>
                 )}
               />
-              {form.formState.errors.winningTeam && <p className="text-sm text-red-500">{form.formState.errors.winningTeam.message}</p>}
+              {errors.winningTeam && <p className="text-xs text-red-500 pt-1">{errors.winningTeam.message}</p>}
             </div>
-            <div className="flex items-center space-x-2">
-              <Controller
-                control={control}
-                name="isFanny"
-                render={({ field }) => (
-                  <Checkbox
-                    id="isFanny"
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                )}
-              />
-              <Label htmlFor="isFanny" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                C'était une Fanny? (Le perdant a marqué 0)
-              </Label>
-              {form.formState.errors.isFanny && <p className="text-sm text-red-500">{form.formState.errors.isFanny.message}</p>}
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Détails du match</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="matchDate">Date du match*</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    id="matchDate"
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !form.watch('matchDate') && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {form.watch('matchDate') ? format(form.watch('matchDate')!, "PPP", { locale: fr }) : <span>Choisissez une date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={form.watch('matchDate')}
-                    onSelect={(date) => form.setValue('matchDate', date || new Date())}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              {form.formState.errors.matchDate && <p className="text-sm text-red-500">{form.formState.errors.matchDate.message}</p>}
-            </div>
+            {/* Notes */}
             <div className="space-y-2">
               <Label htmlFor="notes">Notes (optionnel)</Label>
-              <Textarea id="notes" placeholder="Evénements notables, litiges, etc." {...form.register('notes')} />
-              {form.formState.errors.notes && <p className="text-sm text-red-500">{form.formState.errors.notes.message}</p>}
+              <Textarea
+                id="notes"
+                placeholder="Événements notables, chambrage, etc."
+                {...form.register('notes')}
+                disabled={loadingPlayers || isSubmitting}
+              />
+              {errors.notes && <p className="text-xs text-red-500 pt-1">{errors.notes.message}</p>}
             </div>
           </CardContent>
         </Card>
 
-        {(form.formState.errors.root || form.formState.errors.teamAPlayer1?.type === 'custom') && (
+        {/* Form-level error (e.g. duplicate player) */}
+        {errors.root?.message && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Erreur de validation</AlertTitle>
-            <AlertDescription>
-              {form.formState.errors.root?.message || 
-               (form.formState.errors.teamAPlayer1?.type === 'custom' && form.formState.errors.teamAPlayer1.message)}
-            </AlertDescription>
+            <AlertDescription>{errors.root.message}</AlertDescription>
           </Alert>
         )}
+         {errors.teamAPlayer1?.type === 'custom' && !errors.root?.message && (
+            <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Erreur de validation</AlertTitle>
+                <AlertDescription>{errors.teamAPlayer1.message}</AlertDescription>
+            </Alert>
+        )}
 
+
+        {/* ELO Preview */}
         {eloPreview.length > 0 && (
-          <Card className="mt-8">
+          <Card>
             <CardHeader>
-              <CardTitle>Prévisualisation des changements d'ELO</CardTitle>
-              <CardDescription>Prévisualisation des changements d'ELO basés sur les selections actuelles.</CardDescription>
+              <CardTitle>Prévisualisation des ELOs</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {eloPreview.map(player => (
                 <div key={player.playerId} className="flex justify-between items-center p-2 border rounded-md">
                   <div>
                     <p className="font-semibold">{player.name}</p>
-                    <p className="text-sm text-muted-foreground">Ancien ELO: {player.oldElo}</p>
+                    <p className="text-sm text-muted-foreground">Ancien: {player.oldElo}</p>
                   </div>
                   <div className="text-right">
-                    <Badge variant={player.change >= 0 ? 'default' : 'destructive'} className="mb-1">
+                    <Badge variant={player.change >= 0 ? 'default' : 'destructive'} className={cn("mb-1 text-sm", player.change >=0 ? "bg-green-500 hover:bg-green-600" : "bg-red-500 hover:bg-red-600")}>
                       {player.change >= 0 ? '+' : ''}{player.change}
                     </Badge>
-                    <p className="text-sm font-semibold">Nouveau ELO: {player.newElo}</p>
+                    <p className="text-sm font-semibold">Nouveau: {player.newElo}</p>
                   </div>
                 </div>
               ))}
@@ -511,18 +473,31 @@ const NewMatchPage = () => {
           </Card>
         )}
 
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? 'Enregistrement...' : 'Enregistrer le match'}
-        </Button>
+        {/* Submission Status Alert */}
         {submissionStatus && (
-          <Alert variant={submissionStatus.type === 'error' ? 'destructive' : 'default'} className="mt-4">
+          <Alert variant={submissionStatus.type === 'success' ? 'default' : 'destructive'} className={submissionStatus.type === 'success' ? 'bg-green-100 border-green-400 text-green-700' : ''}>
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>{submissionStatus.type === 'error' ? 'Error' : 'Success'}</AlertTitle>
-            <AlertDescription>
-              {submissionStatus.message}
-            </AlertDescription>
+            <AlertTitle>{submissionStatus.type === 'success' ? 'Succès' : 'Erreur'}</AlertTitle>
+            <AlertDescription>{submissionStatus.message}</AlertDescription>
           </Alert>
         )}
+
+        {/* Action Buttons */}
+        <div className="flex justify-end space-x-2">
+          <Button variant="outline" onClick={() => router.push('/')} disabled={isSubmitting}>
+            Annuler
+          </Button>
+          <Button type="submit" disabled={loadingPlayers || isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Soumission...
+              </>
+            ) : (
+              'Créer le match'
+            )}
+          </Button>
+        </div>
       </form>
     </div>
   );

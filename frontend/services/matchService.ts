@@ -54,6 +54,7 @@ export interface BackendMatchCreatePayload {
   loser_team_id: number;
   is_fanny: boolean;
   played_at: string;
+  notes?: string | null;
 }
 
 interface BackendTeamResponse {

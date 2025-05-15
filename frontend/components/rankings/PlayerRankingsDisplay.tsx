@@ -77,11 +77,8 @@ export function PlayerRankingsDisplay({ players = [], isLoading, error }: Player
     return <p>Aucun joueur trouvé.</p>;
   }
 
-  console.log(players);
   const topPlayers = players.slice(0, 3);
-  console.log(topPlayers);
   const otherPlayers = players.slice(3);
-  console.log(otherPlayers);
 
   return (
     <div className="w-full space-y-8">
@@ -146,11 +143,9 @@ export function PlayerRankingsDisplay({ players = [], isLoading, error }: Player
                           {player.name}
                         </Link>
                       </TableCell>
-                      <TableCell className="text-right">{player.global_elo}</TableCell> {/* Reverted to player.global_elo */}
+                      <TableCell className="text-right">{player.global_elo}</TableCell>
                       <TableCell className="text-right">{player.matches_played}</TableCell>
-                      <TableCell className="text-right">
-                        {player.wins}W - {player.losses}L ({winrate}%)
-                      </TableCell>
+                      <TableCell className="text-right">{player.wins}W - {player.losses}L ({winrate}%)</TableCell>
                     </TableRow>
                   );
                 })}
