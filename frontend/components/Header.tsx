@@ -13,7 +13,7 @@ export default function Header() {
     <header className="w-full px-6 py-4 flex items-center justify-between border-b bg-background dark:bg-zinc-900 dark:text-foreground-dark shadow-md">
       <div className="flex items-center gap-2">
         <Link href="/">
-          <h1 className="font-bold text-xl tracking-tight">Baby Foot Elo</h1>
+          <h1 className="font-bold text-xl tracking-tight">Baby Foot</h1>
         </Link>
       </div>
       <NavigationMenu>
