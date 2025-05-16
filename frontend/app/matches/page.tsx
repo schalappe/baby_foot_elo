@@ -518,6 +518,16 @@ return (
                       <TableCell>
                         {renderTeamCell(team_B_data, isTeamBWinner, isTeamBFannyLoser)}
                       </TableCell>
+                      <TableCell className="max-w-[200px] overflow-hidden text-ellipsis text-center">
+                        {match.notes?.trim() && (
+                          <div className="flex items-center justify-center text-sm text-slate-600 dark:text-slate-300">
+                            <MessageSquareText className="h-4 w-4 mr-2 flex-shrink-0" />
+                            <span className="truncate italic" title={match.notes}>
+                              {match.notes}
+                            </span>
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right">
                         <Link href={`/matches/${match.match_id}`} passHref>
                           <Button variant="outline" size="sm">
@@ -526,16 +536,6 @@ return (
                         </Link>
                       </TableCell>
                     </TableRow>
-                    {match.notes && match.notes.trim() !== '' && (
-                      <TableRow key={`${match.match_id}-notes`} className="bg-slate-50 dark:bg-slate-800">
-                        <TableCell colSpan={5} className="py-2 px-4 text-sm text-slate-600 dark:text-slate-300">
-                          <div className="flex items-center">
-                            <MessageSquareText className="h-4 w-4 mr-2 flex-shrink-0" />
-                            <span className="italic">{match.notes}</span>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
                   </React.Fragment>
                 );
               })}
