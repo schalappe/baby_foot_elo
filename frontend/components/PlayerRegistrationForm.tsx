@@ -42,10 +42,22 @@ export function PlayerRegistrationForm({ onPlayerRegistered }: PlayerRegistratio
       });
       form.reset();
       onPlayerRegistered();
-    } catch (error) {
-      toast.error("Création du joueur echouée", {
-        description: error instanceof Error ? error.message : "Une erreur inconnue est survenue.",
-      });
+    } catch (error: any) {
+      // Check for duplicate player name (409 Conflict status)
+      if (error.response && error.response.status === 409) {
+        toast.error("Nom de joueur déjà utilisé", {
+          description: "Un joueur avec ce nom existe déjà. Veuillez choisir un nom différent.",
+        });
+        // Set form error
+        form.setError("name", {
+          type: "manual",
+          message: "Ce nom est déjà utilisé par un autre joueur"
+        });
+      } else {
+        toast.error("Création du joueur echouée", {
+          description: error instanceof Error ? error.message : "Une erreur inconnue est survenue.",
+        });
+      }
       console.error("Création du joueur echouée:", error);
     }
   }

@@ -33,6 +33,7 @@ from app.crud.players import (
     delete_player,
     get_all_players,
     get_player,
+    get_player_by_name,
     update_player,
 )
 from app.crud.stats import get_player_stats
@@ -101,6 +102,14 @@ async def create_player_endpoint(player: PlayerCreate):
         if not player.name.strip():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Player name cannot be empty or whitespace only"
+            )
+            
+        # ##: Check if a player with this name already exists.
+        existing_player = get_player_by_name(player.name)
+        if existing_player:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, 
+                detail=f"A player with the name '{player.name}' already exists"
             )
 
         # ##: Create the player.
