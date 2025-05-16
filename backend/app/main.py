@@ -23,11 +23,12 @@ from app.utils.validation import (
     validation_error_response_handler,
     validation_exception_handler,
 )
+from app.core import config
 
 
 @asynccontextmanager
 async def lifespan(app):
-    db = DatabaseManager()
+    db = DatabaseManager(db_path=config.get_db_url())
     initialize_database(db)
     yield
 

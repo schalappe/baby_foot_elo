@@ -442,6 +442,7 @@ dist
 # Specify the folder to ignore
 .roo
 memory-bank/
+data/
 sequentialthinking-mcp/
 library.md
 ShadCN-context.md
