@@ -26,6 +26,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Path, Query, status
 from loguru import logger
 
+from app.crud.builders import SelectQueryBuilder
 from app.crud.elo_history import get_player_elo_history as get_elo_history
 from app.crud.matches import get_matches_by_team
 from app.crud.players import (
@@ -103,13 +104,12 @@ async def create_player_endpoint(player: PlayerCreate):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Player name cannot be empty or whitespace only"
             )
-            
+
         # ##: Check if a player with this name already exists.
         existing_player = get_player_by_name(player.name)
         if existing_player:
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT, 
-                detail=f"A player with the name '{player.name}' already exists"
+                status_code=status.HTTP_409_CONFLICT, detail=f"A player with the name '{player.name}' already exists"
             )
 
         # ##: Create the player.
@@ -213,7 +213,7 @@ async def list_players_endpoint(
     "/rankings",
     response_model=List[PlayerResponse],
     summary="Get player rankings",
-    description="Retrieves a list of players sorted by global ELO rating.",
+    description="Retrieves a list of players sorted by global ELO rating who have played at least one match and their last match was at least one month ago.",
 )
 async def get_player_rankings_endpoint(
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of players to return")
@@ -235,6 +235,8 @@ async def get_player_rankings_endpoint(
     Notes
     -----
     - Players are sorted in descending order by global ELO
+    - Only includes players who have played at least one match
+    - Only includes players whose last match was at least one month ago
     - This is useful for leaderboard displays and ranking tables
     """
     try:
@@ -243,6 +245,13 @@ async def get_player_rankings_endpoint(
         if not all_players:
             return []
 
+        # ##: Get current date to calculate one month ago
+        current_date = datetime.now()
+        one_month_ago = current_date.replace(
+            month=current_date.month - 1 if current_date.month > 1 else 12,
+            year=current_date.year if current_date.month > 1 else current_date.year - 1,
+        )
+
         # ##: Process players and get their stats.
         response = []
         for player in all_players:
@@ -250,6 +259,35 @@ async def get_player_rankings_endpoint(
             stats = get_player_stats(pid)
 
             if not stats:
+                continue
+
+            # ##: Skip players with no matches
+            if stats["matches_played"] == 0:
+                continue
+
+            # ##: Get the player's last match date
+            last_match_query = (
+                SelectQueryBuilder("Matches m")
+                .select("MAX(m.played_at)")
+                .join("Teams tw", "m.winner_team_id = tw.team_id")
+                .join("Teams tl", "m.loser_team_id = tl.team_id")
+                .where(
+                    "tw.player1_id = ? OR tw.player2_id = ? OR tl.player1_id = ? OR tl.player2_id = ?",
+                    pid,
+                    pid,
+                    pid,
+                    pid,
+                )
+                .execute(fetch_all=False)
+            )
+
+            # ##: Skip if no last match found (shouldn't happen if matches_played > 0)
+            if not last_match_query or not last_match_query[0]:
+                continue
+            last_match_date = last_match_query[0]
+
+            # ##: Skip players whose last match is less than a month ago
+            if one_month_ago >= last_match_date:
                 continue
 
             response.append(
