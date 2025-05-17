@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { getPlayerById, Player } from '@/services/playerService';
+import { getPlayerStats, PlayerStats } from '@/services/playerService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'; // Assuming table is available
@@ -12,7 +12,7 @@ interface PlayerDetailProps {
 }
 
 const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
-  const [player, setPlayer] = useState<Player | null>(null);
+  const [player, setPlayer] = useState<PlayerStats | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,7 +21,7 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
       const fetchPlayer = async () => {
         try {
           setLoading(true);
-          const data = await getPlayerById(playerId);
+          const data = await getPlayerStats(playerId);
           setPlayer(data);
           setError(null);
         } catch (err) {
@@ -77,9 +77,8 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
     );
   }
 
-  const calculateWinRate = () => {
-    if (player.matches_played === 0) return '0.00%';
-    return ((player.wins / player.matches_played) * 100).toFixed(2) + '%';
+  const formatPercentage = (value: number) => {
+    return (value).toFixed(2) + '%';
   };
 
   return (
@@ -95,7 +94,7 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
             <div><strong>Matchs:</strong> {player.matches_played}</div>
             <div><strong>Victoires:</strong> {player.wins}</div>
             <div><strong>Défaites:</strong> {player.losses}</div>
-            <div><strong>Taux de Victoire:</strong> {calculateWinRate()}</div>
+            <div><strong>Taux de Victoire:</strong> {formatPercentage(player.win_rate)}</div>
           </div>
         </section>
 
