@@ -8,8 +8,8 @@ from typing import Any, Dict, List, Optional
 from loguru import logger
 
 from app.db.builders import SelectQueryBuilder
+from app.db.session.retry import with_retry
 from app.db.repositories.players import get_player
-from app.db.retry import with_retry
 
 
 @with_retry(max_retries=3, retry_delay=0.5)

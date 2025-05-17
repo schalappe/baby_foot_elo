@@ -9,7 +9,7 @@ from typing import Any, List, Optional, Tuple, Union
 
 from loguru import logger
 
-from app.db import transaction
+from app.db.session import transaction
 
 
 class BaseQueryBuilder:

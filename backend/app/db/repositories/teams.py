@@ -15,7 +15,7 @@ from app.db.builders import (
     SelectQueryBuilder,
     UpdateQueryBuilder,
 )
-from app.db import transaction, with_retry
+from app.db.session import transaction, with_retry
 
 
 @with_retry(max_retries=3, retry_delay=0.5)

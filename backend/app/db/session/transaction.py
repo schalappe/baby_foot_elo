@@ -8,7 +8,7 @@ from contextlib import contextmanager
 
 from loguru import logger
 
-from .database import DatabaseManager
+from app.db.database import DatabaseManager
 
 
 class TransactionHandler:

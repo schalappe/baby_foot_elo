@@ -13,8 +13,8 @@ from app.db.builders import (
     SelectQueryBuilder,
     UpdateQueryBuilder,
 )
-from app.db.retry import with_retry
-from app.db.transaction import transaction
+from app.db.session.retry import with_retry
+from app.db.session.transaction import transaction
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
