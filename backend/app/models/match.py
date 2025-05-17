@@ -82,4 +82,4 @@ class MatchWithEloResponse(MatchResponse):
         Dictionary mapping player IDs to their ELO changes.
     """
 
-    elo_changes: Dict[str, int] = Field(default_factory=dict, description="ELO changes for each player")
+    elo_changes: Dict[int, Dict[str, int]] = Field(default_factory=dict, description="ELO changes for each player")

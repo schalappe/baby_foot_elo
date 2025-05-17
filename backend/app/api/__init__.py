@@ -5,6 +5,7 @@ This package contains all API-related code, including versioned API endpoints.
 """
 
 from fastapi import APIRouter
+
 from app.api.v1 import api_router as v1_router
 
 # ##: Include v1 API routes.

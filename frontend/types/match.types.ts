@@ -66,7 +66,7 @@ export interface BackendMatchWithEloResponse {
   year: number;
   month: number;
   day: number;
-  elo_changes: EloChange;
+  elo_changes: { [player_id: number]: EloChange };
   winner_team: BackendTeamResponse;
   loser_team: BackendTeamResponse;
 }

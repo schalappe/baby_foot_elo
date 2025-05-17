@@ -3,7 +3,7 @@ This module provides business logic and data transformation for player-related o
 It acts as an intermediary between the API routes and the database repositories.
 """
 
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from loguru import logger
 
@@ -16,17 +16,19 @@ from app.db.repositories.players import (
     get_player,
     get_player_by_name,
     update_player,
-    get_player_stats,
 )
+from app.db.repositories.stats import get_player_stats
+from app.db.repositories.teams import get_team
 from app.exceptions.players import (
-    PlayerNotFoundError,
-    PlayerAlreadyExistsError,
     InvalidPlayerDataError,
+    PlayerAlreadyExistsError,
+    PlayerNotFoundError,
     PlayerOperationError,
 )
 from app.models.elo_history import EloHistoryResponse
 from app.models.match import MatchWithEloResponse
 from app.models.player import PlayerCreate, PlayerResponse, PlayerUpdate
+from app.models.team import TeamResponse
 
 
 def get_player_by_id(player_id: int) -> PlayerResponse:
@@ -73,15 +75,16 @@ def get_player_by_id(player_id: int) -> PlayerResponse:
             name=player["name"],
             global_elo=player["global_elo"],
             created_at=player["created_at"],
+            last_match_at=stats["last_match_at"],
             matches_played=stats.get("matches_played", 0),
             wins=stats.get("wins", 0),
             losses=stats.get("losses", 0),
         )
     except PlayerNotFoundError:
         raise
-    except Exception as e:
-        logger.error(f"Error retrieving player with ID {player_id}: {e}")
-        raise PlayerOperationError(f"Failed to retrieve player with ID {player_id}") from e
+    except Exception as exc:
+        logger.error(f"Error retrieving player with ID {player_id}: {exc}")
+        raise PlayerOperationError(f"Failed to retrieve player with ID {player_id}") from exc
 
 
 def create_new_player(player_data: PlayerCreate) -> PlayerResponse:
@@ -207,7 +210,7 @@ def delete_player_by_id(player_id: int) -> bool:
         existing_player = get_player(player_id)
         if not existing_player:
             raise PlayerNotFoundError(f"ID: {player_id}")
-            
+
         success = delete_player(player_id)
         if not success:
             raise PlayerOperationError(f"Failed to delete player with ID {player_id}")
@@ -251,6 +254,7 @@ def get_all_players_with_stats() -> List[PlayerResponse]:
     except Exception as e:
         logger.error(f"Error retrieving all players: {e}")
         raise PlayerOperationError("Failed to retrieve players") from e
+
 
 def get_player_matches(player_id: int, limit: int = 10, offset: int = 0, **filters) -> List[MatchWithEloResponse]:
     """
@@ -299,7 +303,8 @@ def get_player_matches(player_id: int, limit: int = 10, offset: int = 0, **filte
         logger.error(f"Error retrieving matches for player {player_id}: {e}")
         return []
 
-def get_player_elo_history(player_id: int, limit: int = 20, offset: int = 0, **filters) -> List[EloHistoryResponse]:
+
+def get_elo_history_by_id(player_id: int, limit: int = 20, offset: int = 0, **filters) -> List[EloHistoryResponse]:
     """
     Retrieve ELO history for a specific player.
 
@@ -326,6 +331,7 @@ def get_player_elo_history(player_id: int, limit: int = 20, offset: int = 0, **f
         logger.error(f"Error retrieving ELO history for player {player_id}: {e}")
         return []
 
+
 def get_player_statistics(player_id: int) -> Dict[str, Any]:
     """
     Retrieve statistics for a specific player.
@@ -342,21 +348,72 @@ def get_player_statistics(player_id: int) -> Dict[str, Any]:
         A dictionary containing the player's statistics.
     """
     try:
-        stats = get_player_stats(player_id)
-        if not stats:
-            return {
-                "matches_played": 0,
-                "wins": 0,
-                "losses": 0,
-                "win_rate": 0.0,
-                "current_streak": 0,
-                "best_streak": 0,
-                "worst_streak": 0,
-                "average_elo_change": 0,
-                "highest_elo": 0,
-                "lowest_elo": 0,
-            }
-        return stats
+        player = get_player_by_id(player_id)
+
+        # ##: Get ELO history for additional stats.
+        elo_history: List[EloHistoryResponse] = get_elo_history_by_id(
+            player_id, 1000, 0, start_date=None, end_date=None
+        )
+
+        # ##: Process ELO history if available.
+        elo_changes = []
+        elo_values = []
+
+        if elo_history:
+            elo_changes = [record.difference for record in elo_history if record.difference is not None]
+            elo_values = [record.new_elo for record in elo_history if record.new_elo is not None]
+
+        # ##: Calculate win rate.
+        win_rate = player.wins / player.matches_played if player.matches_played > 0 else 0
+
+        # ##: Process recent matches (last 30).
+        recent_wins = 0
+        recent_losses = 0
+        recent_elo_changes = []
+
+        if elo_history:
+            for match in elo_history[:30]:
+                if match.difference is not None:
+                    recent_elo_changes.append(match.difference)
+                    if match.difference > 0:
+                        recent_wins += 1
+                    elif match.difference < 0:
+                        recent_losses += 1
+
+        avg_elo_change = sum(elo_changes) / len(elo_changes) if elo_changes else 0
+        highest_elo = max(elo_values) if elo_values else stats.get("global_elo", 1000)
+        lowest_elo = min(elo_values) if elo_values else stats.get("global_elo", 1000)
+
+        # ##: Calculate recent stats
+        recent_matches_played = recent_wins + recent_losses
+        recent_win_rate = (recent_wins / recent_matches_played * 100) if recent_matches_played > 0 else 0
+        recent_avg_elo_change = sum(recent_elo_changes) / len(recent_elo_changes) if recent_elo_changes else 0
+
+        # ##: Return comprehensive statistics.
+        return {
+            "player_id": player_id,
+            "name": player.name,
+            "global_elo": player.global_elo,
+            "matches_played": player.matches_played,
+            "wins": player.wins,
+            "losses": player.losses,
+            "win_rate": round(win_rate, 2),
+            "elo_difference": elo_changes,
+            "elo_values": elo_values,
+            "average_elo_change": round(avg_elo_change, 2),
+            "highest_elo": int(highest_elo),
+            "lowest_elo": int(lowest_elo),
+            "creation_date": player.created_at,
+            # Recent performance (last 30 matches)
+            "recent": {
+                "matches_played": recent_matches_played,
+                "wins": recent_wins,
+                "losses": recent_losses,
+                "win_rate": round(recent_win_rate, 2),
+                "average_elo_change": round(recent_avg_elo_change, 2),
+                "elo_changes": recent_elo_changes,
+            },
+        }
     except Exception as e:
         logger.error(f"Error retrieving statistics for player {player_id}: {e}")
         raise

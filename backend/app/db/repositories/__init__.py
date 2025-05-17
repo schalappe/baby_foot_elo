@@ -10,11 +10,10 @@ from app.db.repositories.elo_history import (
 )
 from app.db.repositories.matches import (
     create_match,
-    get_all_matches_for_recalculation,
-    get_match,
-    get_matches_by_team,
     get_fanny_matches,
-    get_matches_by_player
+    get_match,
+    get_matches_by_player,
+    get_matches_by_team,
 )
 from app.db.repositories.players import (
     batch_insert_players,
@@ -22,10 +21,10 @@ from app.db.repositories.players import (
     delete_player,
     get_all_players,
     get_player,
-    get_player_stats,
     search_players,
     update_player,
 )
+from app.db.repositories.stats import get_player_stats
 from app.db.repositories.teams import (
     batch_insert_teams,
     create_team,
@@ -44,7 +43,6 @@ __all__ = [
     "delete_player",
     "batch_insert_players",
     "search_players",
-    "get_player_stats",
     # ##: Teams.
     "create_team",
     "get_team",
@@ -56,11 +54,12 @@ __all__ = [
     "create_match",
     "get_match",
     "get_matches_by_team",
-    "get_all_matches_for_recalculation",
     "get_fanny_matches",
     "get_matches_by_player",
     # ##: ELO.
     "record_elo_update",
     "batch_record_elo_updates",
     "get_player_elo_history",
+    # ##: Stats.
+    "get_player_stats",
 ]

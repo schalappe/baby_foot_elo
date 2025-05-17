@@ -3,8 +3,8 @@ This module contains all v1 API endpoints.
 """
 
 from fastapi import APIRouter
-from app.api.v1.endpoints import health, matches, players, teams
 
+from app.api.v1.endpoints import health, matches, players, teams
 
 api_router = APIRouter(prefix="/v1")
 api_router.include_router(health.router)

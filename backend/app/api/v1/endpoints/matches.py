@@ -24,7 +24,10 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query, status
 from loguru import logger
 
-from app.db.repositories.elo_history import batch_record_elo_updates, get_elo_history_by_match
+from app.db.repositories.elo_history import (
+    batch_record_elo_updates,
+    get_elo_history_by_match,
+)
 from app.db.repositories.matches import (
     create_match,
     get_all_matches,

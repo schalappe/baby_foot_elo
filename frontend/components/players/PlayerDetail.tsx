@@ -119,14 +119,14 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
         playerTeam.player1.name,
         playerTeam.player2.name
       ].filter(Boolean).join(' & ');
-      
+
       return {
         id: match.match_id,
         date: match.played_at,
         result: isWinner ? 'Victoire' : 'Défaite',
         playerTeam: playerNames,
         opponentTeam: opponentNames,
-        eloChange: match.elo_changes.difference,
+        eloChange: match.elo_changes[playerId].difference,
         isFanny: match.is_fanny,
       };
     });
@@ -190,7 +190,7 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
             <div className="text-sm text-muted-foreground mb-2">ELO GLOBAL</div>
             {player.recent && player.recent.elo_changes && player.recent.elo_changes.length > 0 ? (
               (() => {
-                const lastChange = player.recent.elo_changes[player.recent.elo_changes.length - 1];
+                const lastChange = player.recent.elo_changes[0];
                 return (
                   <div className={`text-lg font-medium ${lastChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                     {lastChange >= 0 ? '+' : ''}
@@ -297,7 +297,6 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
                   </TableHeader>
                   <TableBody>
                     {formattedMatches.map((match) => (
-                      console.log(match),
                       <TableRow key={match.id}>
                         <TableCell className="font-medium">
                           {format(new Date(match.date), 'PPP', { locale: fr })}

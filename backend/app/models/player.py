@@ -66,6 +66,8 @@ class PlayerResponse(PlayerBase):
         The current global ELO rating of the player.
     creation_date : datetime
         The date and time when the player was created.
+    last_match_at : Optional[datetime]
+        The date and time of the player's last match.
     matches_played : int, optional
         The number of matches the player has played (default is 0).
     wins : int, optional
@@ -77,6 +79,7 @@ class PlayerResponse(PlayerBase):
     player_id: int = Field(..., gt=0, description="Unique identifier for the player")
     global_elo: int = Field(..., ge=0, description="Current global ELO rating of the player")
     created_at: datetime = Field(..., description="Timestamp of player creation")
+    last_match_at: Optional[datetime] = Field(default=None, description="Timestamp of the player's last match")
     matches_played: int = Field(default=0, ge=0, description="Total matches played by the player")
     wins: int = Field(default=0, ge=0, description="Total matches won by the player")
     losses: int = Field(default=0, ge=0, description="Total matches lost by the player")

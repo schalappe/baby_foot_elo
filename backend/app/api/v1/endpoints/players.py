@@ -26,23 +26,16 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Path, Query, status
 from loguru import logger
 
-from app.db.builders import SelectQueryBuilder
-from app.db.repositories.elo_history import get_player_elo_history
-from app.db.repositories.matches import get_matches_by_player
-from app.db.repositories.players import (
-    create_player,
-    delete_player,
-    get_all_players,
-    get_player,
-    get_player_by_name,
-    update_player,
-    get_player_stats
+from app.exceptions.players import (
+    InvalidPlayerDataError,
+    PlayerAlreadyExistsError,
+    PlayerNotFoundError,
+    PlayerOperationError,
 )
-from app.db.repositories.teams import get_team
 from app.models.elo_history import EloHistoryResponse
 from app.models.match import MatchWithEloResponse
-from app.models.team import TeamResponse
 from app.models.player import PlayerCreate, PlayerResponse, PlayerUpdate
+from app.services import players as player_service
 from app.utils.error_handlers import ErrorResponse
 
 router = APIRouter(
@@ -100,41 +93,18 @@ async def create_player_endpoint(player: PlayerCreate):
         If player creation or fetching stats fails.
     """
     try:
-        # ##: Check if name contains only valid characters.
-        if not player.name.strip():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Player name cannot be empty or whitespace only"
-            )
-
-        # ##: Check if a player with this name already exists.
-        existing_player = get_player_by_name(player.name)
-        if existing_player:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT, detail=f"A player with the name '{player.name}' already exists"
-            )
-
-        # ##: Create the player.
-        player_id = create_player(player.name, global_elo=player.global_elo)
-
-        if not player_id:
-            logger.error(f"Failed to create player with name: {player.name}")
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create player")
-
-        # ##: Get player stats.
-        stats = get_player_stats(player_id)
-        if not stats:
-            logger.error(f"Failed to fetch stats for newly created player ID: {player_id}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch player after creation"
-            )
-
-        # ##: Return player response.
-        return PlayerResponse(**stats)
-    except HTTPException:
-        # ##: Re-raise HTTP exceptions.
-        raise
+        created_player = player_service.create_new_player(player_data=player)
+        return created_player
+    except InvalidPlayerDataError as exc:
+        logger.warning(f"Invalid player data for creation: {exc.detail}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=exc.detail)
+    except PlayerAlreadyExistsError as exc:
+        logger.info(f"Attempt to create player that already exists: {exc.detail}")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=exc.detail)
+    except PlayerOperationError as exc:
+        logger.error(f"Player operation error during creation: {exc.detail}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=exc.detail)
     except Exception as exc:
-        # ##: Log unexpected errors and return a generic error message.
         logger.exception(f"Unexpected error creating player: {str(exc)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -173,35 +143,11 @@ async def list_players_endpoint(
         If an error occurs while retrieving players.
     """
     try:
-        # ##: Get all players.
-        all_players = get_all_players()
-        if not all_players:
-            return []
-
-        # ##: Process players and get their stats.
-        response = []
-        for player in all_players:
-            pid = player.get("player_id")
-            stats = get_player_stats(pid)
-
-            if not stats:
-                continue
-
-            response.append(
-                PlayerResponse(
-                    player_id=pid,
-                    name=stats["name"],
-                    global_elo=int(stats.get("global_elo", 1000)),
-                    created_at=stats.get("created_at"),
-                    matches_played=stats["matches_played"],
-                    wins=stats["wins"],
-                    losses=stats["losses"],
-                    win_rate=stats["win_rate"],
-                )
-            )
-
-        # ##: Apply pagination.
-        return response[offset : offset + limit]
+        players_list = player_service.get_all_players_with_stats()
+        return players_list[offset : offset + limit]
+    except PlayerOperationError as exc:
+        logger.error(f"Player operation error while listing players: {exc.detail}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=exc.detail)
     except Exception as exc:
         logger.exception(f"Unexpected error listing players: {str(exc)}")
         raise HTTPException(
@@ -214,7 +160,7 @@ async def list_players_endpoint(
     "/rankings",
     response_model=List[PlayerResponse],
     summary="Get player rankings",
-    description="Retrieves a list of players sorted by global ELO rating who have played at least one match and their last match was at least one month ago.",
+    description="Retrieves a list of players sorted by global ELO rating.",
 )
 async def get_player_rankings_endpoint(
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of players to return")
@@ -235,85 +181,41 @@ async def get_player_rankings_endpoint(
 
     Notes
     -----
-    - Players are sorted in descending order by global ELO
-    - Only includes players who have played at least one match
-    - Only includes players whose last match was at least one month ago
-    - This is useful for leaderboard displays and ranking tables
+    - Players are sorted in descending order by global ELO.
+    - Only includes players who have played at least one match.
+    - Only includes players whose last match was within the last month.
+    - This is useful for leaderboard displays and ranking tables.
     """
     try:
-        # ##: Get all players.
-        all_players = get_all_players()
-        if not all_players:
+        all_player_stats = player_service.get_all_players_with_stats()
+        if not all_player_stats:
             return []
 
-        # ##: Get current date to calculate one month ago
         current_date = datetime.now()
-        one_month_ago = current_date.replace(
+        one_month_ago_marker = current_date.replace(
             month=current_date.month - 1 if current_date.month > 1 else 12,
             year=current_date.year if current_date.month > 1 else current_date.year - 1,
         )
 
-        # ##: Process players and get their stats.
-        response = []
-        for player in all_players:
-            pid = player.get("player_id")
-            stats = get_player_stats(pid)
-
-            if not stats:
+        ranked_players = []
+        for player_stat_obj in all_player_stats:
+            if player_stat_obj.matches_played == 0 or player_stat_obj.last_match_at <= one_month_ago_marker:
                 continue
-
-            # ##: Skip players with no matches
-            if stats["matches_played"] == 0:
-                continue
-
-            # ##: Get the player's last match date
-            last_match_query = (
-                SelectQueryBuilder("Matches m")
-                .select("MAX(m.played_at)")
-                .join("Teams tw", "m.winner_team_id = tw.team_id")
-                .join("Teams tl", "m.loser_team_id = tl.team_id")
-                .where(
-                    "tw.player1_id = ? OR tw.player2_id = ? OR tl.player1_id = ? OR tl.player2_id = ?",
-                    pid,
-                    pid,
-                    pid,
-                    pid,
-                )
-                .execute(fetch_all=False)
-            )
-
-            # ##: Skip if no last match found (shouldn't happen if matches_played > 0)
-            if not last_match_query or not last_match_query[0]:
-                continue
-            last_match_date = last_match_query[0]
-
-            # ##: Skip players whose last match is less than a month ago
-            if one_month_ago >= last_match_date:
-                continue
-
-            response.append(
-                PlayerResponse(
-                    player_id=pid,
-                    name=stats["name"],
-                    global_elo=int(stats.get("global_elo", 1000)),
-                    created_at=stats.get("created_at"),
-                    matches_played=stats["matches_played"],
-                    wins=stats["wins"],
-                    losses=stats["losses"],
-                    win_rate=stats["win_rate"],
-                )
-            )
+            ranked_players.append(player_stat_obj)
 
         # ##: Sort by global ELO in descending order.
-        response.sort(key=lambda x: x.global_elo, reverse=True)
+        ranked_players.sort(key=lambda p: p.global_elo, reverse=True)
 
         # ##: Apply limit.
-        return response[:limit]
+        return ranked_players[:limit]
+
+    except PlayerOperationError as exc:
+        logger.error(f"Player operation error while getting player rankings: {exc.detail}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=exc.detail)
     except Exception as exc:
         logger.exception(f"Unexpected error getting player rankings: {str(exc)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred while getting player rankings",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to retrieve player rankings"
         )
 
 
@@ -343,34 +245,16 @@ async def get_player_endpoint(player_id: int = Path(..., gt=0, description="The 
         If the player is not found.
     """
     try:
-        # ##: First check if the player exists.
-        player = get_player(player_id)
-        if not player:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Player with ID {player_id} not found")
-
-        # ##: Get player stats.
-        stats = get_player_stats(player_id)
-        if not stats:
-            logger.error(f"Player found but stats missing for ID: {player_id}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch player statistics"
-            )
-
-        # ##: Return player response.
-        return PlayerResponse(
-            player_id=stats["player_id"],
-            name=stats["name"],
-            global_elo=int(stats.get("global_elo", 1000)),
-            created_at=stats.get("created_at"),
-            matches_played=stats["matches_played"],
-            wins=stats["wins"],
-            losses=stats["losses"],
-            win_rate=stats["win_rate"],
-        )
-    except HTTPException:
-        raise
+        player_response = player_service.get_player_by_id(player_id=player_id)
+        return player_response
+    except PlayerNotFoundError as e:
+        logger.info(f"Player not found for ID {player_id}: {e.detail}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.detail)
+    except PlayerOperationError as e:
+        logger.error(f"Player operation error retrieving player ID {player_id}: {e.detail}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e.detail)
     except Exception as exc:
-        logger.exception(f"Unexpected error retrieving player {player_id}: {str(exc)}")
+        logger.exception(f"Unexpected error retrieving player with ID {player_id}: {str(exc)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while retrieving the player",
@@ -411,51 +295,37 @@ async def update_player_endpoint(
     -----
     ELO updates are not supported via this endpoint.
     """
-    try:
-        # ##: Validate update data.
-        if player.name is None:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No update fields provided")
+    if not player or player.name is None:
+        try:
+            current_player = player_service.get_player_by_id(player_id=player_id)
+            return current_player
+        except PlayerNotFoundError as e:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.detail)
+        except PlayerOperationError as e:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e.detail)
 
-        # ##: Check if name contains only valid characters.
-        if player.name is not None and not player.name.strip():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Player name cannot be empty or whitespace only"
-            )
-
-        # ##: First check if the player exists.
-        existing_player = get_player(player_id)
-        if not existing_player:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Player with ID {player_id} not found")
-
-        # ##: Update the player.
-        success = update_player(player_id, player.name)
-        if not success:
-            logger.error(f"Failed to update player ID {player_id} with name {player.name}")
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update player")
-
-        # ##: Get updated player stats.
-        stats = get_player_stats(player_id)
-        if not stats:
-            logger.error(f"Failed to fetch stats for player ID {player_id} after update")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch player after update"
-            )
-
-        # ##: Return updated player response.
-        return PlayerResponse(
-            player_id=stats["player_id"],
-            name=stats["name"],
-            global_elo=int(stats.get("global_elo", 1000)),
-            created_at=stats.get("created_at"),
-            matches_played=stats["matches_played"],
-            wins=stats["wins"],
-            losses=stats["losses"],
-            win_rate=stats["win_rate"],
+    if not player.name.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Player name cannot be empty or whitespace only for update"
         )
-    except HTTPException:
-        raise
+
+    try:
+        updated_player_response = player_service.update_existing_player(player_id=player_id, player_update=player)
+        return updated_player_response
+    except PlayerNotFoundError as e:
+        logger.info(f"Player not found for update, ID {player_id}: {e.detail}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.detail)
+    except PlayerAlreadyExistsError as e:
+        logger.info(f"Attempt to update player to a name that already exists: {e.detail}")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=e.detail)
+    except InvalidPlayerDataError as e:
+        logger.warning(f"Invalid player data for update, ID {player_id}: {e.detail}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e.detail)
+    except PlayerOperationError as e:
+        logger.error(f"Player operation error updating player ID {player_id}: {e.detail}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e.detail)
     except Exception as exc:
-        logger.exception(f"Unexpected error updating player {player_id}: {str(exc)}")
+        logger.exception(f"Unexpected error updating player with ID {player_id}: {str(exc)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while updating the player",
@@ -490,22 +360,16 @@ async def delete_player_endpoint(
         If the player is not found.
     """
     try:
-        # ##: First check if the player exists.
-        existing_player = get_player(player_id)
-        if not existing_player:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Player with ID {player_id} not found")
-
-        # ##: Delete the player.
-        success = delete_player(player_id)
-        if not success:
-            logger.error(f"Failed to delete player ID {player_id}")
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete player")
-
+        player_service.delete_player_by_id(player_id=player_id)
         return None
-    except HTTPException:
-        raise
+    except PlayerNotFoundError as e:
+        logger.info(f"Player not found for deletion, ID {player_id}: {e.detail}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.detail)
+    except PlayerOperationError as e:
+        logger.error(f"Player operation error deleting player ID {player_id}: {e.detail}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e.detail)
     except Exception as exc:
-        logger.exception(f"Unexpected error deleting player {player_id}: {str(exc)}")
+        logger.exception(f"Unexpected error deleting player with ID {player_id}: {str(exc)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while deleting the player",
@@ -524,7 +388,7 @@ async def get_player_matches_endpoint(
     offset: int = Query(0, ge=0, description="Number of matches to skip"),
     start_date: Optional[datetime] = Query(None, description="Filter matches after this date"),
     end_date: Optional[datetime] = Query(None, description="Filter matches before this date"),
-):
+) -> List[MatchWithEloResponse]:
     """
     Get match history for a player.
 
@@ -552,45 +416,24 @@ async def get_player_matches_endpoint(
         If the player is not found or an error occurs.
     """
     try:
-        # ##: Validate date range if both are provided.
-        if start_date and end_date and start_date > end_date:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Start date cannot be after end date")
+        filters = {}
+        if start_date:
+            filters["start_date"] = start_date
+        if end_date:
+            filters["end_date"] = end_date
 
-        # ##: First check if the player exists.
-        player = get_player(player_id)
-        if not player:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Player with ID {player_id} not found")
-
-        # ##: Get matches for the player.
-        matches = get_matches_by_player(player_id, limit, offset, start_date, end_date)
-
-        # ##: Sort by date (newest first) and apply pagination.
-        matches.sort(key=lambda x: x["played_at"], reverse=True)
-        matches = matches[offset : offset + limit]
-
-        # ##: Convert to response model.
-        response = []
-        for match in matches:
-            winner_team = get_team(match["winner_team_id"])
-            loser_team = get_team(match["loser_team_id"])
-            match_response = MatchWithEloResponse(**match)
-            match_response.winner_team = TeamResponse(
-                **winner_team,
-                player1=get_player(winner_team["player1_id"]),
-                player2=get_player(winner_team["player2_id"]),
-            )
-            match_response.loser_team = TeamResponse(
-                **loser_team,
-                player1=get_player(loser_team["player1_id"]),
-                player2=get_player(loser_team["player2_id"]),
-            )
-            response.append(match_response)
-
-        return response
-    except HTTPException:
-        raise
+        matches_response = player_service.get_player_matches(
+            player_id=player_id, limit=limit, offset=offset, **filters
+        )
+        return matches_response
+    except PlayerNotFoundError as e:
+        logger.info(f"Player not found when fetching matches, ID {player_id}: {e.detail}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.detail)
+    except PlayerOperationError as e:
+        logger.error(f"Player operation error fetching matches for player ID {player_id}: {e.detail}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e.detail)
     except Exception as exc:
-        logger.exception(f"Unexpected error retrieving matches for player {player_id}: {str(exc)}")
+        logger.exception(f"Unexpected error getting matches for player {player_id}: {str(exc)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while retrieving player matches",
@@ -610,7 +453,7 @@ async def get_player_elo_history_endpoint(
     start_date: Optional[datetime] = Query(None, description="Filter records after this date"),
     end_date: Optional[datetime] = Query(None, description="Filter records before this date"),
     elo_type: Optional[str] = Query(None, description="Filter by ELO type ('global' or 'monthly')"),
-):
+) -> List[EloHistoryResponse]:
     """
     Get ELO history for a player.
 
@@ -640,36 +483,26 @@ async def get_player_elo_history_endpoint(
         If the player is not found or an error occurs.
     """
     try:
-        # ##: Validate date range if both are provided.
-        if start_date and end_date and start_date > end_date:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Start date cannot be after end date")
+        filters = {}
+        if start_date:
+            filters["start_date"] = start_date
+        if end_date:
+            filters["end_date"] = end_date
+        if elo_type:
+            filters["elo_type"] = elo_type
 
-        # ##: Validate ELO type.
-        if elo_type and elo_type not in ["global", "monthly"]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid ELO type. Must be 'global' or 'monthly'."
-            )
-
-        # ##: First check if the player exists.
-        player = get_player(player_id)
-        if not player:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Player with ID {player_id} not found")
-
-        # ##: Get ELO history.
-        history = get_player_elo_history(player_id, limit, offset, start_date, end_date, elo_type)
-
-        # ##: If no history found, return empty list (player exists but has no history).
-        if not history:
-            return []
-
-        # ##: Convert to response model.
-        response = [EloHistoryResponse(**record) for record in history]
-
-        return response
-    except HTTPException:
-        raise
+        elo_history_response = player_service.get_elo_history_by_id(
+            player_id=player_id, limit=limit, offset=offset, **filters
+        )
+        return elo_history_response
+    except PlayerNotFoundError as e:
+        logger.info(f"Player not found when fetching ELO history, ID {player_id}: {e.detail}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.detail)
+    except PlayerOperationError as e:
+        logger.error(f"Player operation error fetching ELO history for player ID {player_id}: {e.detail}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e.detail)
     except Exception as exc:
-        logger.exception(f"Unexpected error retrieving ELO history for player {player_id}: {str(exc)}")
+        logger.exception(f"Unexpected error getting ELO history for player {player_id}: {str(exc)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while retrieving player ELO history",
@@ -701,9 +534,6 @@ async def get_player_statistics_endpoint(
         - wins: Number of matches won
         - losses: Number of matches lost
         - win_rate: Percentage of matches won
-        - current_streak: Current winning/losing streak
-        - best_streak: Best winning streak
-        - worst_streak: Worst losing streak
         - average_elo_change: Average ELO change per match
         - highest_elo: Highest ELO achieved
         - lowest_elo: Lowest ELO after initial matches
@@ -714,89 +544,14 @@ async def get_player_statistics_endpoint(
         If the player is not found or an error occurs.
     """
     try:
-        # ##: First check if the player exists.
-        player = get_player(player_id)
-        if not player:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Player with ID {player_id} not found")
-
-        # ##: Get player stats.
-        stats = get_player_stats(player_id)
-        if not stats:
-            logger.error(f"Player found but stats missing for ID: {player_id}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch player statistics"
-            )
-
-        # ##: Get ELO history for additional stats.
-        elo_history = get_player_elo_history(player_id, 1000, 0, None, None)
-
-        # ##: Get last 30 matches for recent performance stats
-        recent_matches = get_player_elo_history(player_id, 30, 0, None, None)
-
-        # ##: Calculate win rate.
-        matches_played = stats["matches_played"]
-        wins = stats["wins"]
-        losses = stats["losses"]
-        win_rate = (wins / matches_played) * 100 if matches_played > 0 else 0
-
-        # ##: Process ELO history if available.
-        elo_changes = []
-        elo_values = []
-
-        if elo_history:
-            elo_changes = [record["difference"] for record in elo_history if record["difference"] is not None]
-            elo_values = [record["new_elo"] for record in elo_history if record["new_elo"] is not None]
-
-        # ##: Process recent matches (last 30).
-        recent_wins = 0
-        recent_losses = 0
-        recent_elo_changes = []
-
-        if recent_matches:
-            for match in recent_matches:
-                if match["difference"] is not None:
-                    recent_elo_changes.append(match["difference"])
-                    if match["difference"] > 0:
-                        recent_wins += 1
-                    elif match["difference"] < 0:
-                        recent_losses += 1
-
-        avg_elo_change = sum(elo_changes) / len(elo_changes) if elo_changes else 0
-        highest_elo = max(elo_values) if elo_values else stats.get("global_elo", 1000)
-        lowest_elo = min(elo_values) if elo_values else stats.get("global_elo", 1000)
-
-        # ##: Calculate recent stats
-        recent_matches_played = recent_wins + recent_losses
-        recent_win_rate = (recent_wins / recent_matches_played * 100) if recent_matches_played > 0 else 0
-        recent_avg_elo_change = sum(recent_elo_changes) / len(recent_elo_changes) if recent_elo_changes else 0
-
-        # ##: Return comprehensive statistics.
-        return {
-            "player_id": player_id,
-            "name": stats["name"],
-            "global_elo": int(stats.get("global_elo", 1000)),
-            "matches_played": matches_played,
-            "wins": wins,
-            "losses": losses,
-            "win_rate": round(win_rate, 2),
-            "elo_difference": elo_changes,
-            "elo_values": elo_values,
-            "average_elo_change": round(avg_elo_change, 2),
-            "highest_elo": int(highest_elo),
-            "lowest_elo": int(lowest_elo),
-            "creation_date": stats.get("created_at"),
-            # ##: Recent performance (last 30 matches).
-            "recent": {
-                "matches_played": recent_matches_played,
-                "wins": recent_wins,
-                "losses": recent_losses,
-                "win_rate": round(recent_win_rate, 2),
-                "average_elo_change": round(recent_avg_elo_change, 2),
-                "elo_changes": recent_elo_changes[:30],
-            },
-        }
-    except HTTPException:
-        raise
+        statistics = player_service.get_player_statistics(player_id=player_id)
+        return statistics
+    except PlayerNotFoundError as e:
+        logger.info(f"Player not found when fetching statistics, ID {player_id}: {e.detail}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.detail)
+    except PlayerOperationError as e:
+        logger.error(f"Player operation error fetching statistics for player ID {player_id}: {e.detail}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e.detail)
     except Exception as exc:
         logger.exception(f"Unexpected error retrieving statistics for player {player_id}: {str(exc)}")
         raise HTTPException(

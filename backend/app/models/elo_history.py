@@ -44,6 +44,7 @@ class EloHistoryCreate(EloHistoryBase):
     Year, month, and day are derived from the date field.
     """
 
+
 class EloHistoryUpdate(BaseModel):
     """
     Data model for updating an ELO history entry.

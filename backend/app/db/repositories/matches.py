@@ -201,61 +201,6 @@ def get_matches_by_team(team_id: int) -> List[Dict[str, Any]]:
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_all_matches_for_recalculation() -> List[Dict[str, Any]]:
-    """
-    Get all matches chronologically, including player IDs for winning and losing teams.
-
-    Returns
-    -------
-    List[Dict[str, Any]]
-        List of match data, each dictionary containing:
-        'match_id', 'played_at', 'winner_p1_id', 'winner_p2_id',
-        'loser_p1_id', 'loser_p2_id', 'is_fanny', 'notes'.
-    """
-    try:
-        query = (
-            SelectQueryBuilder("Matches m")
-            .select(
-                "m.match_id",
-                "m.played_at",
-                "m.is_fanny",
-                "m.notes",
-                "wt.player1_id AS winner_p1_id",
-                "wt.player2_id AS winner_p2_id",
-                "lt.player1_id AS loser_p1_id",
-                "lt.player2_id AS loser_p2_id",
-            )
-            .join("Teams wt ON m.winner_team_id = wt.team_id")
-            .join("Teams lt ON m.loser_team_id = lt.team_id")
-            .order_by_clause("m.played_at ASC")
-        )
-        rows = query.execute()
-
-        if not rows:
-            logger.info("No matches found for recalculation.")
-            return []
-
-        matches_data = [
-            {
-                "match_id": row[0],
-                "played_at": row[1],
-                "is_fanny": row[2],
-                "winner_p1_id": row[3],
-                "winner_p2_id": row[4],
-                "loser_p1_id": row[5],
-                "loser_p2_id": row[6],
-            }
-            for row in rows
-        ]
-        logger.info(f"Successfully fetched {len(matches_data)} matches for ELO recalculation.")
-        return matches_data
-
-    except Exception as exc:
-        logger.error(f"Failed to get all matches for recalculation: {exc}")
-        return []
-
-
-@with_retry(max_retries=3, retry_delay=0.5)
 def get_matches_by_date_range(
     start_date: Union[datetime, str], end_date: Union[datetime, str]
 ) -> List[Dict[str, Any]]:
@@ -387,27 +332,31 @@ def get_matches_by_player(
             query, params = query_builder.build()
             results = db_manager.fetchall(query, params)
             logger.info(f"Results: {results}")
-            
+
             for row in results:
-                matches.append({
-                    "match_id": row[0],
-                    "winner_team_id": row[1],
-                    "loser_team_id": row[2],
-                    "is_fanny": row[3],
-                    "played_at": row[4],
-                    "year": row[5],
-                    "month": row[6],
-                    "day": row[7],
-                    "notes": row[8],
-                    "elo_changes": {
-                        "old_elo": row[9],
-                        "new_elo": row[10],
-                        "difference": row[11],
-                    },
-                })
-                
+                matches.append(
+                    {
+                        "match_id": row[0],
+                        "winner_team_id": row[1],
+                        "loser_team_id": row[2],
+                        "is_fanny": row[3],
+                        "played_at": row[4],
+                        "year": row[5],
+                        "month": row[6],
+                        "day": row[7],
+                        "notes": row[8],
+                        "elo_changes": {
+                            player_id: {
+                                "old_elo": row[9],
+                                "new_elo": row[10],
+                                "difference": row[11],
+                            }
+                        },
+                    }
+                )
+
         return matches
-            
+
     except Exception as exc:
         logger.error(f"Failed to get matches for player {player_id}: {exc}")
         return []
