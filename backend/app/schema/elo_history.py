@@ -16,9 +16,6 @@ CREATE TABLE IF NOT EXISTS ELO_History (
     new_elo INTEGER NOT NULL,
     difference INTEGER NOT NULL,
     date TIMESTAMP NOT NULL,
-    year INTEGER NOT NULL,
-    month INTEGER NOT NULL,
-    day INTEGER NOT NULL,
     FOREIGN KEY (player_id) REFERENCES Players(player_id),
     FOREIGN KEY (match_id) REFERENCES Matches(match_id)
 );
