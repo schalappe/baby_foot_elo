@@ -206,6 +206,10 @@ const MatchHistoryPage = () => {
             <Download className="mr-2 h-4 w-4" /> Exporter en JSON
           </Button>
 
+          <Link href="/matches/new" passHref>
+          <Button variant="default" className="w-full md:w-auto">Ajouter une Partie</Button>
+        </Link>
+
         </div>
         <Card>
           <CardContent className="pt-6">
@@ -274,6 +278,10 @@ const MatchHistoryPage = () => {
         <Button onClick={handleExportJSON} variant="outline" className="w-full md:w-auto">
           <Download className="mr-2 h-4 w-4" /> Exporter en JSON
         </Button>
+
+        <Link href="/matches/new" passHref>
+          <Button variant="default" className="w-full md:w-auto">Ajouter une Partie</Button>
+        </Link>
 
       </div>
       <Card>
