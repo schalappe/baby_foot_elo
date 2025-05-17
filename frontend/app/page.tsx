@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { PlayerRegistrationForm } from '@/components/PlayerRegistrationForm';
+import { PlayerRegistrationForm } from '@/components/players/PlayerRegistrationForm';
 import { toast } from 'sonner';
 
 const PLAYERS_API_ENDPOINT = '/api/v1/players/rankings?limit=100';

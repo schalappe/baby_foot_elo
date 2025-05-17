@@ -78,7 +78,7 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
   }
 
   const formatPercentage = (value: number) => {
-    return (value).toFixed(2) + '%';
+    return Math.floor(value) + '%';
   };
 
   return (
