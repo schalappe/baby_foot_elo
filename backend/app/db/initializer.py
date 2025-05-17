@@ -8,36 +8,36 @@ from sys import stderr
 
 from loguru import logger
 
-from app import schema
+from app import schemas
 from app.core import config
 from app.db.database import DatabaseManager
 
 # ##: Constants for database initialization.
 SEQUENCES = [
-    schema.CREATE_SEQ_PLAYERS,
-    schema.CREATE_SEQ_TEAMS,
-    schema.CREATE_SEQ_MATCHES,
-    schema.CREATE_SEQ_ELO_HISTORY,
+    schemas.CREATE_SEQ_PLAYERS,
+    schemas.CREATE_SEQ_TEAMS,
+    schemas.CREATE_SEQ_MATCHES,
+    schemas.CREATE_SEQ_ELO_HISTORY,
 ]
 
 TABLES = [
-    schema.CREATE_PLAYERS_TABLE,
-    schema.CREATE_TEAMS_TABLE,
-    schema.CREATE_MATCHES_TABLE,
-    schema.CREATE_ELO_HISTORY_TABLE,
+    schemas.CREATE_PLAYERS_TABLE,
+    schemas.CREATE_TEAMS_TABLE,
+    schemas.CREATE_MATCHES_TABLE,
+    schemas.CREATE_ELO_HISTORY_TABLE,
 ]
 
 INDEXES = [
-    schema.CREATE_INDEX_PLAYERS_NAME,
-    schema.CREATE_INDEX_TEAMS_PLAYER1_ID,
-    schema.CREATE_INDEX_TEAMS_PLAYER2_ID,
-    schema.CREATE_INDEX_TEAMS_PLAYER_PAIR_ORDER_INSENSITIVE,
-    schema.CREATE_INDEX_MATCHES_WINNER_TEAM_ID,
-    schema.CREATE_INDEX_MATCHES_LOSER_TEAM_ID,
-    schema.CREATE_INDEX_MATCHES_PLAYED_AT,
-    schema.CREATE_INDEX_ELOHIST_PLAYER_ID,
-    schema.CREATE_INDEX_ELOHIST_MATCH_ID,
-    schema.CREATE_INDEX_ELOHIST_DATE,
+    schemas.CREATE_INDEX_PLAYERS_NAME,
+    schemas.CREATE_INDEX_TEAMS_PLAYER1_ID,
+    schemas.CREATE_INDEX_TEAMS_PLAYER2_ID,
+    schemas.CREATE_INDEX_TEAMS_PLAYER_PAIR_ORDER_INSENSITIVE,
+    schemas.CREATE_INDEX_MATCHES_WINNER_TEAM_ID,
+    schemas.CREATE_INDEX_MATCHES_LOSER_TEAM_ID,
+    schemas.CREATE_INDEX_MATCHES_PLAYED_AT,
+    schemas.CREATE_INDEX_ELOHIST_PLAYER_ID,
+    schemas.CREATE_INDEX_ELOHIST_MATCH_ID,
+    schemas.CREATE_INDEX_ELOHIST_DATE,
 ]
 
 
