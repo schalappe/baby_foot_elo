@@ -1,19 +1,8 @@
-import { Player } from './playerService';
+// frontend/services/teamService.ts
 import axios from 'axios';
+import { Team } from '../types/index';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-export interface Team {
-  team_id: number;
-  player1_id: number;
-  player2_id: number;
-  global_elo: number;
-  created_at: string;
-  last_match_at?: string | null;
-  player1?: Player | null;
-  player2?: Player | null;
-  rank?: number | null;
-}
 
 // Fetch team rankings (sorted by Elo descending).
 export const getTeamRankings = async (): Promise<Team[]> => {
@@ -40,8 +29,6 @@ export const findOrCreateTeam = async (player1_id: number, player2_id: number): 
     return response.data;
   } catch (error) {
     console.error(`Échec de la recherche ou de la création de l'équipe pour les joueurs ${player1_id} et ${player2_id}:`, error);
-    if (axios.isAxiosError(error) && error.response && error.response.data) {
-    }
     throw error;
   }
 };

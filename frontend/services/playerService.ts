@@ -1,48 +1,8 @@
 // frontend/services/playerService.ts
-import axios, { AxiosRequestConfig } from 'axios';
+import axios from 'axios';
+import { Player, PlayerStats, GetPlayersParams } from '../types/index';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-export interface Player {
-  player_id: number;
-  name: string;
-  global_elo: number;
-  matches_played: number;
-  wins: number;
-  losses: number;
-  creation_date: string;
-}
-
-export interface PlayerStats {
-  player_id: number;
-  name: string;
-  global_elo: number;
-  matches_played: number;
-  wins: number;
-  losses: number;
-  creation_date: string;
-  win_rate: number;
-  elo_difference: number[];
-  elo_values: number[];
-  average_elo_change: number;
-  highest_elo: number;
-  lowest_elo: number;
-  recent: {
-    matches_played: number;
-    wins: number;
-    losses: number;
-    win_rate: number;
-    average_elo_change: number;
-    elo_changes: number[];
-  };
-}
-
-export interface GetPlayersParams {
-  limit?: number;
-  skip?: number;
-  sort_by?: string;
-  order?: 'asc' | 'desc';
-}
 
 export const getPlayers = async (params?: GetPlayersParams): Promise<Player[]> => {
   try {
