@@ -4,10 +4,10 @@ This module defines FastAPI endpoints for managing matches in the Baby Foot Elo 
 It supports recording, listing, retrieving, and exporting match records, as well as updating ELO ratings.
 
 Endpoints:
-    - POST /api/v1/matches/: Record a new match and update ELO ratings
-    - GET /api/v1/matches/: List all matches with pagination and filtering
-    - GET /api/v1/matches/{match_id}: Retrieve match details including ELO changes
-    - GET /api/v1/matches/export: Export all matches as JSON
+    - POST /matches/: Record a new match and update ELO ratings
+    - GET /matches/: List all matches with pagination and filtering
+    - GET /matches/{match_id}: Retrieve match details including ELO changes
+    - GET /matches/export: Export all matches as JSON
 
 Notes
 -----
@@ -41,7 +41,7 @@ from app.services.elo.calculator import calculate_team_elo, process_match_result
 from app.utils.error_handlers import ErrorResponse
 
 router = APIRouter(
-    prefix="/api/v1/matches",
+    prefix="/matches",
     tags=["matches"],
     responses={
         status.HTTP_400_BAD_REQUEST: {

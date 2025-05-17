@@ -4,13 +4,13 @@ This module defines FastAPI endpoints for managing teams in the Baby Foot Elo sy
 It supports creating, listing, retrieving, and deleting team records, as well as fetching team rankings and match history.
 
 Endpoints:
-    - POST /api/v1/teams/: Create a new team
-    - GET /api/v1/teams/: List all teams
-    - GET /api/v1/teams/rankings: Get team rankings
-    - GET /api/v1/teams/{team_id}: Retrieve a team's details
-    - DELETE /api/v1/teams/{team_id}: Delete a team
-    - GET /api/v1/teams/{team_id}/matches: Get team's match history
-    - GET /api/v1/teams/player/{player_id}: Get teams for a specific player
+    - POST /teams/: Create a new team
+    - GET /teams/: List all teams
+    - GET /teams/rankings: Get team rankings
+    - GET /teams/{team_id}: Retrieve a team's details
+    - DELETE /teams/{team_id}: Delete a team
+    - GET /teams/{team_id}/matches: Get team's match history
+    - GET /teams/player/{player_id}: Get teams for a specific player
 
 Notes
 -----
@@ -43,7 +43,7 @@ from app.utils.error_handlers import ErrorResponse
 from app.utils.validation import ValidationErrorResponse, validate_team_players
 
 router = APIRouter(
-    prefix="/api/v1/teams",
+    prefix="/teams",
     tags=["teams"],
     responses={
         status.HTTP_400_BAD_REQUEST: {

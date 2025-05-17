@@ -16,7 +16,7 @@ from fastapi.openapi.utils import get_openapi
 
 from app.core import config
 from app.db import DatabaseManager, initialize_database
-from app.routers import health, matches, players, teams, test_info
+from app.api import api_router
 from app.utils.error_handlers import setup_error_handlers
 from app.utils.rate_limiter import setup_rate_limiting
 from app.utils.validation import (
@@ -66,11 +66,7 @@ app.add_middleware(
 )
 
 # ##: Include routers.
-app.include_router(health.router)
-app.include_router(test_info.router)
-app.include_router(players.router)
-app.include_router(teams.router)
-app.include_router(matches.router)
+app.include_router(api_router, prefix="/api")
 
 
 @app.get("/", tags=["root"])

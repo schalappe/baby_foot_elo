@@ -3,14 +3,14 @@ This module defines FastAPI endpoints for managing players in the Baby Foot Elo 
 It supports creating, listing, retrieving, updating, and deleting player records, as well as fetching player statistics.
 
 Endpoints:
-    - POST /api/v1/players/: Create a new player
-    - GET /api/v1/players/: List all players
-    - GET /api/v1/players/{player_id}: Retrieve a player's details
-    - PUT /api/v1/players/{player_id}: Update a player's information
-    - DELETE /api/v1/players/{player_id}: Delete a player
-    - GET /api/v1/players/{player_id}/matches: Get player's match history
-    - GET /api/v1/players/{player_id}/elo-history: Get player's ELO history
-    - GET /api/v1/players/{player_id}/statistics: Get player's statistics
+    - POST /players/: Create a new player
+    - GET /players/: List all players
+    - GET /players/{player_id}: Retrieve a player's details
+    - PUT /players/{player_id}: Update a player's information
+    - DELETE /players/{player_id}: Delete a player
+    - GET /players/{player_id}/matches: Get player's match history
+    - GET /players/{player_id}/elo-history: Get player's ELO history
+    - GET /players/{player_id}/statistics: Get player's statistics
 
 Notes
 -----
@@ -40,13 +40,13 @@ from app.crud.players import (
 from app.crud.stats import get_player_stats
 from app.crud.teams import get_team
 from app.models.elo_history import EloHistoryResponse
-from app.models.match import MatchResponse, MatchWithEloResponse
+from app.models.match import MatchWithEloResponse
 from app.models.team import TeamResponse
 from app.models.player import PlayerCreate, PlayerResponse, PlayerUpdate
 from app.utils.error_handlers import ErrorResponse
 
 router = APIRouter(
-    prefix="/api/v1/players",
+    prefix="/players",
     tags=["players"],
     responses={
         status.HTTP_400_BAD_REQUEST: {
