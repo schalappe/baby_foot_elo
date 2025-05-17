@@ -47,6 +47,14 @@ export interface BackendTeamResponse {
   global_elo: number;
   created_at: string;
   last_match_at?: string | null;
+  player1: MatchPlayerInfo;
+  player2: MatchPlayerInfo;
+}
+
+export interface EloChange {
+  old_elo: number;
+  new_elo: number;
+  difference: number;
 }
 
 export interface BackendMatchWithEloResponse {
@@ -58,7 +66,7 @@ export interface BackendMatchWithEloResponse {
   year: number;
   month: number;
   day: number;
-  elo_changes: Record<string, { old_elo: number; new_elo: number; change: number }>;
-  winner_team?: BackendTeamResponse;
-  loser_team?: BackendTeamResponse;
+  elo_changes: EloChange;
+  winner_team: BackendTeamResponse;
+  loser_team: BackendTeamResponse;
 }

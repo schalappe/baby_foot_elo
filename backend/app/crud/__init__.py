@@ -22,6 +22,8 @@ from .matches import (
     get_all_matches_for_recalculation,
     get_match,
     get_matches_by_team,
+    get_fanny_matches,
+    get_matches_by_player
 )
 from .players import (
     batch_insert_players,
@@ -63,6 +65,8 @@ __all__ = [
     "get_match",
     "get_matches_by_team",
     "get_all_matches_for_recalculation",
+    "get_fanny_matches",
+    "get_matches_by_player",
     # ELO
     "record_elo_update",
     "batch_record_elo_updates",

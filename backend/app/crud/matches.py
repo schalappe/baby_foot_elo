@@ -315,6 +315,104 @@ def get_matches_by_date_range(
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
+def get_matches_by_player(
+    player_id: int,
+    limit: int = 100,
+    offset: int = 0,
+    start_date: Optional[Union[datetime, str]] = None,
+    end_date: Optional[Union[datetime, str]] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Get all matches involving a specific player with optional filtering and pagination.
+
+    Parameters
+    ----------
+    player_id : int
+        ID of the player
+    limit : int, optional
+        Maximum number of matches to return, by default 100
+    offset : int, optional
+        Number of matches to skip, by default 0
+    start_date : Optional[Union[datetime, str]], optional
+        Start date to filter matches (inclusive), by default None
+    end_date : Optional[Union[datetime, str]], optional
+        End date to filter matches (inclusive), by default None
+
+    Returns
+    -------
+    List[Dict[str, Any]]
+        List of match dictionaries including match details and player's ELO change
+    """
+    try:
+        # ##: Convert string dates to datetime objects.
+        if isinstance(start_date, str):
+            start_date = datetime.fromisoformat(start_date)
+        if isinstance(end_date, str):
+            end_date = datetime.fromisoformat(end_date)
+        if end_date is not None:
+            end_date = datetime.combine(end_date, datetime.max.time())
+
+        # ##: Build the query using SelectQueryBuilder.
+        query_builder = (
+            SelectQueryBuilder("ELO_History eh")
+            .select(
+                "m.match_id",
+                "m.winner_team_id",
+                "m.loser_team_id",
+                "m.is_fanny",
+                "m.played_at",
+                "m.year",
+                "m.month",
+                "m.day",
+                "m.notes",
+                "eh.old_elo",
+                "eh.new_elo",
+                "eh.difference as elo_change",
+            )
+            .join("Matches m", "eh.match_id = m.match_id")
+            .where("eh.player_id = ?", player_id)
+            .order_by_clause("m.played_at DESC")
+            .limit(limit)
+            .offset(offset)
+        )
+
+        # ##: Add date range filtering if provided.
+        if start_date is not None:
+            query_builder.where("m.played_at >= ?", start_date)
+        if end_date is not None:
+            query_builder.where("m.played_at <= ?", end_date)
+
+        matches = []
+        with transaction() as db_manager:
+            query, params = query_builder.build()
+            results = db_manager.fetchall(query, params)
+            logger.info(f"Results: {results}")
+            
+            for row in results:
+                matches.append({
+                    "match_id": row[0],
+                    "winner_team_id": row[1],
+                    "loser_team_id": row[2],
+                    "is_fanny": row[3],
+                    "played_at": row[4],
+                    "year": row[5],
+                    "month": row[6],
+                    "day": row[7],
+                    "notes": row[8],
+                    "elo_changes": {
+                        "old_elo": row[9],
+                        "new_elo": row[10],
+                        "difference": row[11],
+                    },
+                })
+                
+        return matches
+            
+    except Exception as exc:
+        logger.error(f"Failed to get matches for player {player_id}: {exc}")
+        return []
+
+
 def get_fanny_matches() -> List[Dict[str, Any]]:
     """
     Get all matches that were fannies (10-0).

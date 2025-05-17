@@ -28,7 +28,7 @@ from loguru import logger
 
 from app.crud.builders import SelectQueryBuilder
 from app.crud.elo_history import get_player_elo_history
-from app.crud.matches import get_matches_by_team
+from app.crud.matches import get_matches_by_player
 from app.crud.players import (
     create_player,
     delete_player,
@@ -38,9 +38,10 @@ from app.crud.players import (
     update_player,
 )
 from app.crud.stats import get_player_stats
-from app.crud.teams import get_teams_by_player
+from app.crud.teams import get_team
 from app.models.elo_history import EloHistoryResponse
-from app.models.match import MatchResponse
+from app.models.match import MatchResponse, MatchWithEloResponse
+from app.models.team import TeamResponse
 from app.models.player import PlayerCreate, PlayerResponse, PlayerUpdate
 from app.utils.error_handlers import ErrorResponse
 
@@ -513,7 +514,7 @@ async def delete_player_endpoint(
 
 @router.get(
     "/{player_id}/matches",
-    response_model=List[MatchResponse],
+    response_model=List[MatchWithEloResponse],
     summary="Get player match history",
     description="Retrieves a player's match history with pagination and date filtering options.",
 )
@@ -560,24 +561,30 @@ async def get_player_matches_endpoint(
         if not player:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Player with ID {player_id} not found")
 
-        # ##: Get teams for the player.
-        teams = get_teams_by_player(player_id)
-        if not teams:
-            return []
-
-        # ##: Get matches for each team.
-        matches = []
-        for team in teams:
-            team_matches = get_matches_by_team(team["team_id"], limit, offset, start_date, end_date)
-            if team_matches:
-                matches.extend(team_matches)
+        # ##: Get matches for the player.
+        matches = get_matches_by_player(player_id, limit, offset, start_date, end_date)
 
         # ##: Sort by date (newest first) and apply pagination.
-        matches.sort(key=lambda x: x["match_date"], reverse=True)
+        matches.sort(key=lambda x: x["played_at"], reverse=True)
         matches = matches[offset : offset + limit]
 
         # ##: Convert to response model.
-        response = [MatchResponse(**match) for match in matches]
+        response = []
+        for match in matches:
+            winner_team = get_team(match["winner_team_id"])
+            loser_team = get_team(match["loser_team_id"])
+            match_response = MatchWithEloResponse(**match)
+            match_response.winner_team = TeamResponse(
+                **winner_team,
+                player1=get_player(winner_team["player1_id"]),
+                player2=get_player(winner_team["player2_id"]),
+            )
+            match_response.loser_team = TeamResponse(
+                **loser_team,
+                player1=get_player(loser_team["player1_id"]),
+                player2=get_player(loser_team["player2_id"]),
+            )
+            response.append(match_response)
 
         return response
     except HTTPException:
@@ -778,14 +785,14 @@ async def get_player_statistics_endpoint(
             "highest_elo": int(highest_elo),
             "lowest_elo": int(lowest_elo),
             "creation_date": stats.get("created_at"),
-            # Recent performance (last 30 matches)
+            # ##: Recent performance (last 30 matches).
             "recent": {
                 "matches_played": recent_matches_played,
                 "wins": recent_wins,
                 "losses": recent_losses,
                 "win_rate": round(recent_win_rate, 2),
                 "average_elo_change": round(recent_avg_elo_change, 2),
-                "elo_changes": recent_elo_changes[:30],  # Limit to exactly 30 entries
+                "elo_changes": recent_elo_changes[:30],
             },
         }
     except HTTPException:

@@ -1,7 +1,7 @@
 // frontend/services/playerService.ts
 import axios from 'axios';
 import { Player, PlayerStats, GetPlayersParams } from '../types/index';
-import { Match, GetPlayerMatchesParams } from '../types/match.types';
+import { BackendMatchWithEloResponse, GetPlayerMatchesParams } from '../types/match.types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -68,9 +68,9 @@ export const getPlayerStats = async (playerId: number): Promise<PlayerStats> => 
   }
 };
 
-export const getPlayerMatches = async (playerId: number, params?: GetPlayerMatchesParams): Promise<Match[]> => {
+export const getPlayerMatches = async (playerId: number, params?: GetPlayerMatchesParams): Promise<BackendMatchWithEloResponse[]> => {
   try {
-    const response = await axios.get<Match[]>(`${API_URL}/players/${playerId}/matches`, {
+    const response = await axios.get<BackendMatchWithEloResponse[]>(`${API_URL}/players/${playerId}/matches`, {
       params: {
         limit: params?.limit,
         offset: params?.offset,
