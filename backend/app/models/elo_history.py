@@ -45,28 +45,7 @@ class EloHistoryCreate(EloHistoryBase):
     Year, month, and day are derived from the date field.
     """
 
-    year: Optional[int] = Field(default=None, ge=1900, le=2200, description="Year of ELO change (derived from date)")
-    month: Optional[int] = Field(default=None, ge=1, le=12, description="Month of ELO change (derived from date)")
-    day: Optional[int] = Field(default=None, ge=1, le=31, description="Day of ELO change (derived from date)")
-
-    @model_validator(mode="after")
-    def derive_date_parts(cls, data: EloHistoryCreate) -> EloHistoryCreate:
-        """
-        Derive year, month, and day from the date field.
-        Also validates that new_elo - old_elo == difference.
-        """
-        if data.date:
-            data.year = data.date.year
-            data.month = data.date.month
-            data.day = data.date.day
-        else:
-            raise ValueError("date must be provided to derive date parts.")
-
-        if (data.new_elo - data.old_elo) != data.difference:
-            raise ValueError("ELO difference does not match new_elo - old_elo.")
-
-        return data
-
+    pass
 
 class EloHistoryUpdate(BaseModel):
     """
@@ -85,18 +64,9 @@ class EloHistoryResponse(EloHistoryBase):
     ----------
     history_id : int
         Unique identifier for the ELO history entry.
-    year : int
-        Year of the ELO change.
-    month : int
-        Month of the ELO change.
-    day : int
-        Day of the ELO change.
     """
 
     history_id: int = Field(..., gt=0, description="Unique ID for the ELO history entry")
-    year: int = Field(..., ge=1900, le=2200, description="Year of ELO change")
-    month: int = Field(..., ge=1, le=12, description="Month of ELO change")
-    day: int = Field(..., ge=1, le=31, description="Day of ELO change")
 
     class Config:
         from_attributes = True
