@@ -3,7 +3,7 @@
 Services module.
 """
 
-from .elo import (
+from app.services.elo import (
     calculate_elo_change,
     calculate_team_elo,
     calculate_win_probability,

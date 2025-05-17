@@ -37,7 +37,7 @@ from app.db.repositories.players import get_player, update_player
 from app.db.repositories.teams import get_team, update_team
 from app.models.match import MatchCreate, MatchResponse, MatchWithEloResponse
 from app.models.team import TeamResponse
-from app.services.elo.calculator import calculate_team_elo, process_match_result
+from app.services.elo import calculate_team_elo, process_match_result
 from app.utils.error_handlers import ErrorResponse
 
 router = APIRouter(
