@@ -56,7 +56,6 @@ export default function Home() {
             </DialogContent>
           </Dialog>
 
-          {/* Restored "Ajouter une Partie" button */}
           <Link href="/matches/new" passHref>
             <Button variant="outline" size="lg">Ajouter une Partie</Button>
           </Link>

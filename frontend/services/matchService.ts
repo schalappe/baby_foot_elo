@@ -14,7 +14,7 @@ export interface MatchTeamInfo {
   team_id: number;
   global_elo: number;
   player1: MatchPlayerInfo;
-  player2?: MatchPlayerInfo;
+  player2: MatchPlayerInfo;
 }
 
 export interface Match {
@@ -25,7 +25,7 @@ export interface Match {
   winner_team: MatchTeamInfo;
   loser_team: MatchTeamInfo;
   is_fanny: boolean;
-  notes?: string;
+  notes: string;
 }
 
 export const getMatches = async (): Promise<Match[]> => {

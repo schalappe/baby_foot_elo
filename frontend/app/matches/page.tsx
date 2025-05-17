@@ -24,9 +24,7 @@ const MatchHistoryPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [dateRangeFilter, setDateRangeFilter] = useState<DateRange | undefined>(undefined);
   const [selectedPlayerIdFilter, setSelectedPlayerIdFilter] = useState<string | undefined>(undefined); 
-  const [teamCompPlayer1IdFilter, setTeamCompPlayer1IdFilter] = useState<string | undefined>(undefined); 
-  const [teamCompPlayer2IdFilter, setTeamCompPlayer2IdFilter] = useState<string | undefined>(undefined); 
-  const [matchOutcomeFilter, setMatchOutcomeFilter] = useState<"win" | "loss" | "draw" | undefined>(undefined);
+  const [matchOutcomeFilter, setMatchOutcomeFilter] = useState<"win" | "loss" | undefined>(undefined);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,43 +55,23 @@ const MatchHistoryPage = () => {
     setSelectedPlayerIdFilter(playerId === "all" ? undefined : playerId);
   };
 
-  const handleTeamCompPlayer1Change = (playerId: string) => {
-    const newP1Id = playerId === "all" ? undefined : playerId;
-    setTeamCompPlayer1IdFilter(newP1Id);
-    if (!newP1Id || (teamCompPlayer2IdFilter && newP1Id === teamCompPlayer2IdFilter)) {
-      setTeamCompPlayer2IdFilter(undefined);
-    }
-  };
-
-  const handleTeamCompPlayer2Change = (playerId: string) => {
-    setTeamCompPlayer2IdFilter(playerId === "all" ? undefined : playerId);
-  };
-
   const handleMatchOutcomeChange = (outcome: string) => {
-    setMatchOutcomeFilter(outcome === "any" ? undefined : outcome as "win" | "loss" | "draw");
+    setMatchOutcomeFilter(outcome === "any" ? undefined : outcome as "win" | "loss");
   };
 
   const handleExportJSON = () => {
     if (filteredMatches.length === 0) {
-      // Optionally show an alert or toast that there's nothing to export
       console.warn('No matches to export.');
       return;
     }
     const jsonString = `data:application/json;charset=utf-8,${encodeURIComponent(
-      JSON.stringify(filteredMatches, null, 2) // null, 2 for pretty print
+      JSON.stringify(filteredMatches, null, 2)
     )}`;
     const link = document.createElement("a");
     link.href = jsonString;
     link.download = "match_history.json";
     link.click();
   };
-
-  const availableTeamCompPlayer2Options = useMemo(() => {
-    if (!teamCompPlayer1IdFilter) {
-      return allPlayers; 
-    }
-    return allPlayers.filter(p => p.player_id.toString() !== teamCompPlayer1IdFilter);
-  }, [allPlayers, teamCompPlayer1IdFilter]);
 
   const filteredMatches = useMemo(() => {
     let tempMatches = matches;
@@ -116,59 +94,22 @@ const MatchHistoryPage = () => {
       });
     }
 
-    if (teamCompPlayer1IdFilter) {
-      const p1Id = parseInt(teamCompPlayer1IdFilter, 10);
-      if (teamCompPlayer2IdFilter) {
-        const p2Id = parseInt(teamCompPlayer2IdFilter, 10);
-        tempMatches = tempMatches.filter(match => {
-          const teamAHasBoth = 
-            (match.winner_team.player1.player_id === p1Id && match.winner_team.player2?.player_id === p2Id) ||
-            (match.winner_team.player1.player_id === p2Id && match.winner_team.player2?.player_id === p1Id);
-          const teamBHasBoth = 
-            (match.loser_team.player1.player_id === p1Id && match.loser_team.player2?.player_id === p2Id) ||
-            (match.loser_team.player1.player_id === p2Id && match.loser_team.player2?.player_id === p1Id);
-          return teamAHasBoth || teamBHasBoth;
-        });
-      } else {
-        tempMatches = tempMatches.filter(match => {
-          const p1SoloOnTeamA = match.winner_team.player1.player_id === p1Id && !match.winner_team.player2;
-          const p1SoloOnTeamB = match.loser_team.player1.player_id === p1Id && !match.loser_team.player2;
-          return p1SoloOnTeamA || p1SoloOnTeamB;
-        });
-      }
-    }
-
-    // Apply match outcome filter (only if a specific player is selected for individual filtering)
-    if (selectedPlayerIdFilter && matchOutcomeFilter) {
-      const playerIdNum = parseInt(selectedPlayerIdFilter, 10);
+    // Apply match outcome filter (enabled when allPlayers is fulfilled)
+    if (allPlayers.length > 0 && matchOutcomeFilter) {
+      const playerIdNum = selectedPlayerIdFilter ? parseInt(selectedPlayerIdFilter, 10) : null;
       tempMatches = tempMatches.filter(match => {
-        let playerTeam: 'A' | 'B' | null = null;
-        if (match.winner_team.player1.player_id === playerIdNum || match.winner_team.player2?.player_id === playerIdNum) {
-          playerTeam = 'A';
-        } else if (match.loser_team.player1.player_id === playerIdNum || match.loser_team.player2?.player_id === playerIdNum) {
-          playerTeam = 'B';
-        }
-
-        if (!playerTeam) return false; // Should not happen if player filter is applied correctly before
-
-        const teamAScore = match.winner_team.global_elo;
-        const teamBScore = match.loser_team.global_elo;
-
         if (matchOutcomeFilter === 'win') {
-          return (playerTeam === 'A' && teamAScore > teamBScore) || (playerTeam === 'B' && teamBScore > teamAScore);
+          return match.winner_team.player1.player_id === playerIdNum || match.winner_team.player2.player_id === playerIdNum;
         }
         if (matchOutcomeFilter === 'loss') {
-          return (playerTeam === 'A' && teamAScore < teamBScore) || (playerTeam === 'B' && teamBScore < teamAScore);
+          return match.loser_team.player1.player_id === playerIdNum || match.loser_team.player2.player_id === playerIdNum;
         }
-        if (matchOutcomeFilter === 'draw') {
-          return teamAScore === teamBScore;
-        }
-        return true; // Should not reach here if outcome is win/loss/draw
+        return true; // Should not reach here if outcome is win/loss
       });
     }
 
     return tempMatches;
-  }, [matches, dateRangeFilter, selectedPlayerIdFilter, teamCompPlayer1IdFilter, teamCompPlayer2IdFilter, matchOutcomeFilter]);
+  }, [matches, dateRangeFilter, selectedPlayerIdFilter, matchOutcomeFilter, allPlayers]);
 
   const renderPlayerName = (player?: MatchPlayerInfo) => {
     if (!player || typeof player.name !== 'string') {
@@ -182,7 +123,7 @@ const MatchHistoryPage = () => {
       <div className="container mx-auto py-8 px-4 md:px-6 lg:px-8">
         <CardHeader className="px-0">
           <CardTitle>Historique des matches</CardTitle>
-          <CardDescription>Consultez les résultats des matches passés et les changements d'ELO.</CardDescription>
+          <CardDescription>Consultez les résultats des matches passés.</CardDescription>
         </CardHeader>
         <Card>
           <CardContent className="pt-6">
@@ -214,7 +155,7 @@ const MatchHistoryPage = () => {
       <div className="container mx-auto py-8 px-4 md:px-6 lg:px-8">
         <CardHeader className="px-0">
           <CardTitle>Historique des matches</CardTitle>
-          <CardDescription>Consultez les résultats des matches passés et les changements d'ELO.</CardDescription>
+          <CardDescription>Consultez les résultats des matches passés.</CardDescription>
         </CardHeader>
         <div className="mb-6 flex flex-col md:flex-row gap-4">
           <DateRangePicker 
@@ -240,51 +181,12 @@ const MatchHistoryPage = () => {
               </SelectGroup>
             </SelectContent>
           </Select>
-          <Select onValueChange={handleTeamCompPlayer1Change} value={teamCompPlayer1IdFilter || "all"}>
-            <SelectTrigger className="w-full md:w-[280px]">
-              <Users className="mr-2 h-4 w-4 text-muted-foreground" />
-              <SelectValue placeholder="Joueur 1 du team..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Joueur 1 du team</SelectLabel>
-                <SelectItem value="all">N'importe quel joueur 1</SelectItem>
-                {allPlayers
-                  .filter(player => player && typeof player.player_id !== 'undefined' && player.name)
-                  .map((player) => (
-                    <SelectItem key={player.player_id} value={player.player_id.toString()}>
-                      {player.name}
-                    </SelectItem>
-                  ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
 
-          <Select onValueChange={handleTeamCompPlayer2Change} value={teamCompPlayer2IdFilter || "all"} disabled={!teamCompPlayer1IdFilter}>
-            <SelectTrigger className="w-full md:w-[280px]">
-              <Users className="mr-2 h-4 w-4 text-muted-foreground" />
-              <SelectValue placeholder="Joueur 2 du team..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Joueur 2 du team (Optionnel)</SelectLabel>
-                <SelectItem value="all">N'importe quel joueur 2 / Aucun</SelectItem>
-                {availableTeamCompPlayer2Options
-                  .filter(player => player && typeof player.player_id !== 'undefined' && player.name)
-                  .map((player) => (
-                    <SelectItem key={player.player_id} value={player.player_id.toString()}>
-                      {player.name}
-                    </SelectItem>
-                  ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-
-          {/* Match Outcome Filter (enabled only if a player is selected) */}
+          {/* Match Outcome Filter (enabled when players are loaded) */}
           <Select 
             onValueChange={handleMatchOutcomeChange} 
             value={matchOutcomeFilter || "any"} 
-            disabled={!selectedPlayerIdFilter}
+            disabled={allPlayers.length === 0}
           >
             <SelectTrigger className="w-full md:w-[280px]">
               <Trophy className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -292,11 +194,10 @@ const MatchHistoryPage = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectLabel>Résultat du match (pour le joueur sélectionné)</SelectLabel>
+                <SelectLabel>Résultat du match</SelectLabel>
                 <SelectItem value="any">N'importe quel résultat</SelectItem>
-                <SelectItem value="win">Win</SelectItem>
-                <SelectItem value="loss">Loss</SelectItem>
-                <SelectItem value="draw">Draw</SelectItem>
+                <SelectItem value="win">Victoire</SelectItem>
+                <SelectItem value="loss">Défaite</SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>
@@ -323,7 +224,7 @@ const MatchHistoryPage = () => {
     <div className="container mx-auto py-8 px-4 md:px-6 lg:px-8">
       <CardHeader className="px-0 mb-4">
         <CardTitle>Historique des matches</CardTitle>
-        <CardDescription>Consultez les résultats des matches passés et les changements d'ELO.</CardDescription>
+        <CardDescription>Consultez les résultats des matches passés.</CardDescription>
       </CardHeader>
       <div className="mb-6 flex flex-col md:flex-row gap-4">
         <DateRangePicker 
@@ -349,51 +250,12 @@ const MatchHistoryPage = () => {
             </SelectGroup>
           </SelectContent>
         </Select>
-        <Select onValueChange={handleTeamCompPlayer1Change} value={teamCompPlayer1IdFilter || "all"}>
-          <SelectTrigger className="w-full md:w-[280px]">
-            <Users className="mr-2 h-4 w-4 text-muted-foreground" />
-            <SelectValue placeholder="Joueur 1 du team..." />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel>Joueur 1 du team</SelectLabel>
-              <SelectItem value="all">N'importe quel joueur 1</SelectItem>
-              {allPlayers
-                .filter(player => player && typeof player.player_id !== 'undefined' && player.name)
-                .map((player) => (
-                  <SelectItem key={player.player_id} value={player.player_id.toString()}>
-                    {player.name}
-                  </SelectItem>
-                ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
 
-        <Select onValueChange={handleTeamCompPlayer2Change} value={teamCompPlayer2IdFilter || "all"} disabled={!teamCompPlayer1IdFilter}>
-          <SelectTrigger className="w-full md:w-[280px]">
-            <Users className="mr-2 h-4 w-4 text-muted-foreground" />
-            <SelectValue placeholder="Joueur 2 du team..." />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel>Joueur 2 du team (Optionnel)</SelectLabel>
-              <SelectItem value="all">N'importe quel joueur 2 / Aucun</SelectItem>
-              {availableTeamCompPlayer2Options
-                .filter(player => player && typeof player.player_id !== 'undefined' && player.name)
-                .map((player) => (
-                  <SelectItem key={player.player_id} value={player.player_id.toString()}>
-                    {player.name}
-                  </SelectItem>
-                ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-
-        {/* Match Outcome Filter (enabled only if a player is selected) */}
+        {/* Match Outcome Filter (enabled when players are loaded) */}
         <Select 
           onValueChange={handleMatchOutcomeChange} 
           value={matchOutcomeFilter || "any"} 
-          disabled={!selectedPlayerIdFilter}
+          disabled={allPlayers.length === 0}
         >
           <SelectTrigger className="w-full md:w-[280px]">
             <Trophy className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -401,7 +263,7 @@ const MatchHistoryPage = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectLabel>Résultat du match (pour le joueur sélectionné)</SelectLabel>
+              <SelectLabel>Résultat du match</SelectLabel>
               <SelectItem value="any">N'importe quel résultat</SelectItem>
               <SelectItem value="win">Victoire</SelectItem>
               <SelectItem value="loss">Défaite</SelectItem>
@@ -423,6 +285,7 @@ const MatchHistoryPage = () => {
                 <TableHead>Équipe</TableHead>
                 <TableHead className="text-center">VS</TableHead>
                 <TableHead>Équipe</TableHead>
+                <TableHead className="text-center">Notes</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -454,19 +317,17 @@ const MatchHistoryPage = () => {
                 }
                 const renderFormattedDate = (dateString: string | null | undefined): string => {
                   if (!dateString) {
-                    // console.warn('Match date is null or undefined for match_id:', match?.match_id);
                     return 'Date N/A';
                   }
                   const dateObj = new Date(dateString);
                   if (isNaN(dateObj.getTime())) {
-                    console.error('Invalid date string received for match_id ' + match?.match_id + ':', dateString);
                     return 'Invalid Date';
                   }
                   return format(dateObj, 'dd/MM/yy');
                 };
 
                 const renderTeamCell = (team: MatchTeamInfo, isWinner: boolean, isFannyLoser: boolean) => {
-                  let cellClasses = "flex items-center p-2 rounded-md"; // always apply p-2 and rounded-md
+                  let cellClasses = "flex items-center p-2 rounded-md";
                   let icon = null;
 
                   if (isWinner) {
@@ -507,7 +368,7 @@ const MatchHistoryPage = () => {
                 const isTeamBWinner = team_B_data.team_id === match.winner_team.team_id;
                 const isTeamBFannyLoser = !isTeamBWinner && match.is_fanny && team_B_data.team_id === match.loser_team.team_id;
 
-return (
+                return (
                   <React.Fragment key={match.match_id}>
                     <TableRow>
                       <TableCell>{renderFormattedDate(match.played_at)}</TableCell>
