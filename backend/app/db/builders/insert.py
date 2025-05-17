@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Any, List, Tuple
 
-from .base import BaseQueryBuilder
+from app.db.builders.base import BaseQueryBuilder
 
 
 class InsertQueryBuilder(BaseQueryBuilder):

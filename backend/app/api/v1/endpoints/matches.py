@@ -24,8 +24,8 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query, status
 from loguru import logger
 
-from app.crud.elo_history import batch_record_elo_updates, get_elo_history_by_match
-from app.crud.matches import (
+from app.db.repositories.elo_history import batch_record_elo_updates, get_elo_history_by_match
+from app.db.repositories.matches import (
     create_match,
     get_all_matches,
     get_fanny_matches,
@@ -33,8 +33,8 @@ from app.crud.matches import (
     get_matches_by_date_range,
     get_matches_by_team,
 )
-from app.crud.players import get_player, update_player
-from app.crud.teams import get_team, update_team
+from app.db.repositories.players import get_player, update_player
+from app.db.repositories.teams import get_team, update_team
 from app.models.match import MatchCreate, MatchResponse, MatchWithEloResponse
 from app.models.team import TeamResponse
 from app.services.elo.calculator import calculate_team_elo, process_match_result

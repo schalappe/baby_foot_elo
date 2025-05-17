@@ -26,10 +26,10 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Path, Query, status
 from loguru import logger
 
-from app.crud.builders import SelectQueryBuilder
-from app.crud.elo_history import get_player_elo_history
-from app.crud.matches import get_matches_by_player
-from app.crud.players import (
+from app.db.builders import SelectQueryBuilder
+from app.db.repositories.elo_history import get_player_elo_history
+from app.db.repositories.matches import get_matches_by_player
+from app.db.repositories.players import (
     create_player,
     delete_player,
     get_all_players,
@@ -37,8 +37,8 @@ from app.crud.players import (
     get_player_by_name,
     update_player,
 )
-from app.crud.stats import get_player_stats
-from app.crud.teams import get_team
+from app.db.repositories.stats import get_player_stats
+from app.db.repositories.teams import get_team
 from app.models.elo_history import EloHistoryResponse
 from app.models.match import MatchWithEloResponse
 from app.models.team import TeamResponse

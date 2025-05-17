@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Union
 from duckdb import ConstraintException
 from loguru import logger
 
-from app.crud.builders import (
+from app.db.builders import (
     DeleteQueryBuilder,
     InsertQueryBuilder,
     SelectQueryBuilder,

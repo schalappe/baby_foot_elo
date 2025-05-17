@@ -26,9 +26,9 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Path, Query, status
 from loguru import logger
 
-from app.crud.matches import get_matches_by_team
-from app.crud.players import get_player
-from app.crud.teams import (
+from app.db.repositories.matches import get_matches_by_team
+from app.db.repositories.players import get_player
+from app.db.repositories.teams import (
     create_team,
     delete_team,
     get_all_teams,

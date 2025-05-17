@@ -66,7 +66,7 @@ app.add_middleware(
 )
 
 # ##: Include routers.
-app.include_router(api_router, prefix="/api")
+app.include_router(api_router)
 
 
 @app.get("/", tags=["root"])

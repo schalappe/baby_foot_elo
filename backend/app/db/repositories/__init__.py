@@ -1,23 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Database module.
-
-Re-exports core functionalities, CRUD operations, ELO functions, batch operations,
-and query utilities from their respective submodules.
+This module provides a collection of repositories for database operations.
 """
 
-from .builders import (
-    DeleteQueryBuilder,
-    InsertQueryBuilder,
-    SelectQueryBuilder,
-    UpdateQueryBuilder,
-)
-from .elo_history import (
+from app.db.repositories.elo_history import (
     batch_record_elo_updates,
     get_player_elo_history,
     record_elo_update,
 )
-from .matches import (
+from app.db.repositories.matches import (
     create_match,
     get_all_matches_for_recalculation,
     get_match,
@@ -25,7 +16,7 @@ from .matches import (
     get_fanny_matches,
     get_matches_by_player
 )
-from .players import (
+from app.db.repositories.players import (
     batch_insert_players,
     create_player,
     delete_player,
@@ -34,8 +25,8 @@ from .players import (
     search_players,
     update_player,
 )
-from .stats import get_player_stats
-from .teams import (
+from app.db.repositories.stats import get_player_stats
+from app.db.repositories.teams import (
     batch_insert_teams,
     create_team,
     delete_team,
@@ -45,7 +36,7 @@ from .teams import (
 )
 
 __all__ = [
-    # CRUD - Players
+    # ##: Players.
     "create_player",
     "get_player",
     "get_all_players",
@@ -53,29 +44,24 @@ __all__ = [
     "delete_player",
     "batch_insert_players",
     "search_players",
-    # CRUD - Teams
+    # ##: Teams.
     "create_team",
     "get_team",
     "get_all_teams",
     "delete_team",
     "batch_insert_teams",
     "get_teams_by_player",
-    # CRUD - Matches
+    # ##: Matches.
     "create_match",
     "get_match",
     "get_matches_by_team",
     "get_all_matches_for_recalculation",
     "get_fanny_matches",
     "get_matches_by_player",
-    # ELO
+    # ##: ELO.
     "record_elo_update",
     "batch_record_elo_updates",
     "get_player_elo_history",
-    # Stats
+    # ##: Stats.
     "get_player_stats",
-    # Query Builders
-    "SelectQueryBuilder",
-    "InsertQueryBuilder",
-    "UpdateQueryBuilder",
-    "DeleteQueryBuilder",
 ]

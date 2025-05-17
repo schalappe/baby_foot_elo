@@ -10,8 +10,8 @@ from typing import Any, Dict
 
 from loguru import logger
 
-from app.crud import matches as crud_matches
-from app.crud import players as crud_players
+from app.db.repositories import matches as crud_matches
+from app.db.repositories import players as crud_players
 from app.services.elo.calculator import (
     calculate_elo_change,
     calculate_team_elo,

@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 
-from app.crud.builders import DeleteQueryBuilder, InsertQueryBuilder, SelectQueryBuilder
+from app.db.builders import DeleteQueryBuilder, InsertQueryBuilder, SelectQueryBuilder
 from app.db import transaction, with_retry
 
 

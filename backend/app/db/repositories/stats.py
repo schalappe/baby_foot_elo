@@ -7,8 +7,8 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
-from app.crud.builders import SelectQueryBuilder
-from app.crud.players import get_player
+from app.db.builders import SelectQueryBuilder
+from app.db.repositories.players import get_player
 from app.db.retry import with_retry
 
 

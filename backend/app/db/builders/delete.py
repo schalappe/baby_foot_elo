@@ -5,7 +5,7 @@ Query builder for constructing DELETE SQL queries.
 
 from typing import Any, List, Tuple
 
-from .base import BaseQueryBuilder
+from app.db.builders.base import BaseQueryBuilder
 
 
 class DeleteQueryBuilder(BaseQueryBuilder):
