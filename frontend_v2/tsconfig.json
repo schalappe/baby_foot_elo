@@ -12,10 +12,12 @@
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "#app": [".nuxt/dist/app"],
+      "#app/*": [".nuxt/dist/app/*"]
     },
-    "types": ["@nuxt/schema"]
+    "types": ["@nuxt/schema", "@types/node"]
   },
   "exclude": ["node_modules", ".nuxt", "dist"],
-  "include": ["nuxt.config.ts", "components", "pages", "composables", "plugins"]
+  "include": ["types", "nuxt.config.ts", "components", "pages", "composables", "plugins", "models"]
 }
