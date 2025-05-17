@@ -5,6 +5,8 @@ import { getPlayerStats, PlayerStats } from '@/services/playerService';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from "@/components/ui/skeleton";
+import { type ChartConfig, ChartContainer } from "@/components/ui/chart";
+import { PieChart, Pie, Label, ResponsiveContainer } from 'recharts';
 
 interface PlayerDetailProps {
   playerId: number;
@@ -106,49 +108,53 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
         {/* Win Rate Card */}
         <Card className="bg-card text-card-foreground shadow-lg rounded-xl overflow-hidden">
           <CardContent className="flex flex-col items-center justify-center p-6 h-full space-y-2 text-center">
-            <div className="relative w-28 h-28 sm:w-32 sm:h-32">
+            <div className="relative w-32 h-32 sm:w-36 sm:h-36"> 
               {(() => {
-                const winRate = player.recent?.win_rate ?? 0;
-                const radius = 15.9155;
-                const circumference = 2 * Math.PI * radius;
+                const currentWinRate = player.recent?.win_rate ?? 0;
 
-                const trackArcDegrees = 270;
-                const trackArcLength = (trackArcDegrees / 360) * circumference;
-                const trackGapLength = circumference - trackArcLength;
+                const chartConfig = {
+                  winSegment: {
+                    label: 'Win Rate',
+                    color: currentWinRate < 50 ? 'hsl(0 72.2% 50.6%)' : 'hsl(142.1 70.6% 45.3%)', // Literal Red for win rate < 50%, Green for >= 50% 
+                  },
+                  remainderSegment: {
+                    label: 'Remainder',
+                    color: 'hsl(var(--muted))',
+                  },
+                } satisfies ChartConfig;
 
-                const progressFillLength = (winRate / 100) * trackArcLength;
-
-                const rotationAngle = 225;
-                const strokeW = 4;
+                const chartData = [
+                  { segment: 'winSegment', value: currentWinRate, fill: 'var(--color-winSegment)' },
+                  { segment: 'remainderSegment', value: 100 - currentWinRate, fill: 'var(--color-remainderSegment)' },
+                ];
 
                 return (
-                  <>
-                    <svg viewBox="0 0 36 36" className="absolute top-0 left-0 w-full h-full">
-                      <path
-                        stroke="grey"
-                        d={`M18 ${18 - radius} a ${radius} ${radius} 0 0 1 0 ${2 * radius} a ${radius} ${radius} 0 0 1 0 ${-2 * radius}`}
-                        fill="none"
-                        strokeWidth={strokeW}
-                        strokeDasharray={`${trackArcLength} ${trackGapLength}`}
-                        transform={`rotate(${rotationAngle} 18 18)`}
-                        strokeLinecap="round"
-                      />
-                      {winRate > 0 && (
-                        <path
-                          stroke="blue"
-                          d={`M18 ${18 - radius} a ${radius} ${radius} 0 0 1 0 ${2 * radius} a ${radius} ${radius} 0 0 1 0 ${-2 * radius}`}
-                          fill="none"
-                          strokeWidth={strokeW}
-                          strokeDasharray={`${progressFillLength} ${circumference - progressFillLength}`}
-                          transform={`rotate(${rotationAngle} 18 18)`}
-                          strokeLinecap="round"
-                        />
-                      )}
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center text-2xl sm:text-3xl font-semibold">
-                      {Math.round(winRate)}%
-                    </div>
-                  </>
+                  <ChartContainer config={chartConfig} className="w-full h-full aspect-square">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={chartData}
+                          dataKey="value"
+                          nameKey="segment"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius="70%"
+                          outerRadius="100%"
+                          startAngle={225}
+                          endAngle={-45}
+                          paddingAngle={0}
+                          cornerRadius={8}
+                        >
+                          <Label
+                            value={`${Math.round(currentWinRate)}%`}
+                            position="center"
+                            dy={4} 
+                            className="fill-foreground text-2xl sm:text-3xl font-semibold"
+                          />
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
                 );
               })()}
             </div>
