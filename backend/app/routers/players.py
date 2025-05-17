@@ -27,7 +27,7 @@ from fastapi import APIRouter, HTTPException, Path, Query, status
 from loguru import logger
 
 from app.crud.builders import SelectQueryBuilder
-from app.crud.elo_history import get_player_elo_history as get_elo_history
+from app.crud.elo_history import get_player_elo_history
 from app.crud.matches import get_matches_by_team
 from app.crud.players import (
     create_player,
@@ -649,7 +649,7 @@ async def get_player_elo_history_endpoint(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Player with ID {player_id} not found")
 
         # ##: Get ELO history.
-        history = get_elo_history(player_id, limit, offset, start_date, end_date, elo_type)
+        history = get_player_elo_history(player_id, limit, offset, start_date, end_date, elo_type)
 
         # ##: If no history found, return empty list (player exists but has no history).
         if not history:
@@ -729,13 +729,6 @@ async def get_player_statistics_endpoint(
         losses = stats["losses"]
         win_rate = (wins / matches_played) * 100 if matches_played > 0 else 0
 
-        # TODO: Calculate streaks and ELO stats.
-        current_streak = 0
-        best_streak = 0
-        worst_streak = 0
-        streak_type = None  # 'win' or 'loss'
-        temp_streak = 0
-
         # ##: Process ELO history if available.
         elo_changes = []
         elo_values = []
@@ -757,9 +750,8 @@ async def get_player_statistics_endpoint(
             "wins": wins,
             "losses": losses,
             "win_rate": round(win_rate, 2),
-            "current_streak": current_streak,
-            "best_streak": best_streak,
-            "worst_streak": worst_streak,
+            "elo_difference": elo_changes,
+            "elo_values": elo_values,
             "average_elo_change": round(avg_elo_change, 2),
             "highest_elo": int(highest_elo),
             "lowest_elo": int(lowest_elo),
