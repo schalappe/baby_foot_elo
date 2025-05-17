@@ -71,8 +71,6 @@ class TeamUpdate(BaseModel):
     This model is a placeholder for potential future updatable fields.
     """
 
-    pass
-
 
 class TeamResponse(TeamBase):
     """

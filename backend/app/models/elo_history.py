@@ -6,9 +6,8 @@ Pydantic models for ELO history, mirroring the ELO_History database schema.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 
 class EloHistoryBase(BaseModel):
@@ -45,15 +44,11 @@ class EloHistoryCreate(EloHistoryBase):
     Year, month, and day are derived from the date field.
     """
 
-    pass
-
 class EloHistoryUpdate(BaseModel):
     """
     Data model for updating an ELO history entry.
     ELO history entries are typically immutable.
     """
-
-    pass
 
 
 class EloHistoryResponse(EloHistoryBase):

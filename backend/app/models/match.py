@@ -6,7 +6,7 @@ Pydantic models for match-related operations, mirroring the Matches database sch
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import Dict, Optional
 
 from pydantic import BaseModel, Field
 
@@ -41,16 +41,12 @@ class MatchCreate(MatchBase):
     Data model for creating a new match record.
     """
 
-    pass
-
 
 class MatchUpdate(BaseModel):
     """
     Data model for updating an existing match's information.
     Matches are typically immutable once recorded. Placeholder for future needs.
     """
-
-    pass
 
 
 class MatchResponse(MatchBase):
@@ -86,4 +82,4 @@ class MatchWithEloResponse(MatchResponse):
         Dictionary mapping player IDs to their ELO changes.
     """
 
-    elo_changes: dict = Field(default_factory=dict, description="ELO changes for each player")
+    elo_changes: Dict[str, int] = Field(default_factory=dict, description="ELO changes for each player")
