@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Player } from '@/services/playerService';
+import { Player } from '@/types/player.types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';

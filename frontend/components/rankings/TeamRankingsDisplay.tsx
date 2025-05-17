@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link'; // Added Link import
-import { Team } from '@/services/teamService'; // Assuming Team interface is in teamService
+import { Team } from '@/types/team.types'; // Assuming Team interface is in teamService
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';

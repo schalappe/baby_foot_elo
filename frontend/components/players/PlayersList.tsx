@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowUpDown, ArrowDown, ArrowUp, AlertCircle, Loader2 } from 'lucide-react';
-import { getPlayers, Player } from '@/services/playerService';
+import { Player } from '@/types/player.types';
+import { getPlayers } from '@/services/playerService';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Dialog,

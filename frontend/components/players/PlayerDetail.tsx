@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { getPlayerStats, PlayerStats } from '@/services/playerService';
+import { PlayerStats } from '@/types/player.types';
+import { getPlayerStats } from '@/services/playerService';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from "@/components/ui/skeleton";
@@ -115,7 +116,7 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
                 const chartConfig = {
                   winSegment: {
                     label: 'Win Rate',
-                    color: currentWinRate < 50 ? 'hsl(0 72.2% 50.6%)' : 'hsl(142.1 70.6% 45.3%)', // Literal Red for win rate < 50%, Green for >= 50% 
+                    color: currentWinRate < 50 ? 'hsl(0 72.2% 50.6%)' : 'hsl(142.1 70.6% 45.3%)',
                   },
                   remainderSegment: {
                     label: 'Remainder',
