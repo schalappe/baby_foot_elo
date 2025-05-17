@@ -1,6 +1,13 @@
 // frontend/types/match.types.ts
 import { Player } from './player.types';
 
+export interface GetPlayerMatchesParams {
+  limit?: number;
+  offset?: number;
+  startDate?: string;
+  endDate?: string;
+}
+
 export interface MatchPlayerInfo {
   player_id: number;
   name: string;

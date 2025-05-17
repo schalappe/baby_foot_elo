@@ -1,6 +1,7 @@
 // frontend/services/playerService.ts
 import axios from 'axios';
 import { Player, PlayerStats, GetPlayersParams } from '../types/index';
+import { Match, GetPlayerMatchesParams } from '../types/match.types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -67,4 +68,19 @@ export const getPlayerStats = async (playerId: number): Promise<PlayerStats> => 
   }
 };
 
-// Add other service functions as needed (e.g., updatePlayer, deletePlayer)
+export const getPlayerMatches = async (playerId: number, params?: GetPlayerMatchesParams): Promise<Match[]> => {
+  try {
+    const response = await axios.get<Match[]>(`${API_URL}/players/${playerId}/matches`, {
+      params: {
+        limit: params?.limit,
+        offset: params?.offset,
+        start_date: params?.startDate,
+        end_date: params?.endDate,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch matches for player with ID ${playerId}:`, error);
+    throw error;
+  }
+};
