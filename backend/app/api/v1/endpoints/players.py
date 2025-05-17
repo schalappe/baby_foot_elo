@@ -36,8 +36,8 @@ from app.db.repositories.players import (
     get_player,
     get_player_by_name,
     update_player,
+    get_player_stats
 )
-from app.db.repositories.stats import get_player_stats
 from app.db.repositories.teams import get_team
 from app.models.elo_history import EloHistoryResponse
 from app.models.match import MatchWithEloResponse

@@ -22,10 +22,10 @@ from app.db.repositories.players import (
     delete_player,
     get_all_players,
     get_player,
+    get_player_stats,
     search_players,
     update_player,
 )
-from app.db.repositories.stats import get_player_stats
 from app.db.repositories.teams import (
     batch_insert_teams,
     create_team,
@@ -44,6 +44,7 @@ __all__ = [
     "delete_player",
     "batch_insert_players",
     "search_players",
+    "get_player_stats",
     # ##: Teams.
     "create_team",
     "get_team",
@@ -62,6 +63,4 @@ __all__ = [
     "record_elo_update",
     "batch_record_elo_updates",
     "get_player_elo_history",
-    # ##: Stats.
-    "get_player_stats",
 ]
