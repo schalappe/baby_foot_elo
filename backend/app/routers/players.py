@@ -723,6 +723,9 @@ async def get_player_statistics_endpoint(
         # ##: Get ELO history for additional stats.
         elo_history = get_player_elo_history(player_id, 1000, 0, None, None)
 
+        # ##: Get last 30 matches for recent performance stats
+        recent_matches = get_player_elo_history(player_id, 30, 0, None, None)
+
         # ##: Calculate win rate.
         matches_played = stats["matches_played"]
         wins = stats["wins"]
@@ -737,9 +740,28 @@ async def get_player_statistics_endpoint(
             elo_changes = [record["difference"] for record in elo_history if record["difference"] is not None]
             elo_values = [record["new_elo"] for record in elo_history if record["new_elo"] is not None]
 
+        # ##: Process recent matches (last 30).
+        recent_wins = 0
+        recent_losses = 0
+        recent_elo_changes = []
+
+        if recent_matches:
+            for match in recent_matches:
+                if match["difference"] is not None:
+                    recent_elo_changes.append(match["difference"])
+                    if match["difference"] > 0:
+                        recent_wins += 1
+                    elif match["difference"] < 0:
+                        recent_losses += 1
+
         avg_elo_change = sum(elo_changes) / len(elo_changes) if elo_changes else 0
         highest_elo = max(elo_values) if elo_values else stats.get("global_elo", 1000)
         lowest_elo = min(elo_values) if elo_values else stats.get("global_elo", 1000)
+
+        # ##: Calculate recent stats
+        recent_matches_played = recent_wins + recent_losses
+        recent_win_rate = (recent_wins / recent_matches_played * 100) if recent_matches_played > 0 else 0
+        recent_avg_elo_change = sum(recent_elo_changes) / len(recent_elo_changes) if recent_elo_changes else 0
 
         # ##: Return comprehensive statistics.
         return {
@@ -756,6 +778,15 @@ async def get_player_statistics_endpoint(
             "highest_elo": int(highest_elo),
             "lowest_elo": int(lowest_elo),
             "creation_date": stats.get("created_at"),
+            # Recent performance (last 30 matches)
+            "recent": {
+                "matches_played": recent_matches_played,
+                "wins": recent_wins,
+                "losses": recent_losses,
+                "win_rate": round(recent_win_rate, 2),
+                "average_elo_change": round(recent_avg_elo_change, 2),
+                "elo_changes": recent_elo_changes[:30],  # Limit to exactly 30 entries
+            },
         }
     except HTTPException:
         raise

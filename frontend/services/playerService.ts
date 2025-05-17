@@ -13,12 +13,35 @@ export interface Player {
   creation_date: string;
 }
 
+export interface PlayerStats {
+  player_id: number;
+  name: string;
+  global_elo: number;
+  matches_played: number;
+  wins: number;
+  losses: number;
+  creation_date: string;
+  win_rate: number;
+  elo_difference: number[];
+  elo_values: number[];
+  average_elo_change: number;
+  highest_elo: number;
+  lowest_elo: number;
+  recent: {
+    matches_played: number;
+    wins: number;
+    losses: number;
+    win_rate: number;
+    average_elo_change: number;
+    elo_changes: number[];
+  };
+}
+
 export interface GetPlayersParams {
   limit?: number;
   skip?: number;
   sort_by?: string;
   order?: 'asc' | 'desc';
-  // Add other potential query parameters if needed by the backend
 }
 
 export const getPlayers = async (params?: GetPlayersParams): Promise<Player[]> => {
@@ -27,7 +50,6 @@ export const getPlayers = async (params?: GetPlayersParams): Promise<Player[]> =
     let url = `${API_URL}/players`;
 
     if (params && Object.keys(params).length > 0) {
-      // @ts-ignore TODO: Fix this type issue if possible, URLSearchParams expects Record<string, string>
       const queryParams = new URLSearchParams(params as Record<string, string>).toString();
       url += `?${queryParams}`;
     }
@@ -60,7 +82,7 @@ export const createPlayer = async (name: string): Promise<Player> => {
   }
 };
 
-// Fetch player rankings (sorted by Elo descending)
+
 export const getPlayerRankings = async (): Promise<Player[]> => {
   try {
     const response = await axios.get<Player[]>(`${API_URL}/players/rankings`, {
@@ -71,6 +93,16 @@ export const getPlayerRankings = async (): Promise<Player[]> => {
     return response.data;
   } catch (error) {
     console.error('Échec de la récupération des joueurs:', error);
+    throw error;
+  }
+};
+
+export const getPlayerStats = async (playerId: number): Promise<PlayerStats> => {
+  try {
+    const response = await axios.get<PlayerStats>(`${API_URL}/players/${playerId}/statistics`);
+    return response.data;
+  } catch (error) {
+    console.error(`Échec de la récupération des statistiques du joueur avec l'ID ${playerId}:`, error);
     throw error;
   }
 };
