@@ -20,6 +20,7 @@ Notes
 - All endpoints include proper validation and error handling.
 """
 
+from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Path, Query, status
@@ -228,7 +229,7 @@ async def get_teams_endpoint(
     "/rankings",
     response_model=List[TeamResponse],
     summary="Get team rankings",
-    description="Get teams sorted by ELO rating (global) with rank information.",
+    description="Get teams sorted by ELO rating (global) with rank information. Only includes teams that have played at least one match and whose last match was at least one month ago.",
 )
 async def get_team_rankings_endpoint(
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of teams to return")
@@ -240,6 +241,8 @@ async def get_team_rankings_endpoint(
     - Limiting the number of results
     - Automatic inclusion of player details for each team
     - Rank information for each team
+    - Filtering for teams with at least one match played
+    - Filtering for teams whose last match was at least one month ago
 
     Parameters
     ----------
@@ -256,15 +259,28 @@ async def get_team_rankings_endpoint(
     -----
     - Teams are sorted in descending order by global ELO
     - Each team includes a 'rank' field indicating its position in the rankings
+    - Only includes teams who have played at least one match
+    - Only includes teams whose last match was at least one month ago
     - The endpoint automatically fetches player details for both team members
     - This is useful for leaderboard displays and ranking tables
     """
+    # ##: Get current date.
+    current_date = datetime.now()
+    one_month_ago = current_date.replace(
+        month=current_date.month - 1 if current_date.month > 1 else 12,
+        year=current_date.year if current_date.month > 1 else current_date.year - 1,
+    )
+
     # ##: Get ranked teams from database.
     teams_data = get_team_rankings(limit=limit)
 
     # ##: Populate player details for each team.
     result = []
     for team_data in teams_data:
+
+        if team_data["last_match_at"] is None or team_data["last_match_at"] < one_month_ago:
+            continue
+
         team = TeamResponse(**team_data)
         team.player1 = get_player(team_data["player1_id"])
         team.player2 = get_player(team_data["player2_id"])
