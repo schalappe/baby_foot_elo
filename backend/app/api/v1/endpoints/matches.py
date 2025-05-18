@@ -19,28 +19,27 @@ Notes
 """
 
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from fastapi import APIRouter, HTTPException, Query, status
 from loguru import logger
 
-from app.db.repositories.elo_history import (
-    batch_record_elo_updates,
-    get_elo_history_by_match,
+from app.exceptions.matches import (
+    InvalidMatchTeamsError,
+    MatchCreationError,
+    MatchDeletionError,
+    MatchNotFoundError,
+    MatchUpdateError,
 )
-from app.db.repositories.matches import (
-    create_match,
-    get_all_matches,
-    get_fanny_matches,
-    get_match,
-    get_matches_by_date_range,
-    get_matches_by_team,
-)
-from app.db.repositories.players import get_player, update_player
-from app.db.repositories.teams import get_team, update_team
 from app.models.match import MatchCreate, MatchResponse, MatchWithEloResponse
-from app.models.team import TeamResponse
-from app.services.elo import calculate_team_elo, process_match_result
+from app.services import matches as service_matches
+from app.services.matches import create_match as service_create_match
+from app.services.matches import delete_match as service_delete_match
+from app.services.matches import (
+    get_match_by_id,
+    get_match_with_elo,
+    get_matches,
+)
 from app.utils.error_handlers import ErrorResponse
 
 router = APIRouter(
@@ -73,8 +72,14 @@ router = APIRouter(
     status_code=status.HTTP_201_CREATED,
     summary="Record a new match",
     description="Records a new match between two teams and updates ELO ratings for all involved players.",
+    responses={
+        status.HTTP_201_CREATED: {"description": "Match created successfully"},
+        status.HTTP_400_BAD_REQUEST: {"description": "Invalid input data"},
+        status.HTTP_404_NOT_FOUND: {"description": "Team or player not found"},
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {"description": "Internal server error"},
+    },
 )
-async def record_match_endpoint(match_data: MatchCreate):
+async def record_match_endpoint(match_data: MatchCreate) -> MatchWithEloResponse:
     """
     Record a new match and update ELO ratings for all involved players.
 
@@ -99,127 +104,25 @@ async def record_match_endpoint(match_data: MatchCreate):
     Raises
     ------
     HTTPException
-        If teams don't exist, are the same, or if any other validation fails.
+        - 400: If the request data is invalid
+        - 404: If a team or player is not found
+        - 500: If there's an internal server error
     """
-    # ##: Set default played_at time if not provided.
-    played_at = match_data.played_at or datetime.now()
-
-    # ##: Validate teams exist.
-    winner_team = get_team(match_data.winner_team_id)
-    if not winner_team:
-        raise HTTPException(status_code=404, detail=f"Winner team with ID {match_data.winner_team_id} not found")
-
-    loser_team = get_team(match_data.loser_team_id)
-    if not loser_team:
-        raise HTTPException(status_code=404, detail=f"Loser team with ID {match_data.loser_team_id} not found")
-
-    # ##: Validate teams are different.
-    if match_data.winner_team_id == match_data.loser_team_id:
-        raise HTTPException(status_code=400, detail="Winner and loser teams cannot be the same")
-
-    # ##: Get player data for ELO calculations.
-    winner_player1 = get_player(winner_team["player1_id"])
-    winner_player2 = get_player(winner_team["player2_id"])
-    loser_player1 = get_player(loser_team["player1_id"])
-    loser_player2 = get_player(loser_team["player2_id"])
-
-    if not all([winner_player1, winner_player2, loser_player1, loser_player2]):
-        raise HTTPException(status_code=404, detail="One or more players not found")
-
     try:
-        # ##: Record the match.
-        match_id = create_match(
-            winner_team_id=match_data.winner_team_id,
-            loser_team_id=match_data.loser_team_id,
-            played_at=played_at,
-            is_fanny=match_data.is_fanny,
-            notes=match_data.notes,
+        return service_matches.create_new_match(match_data)
+
+    except MatchCreationError as exc:
+        logger.error(f"Match creation failed: {str(exc)}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc) or "Failed to create match")
+    except InvalidMatchTeamsError as exc:
+        logger.warning(f"Invalid match teams: {str(exc)}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc) or "Invalid match teams")
+    except Exception as exc:
+        logger.error(f"Unexpected error in record_match_endpoint: {str(exc)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while processing the match",
         )
-
-        if not match_id:
-            raise HTTPException(status_code=500, detail="Failed to create match record")
-
-        # ##: Calculate ELO changes.
-        elo_changes = process_match_result(
-            winning_team=[
-                {"id": winner_player1["player_id"], "elo": winner_player1["global_elo"]},
-                {"id": winner_player2["player_id"], "elo": winner_player2["global_elo"]},
-            ],
-            losing_team=[
-                {"id": loser_player1["player_id"], "elo": loser_player1["global_elo"]},
-                {"id": loser_player2["player_id"], "elo": loser_player2["global_elo"]},
-            ],
-        )
-
-        # ##: Update player ELO ratings and record ELO history.
-        elo_history_records = []
-        for player_id, changes in elo_changes.items():
-            old_elo = changes["old_elo"]
-            new_elo = changes["new_elo"]
-
-            # Update player ELO
-            update_player(player_id, global_elo=new_elo)
-
-            # Record ELO history
-            elo_history_records.append(
-                {
-                    "player_id": player_id,
-                    "match_id": match_id,
-                    "old_elo": old_elo,
-                    "new_elo": new_elo,
-                    "date": played_at,
-                }
-            )
-
-        # ##: Record all ELO history entries in a batch.
-        batch_record_elo_updates(elo_history_records)
-
-        # ##: Update team ELO ratings.
-        winner_team_elo = calculate_team_elo(
-            elo_changes[winner_player1["player_id"]]["new_elo"], elo_changes[winner_player2["player_id"]]["new_elo"]
-        )
-
-        loser_team_elo = calculate_team_elo(
-            elo_changes[loser_player1["player_id"]]["new_elo"], elo_changes[loser_player2["player_id"]]["new_elo"]
-        )
-
-        # ##: Update team ELO and last match timestamp.
-        update_team(match_data.winner_team_id, global_elo=winner_team_elo, last_match_at=played_at.isoformat())
-
-        update_team(match_data.loser_team_id, global_elo=loser_team_elo, last_match_at=played_at.isoformat())
-
-        # ##: Get match details for response.
-        match_data = get_match(match_id)
-
-        # ##: Create response with ELO changes.
-        response = MatchWithEloResponse(
-            match_id=match_id,
-            winner_team_id=match_data["winner_team_id"],
-            loser_team_id=match_data["loser_team_id"],
-            is_fanny=match_data["is_fanny"],
-            played_at=match_data["played_at"],
-            year=match_data["year"],
-            month=match_data["month"],
-            day=match_data["day"],
-            elo_changes=elo_changes,
-            notes=match_data.get("notes"),
-            winner_team=TeamResponse(
-                **winner_team,
-                player1=get_player(winner_team["player1_id"]),
-                player2=get_player(winner_team["player2_id"]),
-            ),
-            loser_team=TeamResponse(
-                **loser_team,
-                player1=get_player(loser_team["player1_id"]),
-                player2=get_player(loser_team["player2_id"]),
-            ),
-        )
-
-        return response
-
-    except Exception as e:
-        logger.error(f"Error recording match: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to process match: {str(e)}")
 
 
 @router.get(
@@ -227,6 +130,11 @@ async def record_match_endpoint(match_data: MatchCreate):
     response_model=List[MatchResponse],
     summary="List all matches",
     description="Returns a paginated list of matches with optional filtering by team, date range, or fanny status.",
+    responses={
+        status.HTTP_200_OK: {"description": "List of matches retrieved successfully"},
+        status.HTTP_400_BAD_REQUEST: {"description": "Invalid filter parameters"},
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {"description": "Internal server error"},
+    },
 )
 async def list_matches(
     skip: int = Query(0, ge=0, description="Number of matches to skip"),
@@ -235,7 +143,7 @@ async def list_matches(
     start_date: Optional[datetime] = Query(None, description="Filter matches by start date"),
     end_date: Optional[datetime] = Query(None, description="Filter matches by end date"),
     is_fanny: Optional[bool] = Query(None, description="Filter by fanny matches"),
-):
+) -> List[MatchResponse]:
     """
     List matches with pagination and filtering options.
 
@@ -247,55 +155,53 @@ async def list_matches(
 
     Parameters
     ----------
-    skip : int
-        Number of matches to skip for pagination
-    limit : int
-        Maximum number of matches to return
-    team_id : Optional[int]
+    skip : int, optional
+        Number of matches to skip for pagination (default: 0)
+    limit : int, optional
+        Maximum number of matches to return (default: 100, max: 1000)
+    team_id : Optional[int], optional
         Filter matches by team ID
-    start_date : Optional[datetime]
-        Filter matches by start date
-    end_date : Optional[datetime]
-        Filter matches by end date
-    is_fanny : Optional[bool]
-        Filter by fanny matches
+    start_date : Optional[datetime], optional
+        Filter matches by start date (inclusive)
+    end_date : Optional[datetime], optional
+        Filter matches by end date (inclusive)
+    is_fanny : Optional[bool], optional
+        Filter by fanny matches (10-0 results)
 
     Returns
     -------
     List[MatchResponse]
-        List of matches matching the criteria
+        List of matches matching the criteria with team and player details
+
+    Raises
+    ------
+    HTTPException
+        - 400: If filter parameters are invalid
+        - 500: If there's an internal server error
     """
-    # ##: Determine which query to use based on filters.
-    if is_fanny is not None and is_fanny:
-        matches_data = get_fanny_matches()
-    elif team_id is not None:
-        matches_data = get_matches_by_team(team_id)
-    elif start_date is not None and end_date is not None:
-        matches_data = get_matches_by_date_range(start_date, end_date)
-    else:
-        matches_data = get_all_matches(limit=limit, offset=skip)
+    try:
+        # ##: Build filter parameters.
+        filters = {}
+        if team_id is not None:
+            filters["team_id"] = team_id
+        if start_date is not None:
+            filters["start_date"] = start_date
+        if end_date is not None:
+            filters["end_date"] = end_date
+        if is_fanny is not None:
+            filters["is_fanny"] = is_fanny
 
-    # ##: Convert to response model.
-    result = []
-    for match in matches_data:
-        # ##: Get team details.
-        winner_team = get_team(match["winner_team_id"])
-        loser_team = get_team(match["loser_team_id"])
+        # ##: Get matches using the service layer.
+        return service_matches.get_matches(skip=skip, limit=limit, **filters)
 
-        match_response = MatchResponse(**match)
-        match_response.winner_team = TeamResponse(
-            **winner_team,
-            player1=get_player(winner_team["player1_id"]),
-            player2=get_player(winner_team["player2_id"]),
+    except ValueError as exc:
+        logger.warning(f"Invalid filter parameters: {str(exc)}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid filter parameters: {str(exc)}")
+    except Exception as exc:
+        logger.error(f"Error listing matches: {str(exc)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An error occurred while retrieving matches"
         )
-        match_response.loser_team = TeamResponse(
-            **loser_team,
-            player1=get_player(loser_team["player1_id"]),
-            player2=get_player(loser_team["player2_id"]),
-        )
-        result.append(match_response)
-
-    return result
 
 
 @router.get(
@@ -303,8 +209,12 @@ async def list_matches(
     response_model=List[MatchResponse],
     summary="Export all matches",
     description="Exports all matches in the system as a JSON array for backup or analysis purposes.",
+    responses={
+        status.HTTP_200_OK: {"description": "All matches exported successfully"},
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {"description": "Internal server error"},
+    },
 )
-async def export_matches():
+async def export_matches() -> List[MatchResponse]:
     """
     Export all matches as JSON.
 
@@ -314,24 +224,35 @@ async def export_matches():
     Returns
     -------
     List[MatchResponse]
-        List of all matches in the system
+        List of all matches in the system with complete details including teams and players
+
+    Raises
+    ------
+    HTTPException
+        - 500: If there's an error retrieving the matches
     """
-    # ##: Get all matches without pagination limits.
-    matches_data = get_all_matches(limit=10000, offset=0)
+    try:
+        return service_matches.get_matches(limit=100000)
 
-    # ##: Convert to response model.
-    result = [MatchResponse(**match) for match in matches_data]
-
-    return result
+    except Exception as exc:
+        logger.error(f"Error exporting matches: {str(exc)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An error occurred while exporting matches"
+        )
 
 
 @router.get(
     "/{match_id}",
     response_model=MatchWithEloResponse,
     summary="Get match details",
-    description="Retrieves detailed information about a specific match, including ELO changes for all players involved.",
+    description="Retrieves detailed information about a specific match.",
+    responses={
+        status.HTTP_200_OK: {"description": "Match details retrieved successfully"},
+        status.HTTP_404_NOT_FOUND: {"description": "Match not found"},
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {"description": "Internal server error"},
+    },
 )
-async def get_match_details(match_id: int):
+async def get_match_details(match_id: int) -> MatchWithEloResponse:
     """
     Get detailed information about a specific match.
 
@@ -339,6 +260,7 @@ async def get_match_details(match_id: int):
     - Basic match details (winner/loser teams, date, etc.)
     - ELO changes for all players involved
     - Team information for both winner and loser teams
+    - Player details and statistics
 
     Parameters
     ----------
@@ -348,55 +270,89 @@ async def get_match_details(match_id: int):
     Returns
     -------
     MatchWithEloResponse
-        Match details including ELO changes
+        Match details including ELO changes and team/player information
 
     Raises
     ------
     HTTPException
-        If the match is not found
+        - 404: If the match is not found
+        - 500: If there's an internal server error
     """
-    match_data = get_match(match_id)
-    if not match_data:
-        raise HTTPException(status_code=404, detail=f"Match with ID {match_id} not found")
+    try:
+        # ##: Get match details with ELO information using the service layer.
+        match_with_elo = service_matches.get_match_with_elo(match_id)
 
-    # ##: Get ELO history records for this match to show ELO changes.
-    elo_changes = {}
+        if not match_with_elo:
+            raise MatchNotFoundError(f"Match with ID {match_id} not found")
+        return match_with_elo
 
-    # ##: Get ELO history records for this match.
-    elo_history_records = get_elo_history_by_match(match_id)
+    except MatchNotFoundError as exc:
+        logger.warning(f"Match not found: {str(exc)}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc) or "Match not found")
+    except Exception as exc:
+        logger.error(f"Error retrieving match details: {str(exc)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while retrieving match details",
+        )
 
-    # ##: Format ELO changes for response.
-    for record in elo_history_records:
-        player_id = record["player_id"]
-        elo_changes[player_id] = {
-            "old_elo": record["old_elo"],
-            "new_elo": record["new_elo"],
-            "change": record["difference"],
-        }
 
-    # ##: Get team details.
-    winner_team = get_team(match_data["winner_team_id"])
-    loser_team = get_team(match_data["loser_team_id"])
+@router.delete(
+    "/{match_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a match",
+    description="""Deletes a match and reverts all associated ELO changes.""",
+    responses={
+        status.HTTP_204_NO_CONTENT: {"description": "Match deleted successfully"},
+        status.HTTP_404_NOT_FOUND: {"description": "Match not found"},
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {"description": "Internal server error"},
+    },
+)
+async def delete_match(match_id: int) -> None:
+    """
+    Delete a match and revert all associated ELO changes.
 
-    # ##: Convert to response models.
-    winner_team_response = None
-    loser_team_response = None
+    This endpoint handles the complete match deletion process, including:
+    - Validating the match exists
+    - Reverting ELO changes for all players involved
+    - Updating team statistics
+    - Removing the match record
 
-    if winner_team:
-        winner_team_response = TeamResponse(**winner_team)
-        winner_team_response.player1 = get_player(winner_team["player1_id"])
-        winner_team_response.player2 = get_player(winner_team["player2_id"])
+    Parameters
+    ----------
+    match_id : int
+        ID of the match to delete
 
-    if loser_team:
-        loser_team_response = TeamResponse(**loser_team)
-        loser_team_response.player1 = get_player(loser_team["player1_id"])
-        loser_team_response.player2 = get_player(loser_team["player2_id"])
+    Raises
+    ------
+    HTTPException
+        - 404: If the match is not found
+        - 500: If there's an error during deletion
+    """
+    try:
+        # ##: Verify the match exists.
+        match_data = service_matches.get_match_by_id(match_id)
+        if not match_data:
+            raise MatchNotFoundError(f"Match with ID {match_id} not found")
 
-    match_with_elo_response = MatchWithEloResponse(
-        **match_data,
-        winner_team=winner_team_response,
-        loser_team=loser_team_response,
-        elo_changes=elo_changes,
-    )
+        # ##: Delete the match using the service layer.
+        success = service_matches.delete_match_by_id(match_id)
 
-    return match_with_elo_response
+        if not success:
+            raise MatchDeletionError(f"Failed to delete match with ID {match_id}")
+        return None
+
+    except MatchNotFoundError as exc:
+        logger.warning(f"Match not found for deletion: {str(exc)}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc) or "Match not found")
+    except MatchDeletionError as exc:
+        logger.error(f"Error deleting match: {str(exc)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc) or "Failed to delete match"
+        )
+    except Exception as exc:
+        logger.error(f"Unexpected error in delete_match: {str(exc)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while deleting the match",
+        )
