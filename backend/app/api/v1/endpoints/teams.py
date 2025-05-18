@@ -31,7 +31,7 @@ from app.exceptions.teams import (
     TeamNotFoundError,
     TeamOperationError,
 )
-from app.models.match import MatchResponse
+from app.models.match import MatchResponse, MatchWithEloResponse
 from app.models.team import TeamCreate, TeamResponse, TeamUpdate
 from app.services import stats as stats_service
 from app.services import teams as teams_service
@@ -361,7 +361,7 @@ async def get_team_matches_endpoint(
     team_id: int = Path(..., gt=0, description="The ID of the team"),
     skip: int = Query(0, ge=0, description="Number of matches to skip"),
     limit: int = Query(100, ge=1, le=100, description="Maximum number of matches to return"),
-) -> List[MatchResponse]:
+) -> List[MatchWithEloResponse]:
     """
     Get a list of matches for a specific team with optional filtering.
 
@@ -379,7 +379,7 @@ async def get_team_matches_endpoint(
 
     Returns
     -------
-    List[MatchResponse]
+    List[MatchWithEloResponse]
         List of matches involving the specified team.
     """
     try:
