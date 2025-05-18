@@ -19,7 +19,7 @@ Notes
 """
 
 from datetime import datetime
-from typing import List, Optional, Union
+from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Query, status
 from loguru import logger
@@ -29,17 +29,9 @@ from app.exceptions.matches import (
     MatchCreationError,
     MatchDeletionError,
     MatchNotFoundError,
-    MatchUpdateError,
 )
 from app.models.match import MatchCreate, MatchResponse, MatchWithEloResponse
 from app.services import matches as service_matches
-from app.services.matches import create_match as service_create_match
-from app.services.matches import delete_match as service_delete_match
-from app.services.matches import (
-    get_match_by_id,
-    get_match_with_elo,
-    get_matches,
-)
 from app.utils.error_handlers import ErrorResponse
 
 router = APIRouter(
