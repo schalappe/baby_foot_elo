@@ -56,13 +56,19 @@ const PlayerMatchesSection: React.FC<PlayerMatchesSectionProps> = ({
               const opponentTeam = isWinner ? match.loser_team : match.winner_team;
               const eloChange = match.elo_changes[playerId]?.difference ?? 0;
               const isFanny = match.is_fanny;
-              const cardColor = isWinner ? 'bg-teal-900/30 border-teal-700' : 'bg-red-800/30 border-red-800';
+              const cardStyle = isWinner
+                ? { background: 'var(--match-win-bg)', borderColor: 'var(--match-win-border)' }
+                : { background: 'var(--match-lose-bg)', borderColor: 'var(--match-lose-border)' };
               return (
-                <div key={match.match_id} className={`relative border-2 ${cardColor} shadow-lg rounded-xl overflow-hidden transition-colors min-h-[72px] w-full`}>
+                <div
+                  key={match.match_id}
+                  className="relative border-2 shadow-lg rounded-xl overflow-hidden transition-colors min-h-[72px] w-full"
+                  style={cardStyle}
+                >
                   <div className="flex flex-row items-center justify-between gap-2 px-4 py-3">
                     {/* ELO Change */}
                     <div className="flex flex-col items-center min-w-[70px]">
-                      <span className={`font-extrabold text-3xl leading-none ${eloChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>{eloChange > 0 ? '+' : ''}{eloChange}</span>
+                      <span className="font-extrabold text-3xl leading-none" style={{ color: eloChange >= 0 ? 'var(--win-text)' : 'var(--lose-text)' }}>{eloChange > 0 ? '+' : ''}{eloChange}</span>
                     </div>
                     {/* Teams */}
                     <div className="flex flex-1 flex-col gap-1 items-center">
@@ -75,7 +81,7 @@ const PlayerMatchesSection: React.FC<PlayerMatchesSectionProps> = ({
                             {p.name}
                           </span>
                         ))}
-                        <span className="mx-2 text-lg font-bold text-neutral-300">VS</span>
+                        <span className="mx-2 text-lg font-bold" style={{ color: 'var(--primary)'}}>VS</span>
                         {[opponentTeam.player1, opponentTeam.player2].map((p) => (
                           <span
                             key={p.player_id}

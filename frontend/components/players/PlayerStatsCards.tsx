@@ -22,7 +22,7 @@ const PlayerStatsCards: React.FC<PlayerStatsCardsProps> = ({ player }) => {
             (() => {
               const lastChange = player.recent.elo_changes[0];
               return (
-                <div className={`text-lg font-medium ${lastChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                <div className={`text-lg font-medium ${lastChange >= 0 ? '' : ''}`} style={{ color: lastChange >= 0 ? 'var(--win-text)' : 'var(--lose-text)' }}>
                   {lastChange >= 0 ? '+' : ''}
                   {lastChange.toFixed(0)} ELO (dernier match)
                 </div>
@@ -57,20 +57,20 @@ const PlayerStatsCards: React.FC<PlayerStatsCardsProps> = ({ player }) => {
             {/* Stats summary below chart */}
             <div className="flex justify-between mt-4 px-2">
               <div className="flex flex-col items-center">
-                <span className="text-lg font-bold text-green-400">{player?.wins ?? 0}</span>
+                <span className="text-lg font-bold" style={{ color: 'var(--win-text)' }}>{player?.wins ?? 0}</span>
                 <span className="text-xs text-muted-foreground">Victoires</span>
               </div>
               <div className="flex flex-col items-center">
-                <span className="text-lg font-bold text-red-400">{player?.losses ?? 0}</span>
+                <span className="text-lg font-bold" style={{ color: 'var(--lose-text)' }}>{player?.losses ?? 0}</span>
                 <span className="text-xs text-muted-foreground">Défaites</span>
               </div>
               <div className="flex flex-col items-center">
                 <span
-                  className={`text-lg font-bold ${player ? (player.win_rate >= 0.5 ? 'text-green-400' : 'text-red-400') : 'text-blue-300'}`}
+                  className="text-lg font-bold" style={{ color: player ? (player.win_rate >= 0.5 ? 'var(--win-text)' : 'var(--lose-text)') : 'var(--muted)' }}
                 >
                   {player ? `${Math.round(player.win_rate*100)}%` : '--'}
                 </span>
-                <span className="text-xs text-muted-foreground">Winrate</span>
+                <span className="text-xs text-muted-foreground">Taux de victoire</span>
               </div>
             </div>
           </CardContent>
@@ -86,16 +86,16 @@ const PlayerStatsCards: React.FC<PlayerStatsCardsProps> = ({ player }) => {
               const chartConfig = {
                 winSegment: {
                   label: 'Win Rate',
-                  color: currentWinRate < 50 ? 'hsl(0 72.2% 50.6%)' : 'hsl(142.1 70.6% 45.3%)',
+                  color: currentWinRate < 50 ? 'var(--lose)' : 'var(--win)',
                 },
                 remainderSegment: {
                   label: 'Remainder',
-                  color: 'hsl(var(--muted))',
+                  color: 'var(--muted)',
                 },
               };
               const chartData = [
-                { segment: 'winSegment', value: currentWinRate, fill: 'var(--color-winSegment)' },
-                { segment: 'remainderSegment', value: 100 - currentWinRate, fill: 'var(--color-remainderSegment)' },
+                { segment: 'winSegment', value: currentWinRate, fill: currentWinRate < 50 ? 'var(--lose)' : 'var(--win)', },
+                { segment: 'remainderSegment', value: 100 - currentWinRate, fill: 'var(--muted)' },
               ];
               return (
                 <ChartContainer config={chartConfig} className="w-full h-full aspect-square">
@@ -129,9 +129,9 @@ const PlayerStatsCards: React.FC<PlayerStatsCardsProps> = ({ player }) => {
           </div>
           <div className="text-sm text-muted-foreground uppercase tracking-wider">TAUX DE VICTOIRE</div>
           <div>
-            <span className="text-lg sm:text-xl font-bold text-green-500">{player.recent?.wins ?? 0}W</span>
+            <span className="text-lg sm:text-xl font-bold" style={{ color: 'var(--win-text)' }}>{player.recent?.wins ?? 0}W</span>
             <span className="text-lg sm:text-xl font-bold"> - </span>
-            <span className="text-lg sm:text-xl font-bold text-red-500">{player.recent?.losses ?? 0}L</span>
+            <span className="text-lg sm:text-xl font-bold" style={{ color: 'var(--lose-text)' }}>{player.recent?.losses ?? 0}L</span>
           </div>
           <div className="text-xs text-muted-foreground">{player.recent?.matches_played ?? 0} dernières parties</div>
         </CardContent>
