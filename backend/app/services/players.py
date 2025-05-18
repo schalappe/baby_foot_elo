@@ -372,7 +372,7 @@ def get_player_statistics(player_id: int) -> Dict[str, Any]:
         recent_elo_changes = []
 
         if elo_history:
-            for match in elo_history[:30]:
+            for match in elo_history[:10]:
                 if match.difference is not None:
                     recent_elo_changes.append(match.difference)
                     if match.difference > 0:
@@ -380,6 +380,7 @@ def get_player_statistics(player_id: int) -> Dict[str, Any]:
                     elif match.difference < 0:
                         recent_losses += 1
 
+        # ##: Calculate average ELO change.
         avg_elo_change = sum(elo_changes) / len(elo_changes) if elo_changes else 0
         highest_elo = max(elo_values) if elo_values else stats.get("global_elo", 1000)
         lowest_elo = min(elo_values) if elo_values else stats.get("global_elo", 1000)
@@ -404,7 +405,7 @@ def get_player_statistics(player_id: int) -> Dict[str, Any]:
             "highest_elo": int(highest_elo),
             "lowest_elo": int(lowest_elo),
             "creation_date": player.created_at,
-            # Recent performance (last 30 matches)
+            # ##: Recent performance (last 10 matches).
             "recent": {
                 "matches_played": recent_matches_played,
                 "wins": recent_wins,

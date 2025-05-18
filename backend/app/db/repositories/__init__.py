@@ -5,6 +5,8 @@ This module provides a collection of repositories for database operations.
 
 from app.db.repositories.elo_history import (
     batch_record_elo_updates,
+    get_elo_history_by_match,
+    get_elo_history_by_player_match,
     get_player_elo_history,
     record_elo_update,
 )
@@ -60,6 +62,8 @@ __all__ = [
     "record_elo_update",
     "batch_record_elo_updates",
     "get_player_elo_history",
+    "get_elo_history_by_match",
+    "get_elo_history_by_player_match",
     # ##: Stats.
     "get_player_stats",
 ]

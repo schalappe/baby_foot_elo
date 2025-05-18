@@ -195,9 +195,16 @@ def get_team(team_id: int) -> Optional[Dict[str, Any]]:
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_all_teams() -> List[Dict[str, Any]]:
+def get_all_teams(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
     """
     Get all teams from the database.
+
+    Parameters
+    ----------
+    limit : int, optional
+        Maximum number of teams to return, by default 100.
+    offset : int, optional
+        Number of teams to skip for pagination, by default 0.
 
     Returns
     -------
@@ -216,6 +223,8 @@ def get_all_teams() -> List[Dict[str, Any]]:
                 "last_match_at",
             )
             .order_by_clause("player1_id")
+            .limit(limit)
+            .offset(offset)
             .execute()
         )
         return (

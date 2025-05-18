@@ -10,11 +10,25 @@ from app.exceptions.players import (
     PlayerNotFoundError,
     PlayerOperationError,
 )
+from app.exceptions.teams import (
+    InvalidTeamDataError,
+    TeamAlreadyExistsError,
+    TeamException,
+    TeamNotFoundError,
+    TeamOperationError,
+)
 
 __all__ = [
+    # Player exceptions
     "PlayerException",
     "PlayerNotFoundError",
     "PlayerAlreadyExistsError",
     "InvalidPlayerDataError",
     "PlayerOperationError",
+    # Team exceptions
+    "TeamException",
+    "TeamNotFoundError",
+    "TeamAlreadyExistsError",
+    "InvalidTeamDataError",
+    "TeamOperationError",
 ]

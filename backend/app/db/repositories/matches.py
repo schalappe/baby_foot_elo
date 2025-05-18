@@ -156,7 +156,7 @@ def get_match(match_id: int) -> Optional[Dict[str, Any]]:
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_matches_by_team(team_id: int) -> List[Dict[str, Any]]:
+def get_matches_by_team(team_id: int, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
     """
     Get all matches involving a specific team.
 
@@ -164,6 +164,10 @@ def get_matches_by_team(team_id: int) -> List[Dict[str, Any]]:
     ----------
     team_id : int
         ID of the team
+    limit : int, optional
+        Maximum number of matches to return (default: 100).
+    offset : int, optional
+        Number of matches to skip for pagination (default: 0).
 
     Returns
     -------
@@ -177,6 +181,8 @@ def get_matches_by_team(team_id: int) -> List[Dict[str, Any]]:
         )
         .where("winner_team_id = ? OR loser_team_id = ?", team_id, team_id)
         .order_by_clause("played_at DESC")
+        .limit(limit)
+        .offset(offset)
         .execute()
     )
     return (
@@ -331,7 +337,6 @@ def get_matches_by_player(
         with transaction() as db_manager:
             query, params = query_builder.build()
             results = db_manager.fetchall(query, params)
-            logger.info(f"Results: {results}")
 
             for row in results:
                 matches.append(

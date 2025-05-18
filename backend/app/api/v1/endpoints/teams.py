@@ -20,27 +20,21 @@ Notes
 - All endpoints include proper validation and error handling.
 """
 
-from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Path, Query, status
 from loguru import logger
 
-from app.db.repositories.matches import get_matches_by_team
-from app.db.repositories.players import get_player
-from app.db.repositories.teams import (
-    create_team,
-    delete_team,
-    get_all_teams,
-    get_team,
-    get_team_rankings,
-    get_teams_by_player,
+from app.exceptions.teams import (
+    InvalidTeamDataError,
+    TeamAlreadyExistsError,
+    TeamNotFoundError,
+    TeamOperationError,
 )
 from app.models.match import MatchResponse
-from app.models.team import TeamCreate, TeamResponse
-from app.services.elo import calculate_team_elo
+from app.models.team import TeamCreate, TeamResponse, TeamUpdate
+from app.services import teams as teams_service
 from app.utils.error_handlers import ErrorResponse
-from app.utils.validation import ValidationErrorResponse, validate_team_players
 
 router = APIRouter(
     prefix="/teams",
@@ -73,7 +67,7 @@ router = APIRouter(
     summary="Create a new team",
     description="Create a new team with two players.",
 )
-async def create_team_endpoint(team: TeamCreate):
+async def create_team_endpoint(team: TeamCreate) -> TeamResponse:
     """
     Create a new team with two players.
 
@@ -99,64 +93,34 @@ async def create_team_endpoint(team: TeamCreate):
     HTTPException
         If player IDs are invalid, players don't exist, or team creation fails.
         Status codes:
-        - 400: Invalid team data or team already exists
-        - 404: Player not found
+        - 400: Invalid input (e.g., same player for both positions)
+        - 404: One or both players not found
+        - 409: Team with these players already exists
+        - 422: Validation error
         - 500: Internal server error
     """
-    # ##: Validate team data
     try:
-        validate_team_players(team.player1_id, team.player2_id)
-    except ValidationErrorResponse as e:
-        raise e
+        return teams_service.create_new_team(team)
 
-    # ##: Validate that both players exist.
-    player1 = get_player(team.player1_id)
-    if not player1:
+    except InvalidTeamDataError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except TeamAlreadyExistsError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    except TeamOperationError as exc:
+        logger.error(f"Error creating team: {exc}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Player with ID {team.player1_id} not found",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An error occurred while creating the team"
         )
-
-    player2 = get_player(team.player2_id)
-    if not player2:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Player with ID {team.player2_id} not found",
-        )
-
-    # ##: Calculate initial team ELO based on player ELOs.
-    team.global_elo = calculate_team_elo(player1["global_elo"], player2["global_elo"])
-
-    # ##: Create the team.
-    team_id = create_team(player1_id=team.player1_id, player2_id=team.player2_id, global_elo=team.global_elo)
-
-    if not team_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Failed to create team. Team may already exist.",
-        )
-
-    # ##: Get the created team.
-    team_data = get_team(team_id)
-    if not team_data:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Team was created but could not be retrieved.",
-        )
-
-    # ##: Create response with player details.
-    response = TeamResponse(**team_data)
-    response.player1 = player1
-    response.player2 = player2
-
-    return response
+    except Exception as exc:
+        logger.error(f"Unexpected error creating team: {exc}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred")
 
 
 @router.get(
     "/",
     response_model=List[TeamResponse],
     summary="List all teams",
-    description="Get a list of all teams with optional pagination and filtering by ELO rating or player ID.",
+    description="Get a list of all teams with optional filtering and pagination.",
 )
 async def get_teams_endpoint(
     skip: int = Query(0, ge=0, description="Number of teams to skip"),
@@ -164,7 +128,7 @@ async def get_teams_endpoint(
     min_elo: Optional[float] = Query(None, ge=0, description="Minimum global ELO rating"),
     max_elo: Optional[float] = Query(None, ge=0, description="Maximum global ELO rating"),
     player_id: Optional[int] = Query(None, gt=0, description="Filter teams by player ID"),
-):
+) -> List[TeamResponse]:
     """
     Get a list of all teams with optional pagination and filtering.
 
@@ -191,220 +155,308 @@ async def get_teams_endpoint(
     -------
     List[TeamResponse]
         List of teams matching the criteria, each including complete player details.
-
-    Notes
-    -----
-    - When filtering by player_id, the endpoint uses a specialized query to find teams containing that player
-    - Otherwise, it retrieves all teams and applies filters in memory
-    - ELO filtering is applied after retrieving the teams
-    - Pagination is applied last, after all filtering
     """
-    # ##: Get teams based on filters.
-    if player_id:
-        teams_data = get_teams_by_player(player_id)
-    else:
-        teams_data = get_all_teams()
+    try:
+        if player_id is not None:
+            # ##: Get teams by player ID.
+            teams = teams_service.get_teams_by_player_id(player_id)
 
-    # ##: Apply ELO filters.
-    if min_elo is not None:
-        teams_data = [t for t in teams_data if t["global_elo"] >= min_elo]
-    if max_elo is not None:
-        teams_data = [t for t in teams_data if t["global_elo"] <= max_elo]
+            # ##: Apply additional ELO filters if needed.
+            if min_elo is not None or max_elo is not None:
+                filtered_teams = []
+                for team in teams:
+                    if min_elo is not None and team.global_elo < min_elo:
+                        continue
+                    if max_elo is not None and team.global_elo > max_elo:
+                        continue
+                    filtered_teams.append(team)
+                teams = filtered_teams
 
-    # ##: Apply pagination.
-    teams_data = teams_data[skip : skip + limit]
+            # ##: Apply pagination.
+            return teams[skip : skip + limit]
 
-    # ##: Populate player details for each team.
-    result = []
-    for team_data in teams_data:
-        team = TeamResponse(**team_data)
-        team.player1 = get_player(team.player1_id)
-        team.player2 = get_player(team.player2_id)
-        result.append(team)
+        # ##: Get all teams with pagination and ELO filtering.
+        return teams_service.get_all_teams_with_details(
+            skip=skip,
+            limit=limit,
+            min_elo=min_elo,
+            max_elo=max_elo,
+        )
 
-    return result
+    except Exception as exc:
+        logger.error(f"Error retrieving teams: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An error occurred while retrieving teams"
+        )
 
 
 @router.get(
     "/rankings",
     response_model=List[TeamResponse],
     summary="Get team rankings",
-    description="Get teams sorted by ELO rating (global) with rank information. Only includes teams that have played at least one match and whose last match was at least one month ago.",
+    description="Get teams ranked by their global ELO rating.",
 )
 async def get_team_rankings_endpoint(
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of teams to return")
-):
+    limit: int = Query(200, ge=1, le=1000, description="Maximum number of teams to return"),
+    days_since_last_match: Optional[int] = Query(
+        30, ge=1, description="Only include teams whose last match was at least this many days ago"
+    ),
+) -> List[TeamResponse]:
     """
     Get teams sorted by ELO rating for rankings display.
 
     This endpoint retrieves teams sorted by ELO rating with support for:
     - Limiting the number of results
+    - Filtering by days since last match
     - Automatic inclusion of player details for each team
     - Rank information for each team
-    - Filtering for teams with at least one match played
-    - Filtering for teams whose last match was at least one month ago
 
     Parameters
     ----------
     limit : int, optional
-        Maximum number of teams to return, by default 100 (max 1000).
+        Maximum number of teams to return, by default 200 (max 1000).
+    days_since_last_match : Optional[int], optional
+        Only include teams whose last match was at least this many days ago, by default 30.
 
     Returns
     -------
     List[TeamResponse]
         List of teams sorted by ELO in descending order with rank information.
         Each team includes complete player details and ELO ratings.
-
-    Notes
-    -----
-    - Teams are sorted in descending order by global ELO
-    - Each team includes a 'rank' field indicating its position in the rankings
-    - Only includes teams who have played at least one match
-    - Only includes teams whose last match was at least one month ago
-    - The endpoint automatically fetches player details for both team members
-    - This is useful for leaderboard displays and ranking tables
     """
-    # ##: Get current date.
-    current_date = datetime.now()
-    one_month_ago = current_date.replace(
-        month=current_date.month - 1 if current_date.month > 1 else 12,
-        year=current_date.year if current_date.month > 1 else current_date.year - 1,
-    )
+    try:
+        return teams_service.get_active_team_rankings(limit=limit, days_since_last_match=days_since_last_match)
 
-    # ##: Get ranked teams from database.
-    teams_data = get_team_rankings(limit=limit)
-
-    # ##: Populate player details for each team.
-    result = []
-    for team_data in teams_data:
-
-        if team_data["last_match_at"] is None or team_data["last_match_at"] < one_month_ago:
-            continue
-
-        team = TeamResponse(**team_data)
-        team.player1 = get_player(team_data["player1_id"])
-        team.player2 = get_player(team_data["player2_id"])
-        result.append(team)
-
-    return result
+    except Exception as exc:
+        logger.error(f"Error retrieving team rankings: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while retrieving team rankings",
+        )
 
 
 @router.get(
     "/{team_id}",
     response_model=TeamResponse,
     summary="Get team details",
-    description="Get detailed information about a specific team including player details.",
+    description="Retrieve detailed information about a specific team, including player details.",
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "model": ErrorResponse,
+            "description": "Team not found",
+        },
+    },
 )
-async def get_team_endpoint(team_id: int = Path(..., gt=0, description="The ID of the team to retrieve")):
+async def get_team_endpoint(
+    team_id: int = Path(..., gt=0, description="The ID of the team to retrieve")
+) -> TeamResponse:
     """
-    Get detailed information about a specific team.
+    Retrieve detailed information about a specific team.
 
-    This endpoint retrieves comprehensive team information including:
-    - Basic team details (ID, creation date, ELO ratings)
+    This endpoint provides comprehensive team information including:
+    - Team metadata (ID, creation date, ELO ratings)
     - Complete player information for both team members
-    - Calculated team statistics
+    - Team statistics (if available)
 
     Parameters
     ----------
     team_id : int
-        ID of the team to retrieve. Must be a positive integer.
+        The unique identifier of the team to retrieve.
+
 
     Returns
     -------
     TeamResponse
-        Team details including player information, ELO ratings, and statistics.
+        Detailed team information including player details and statistics.
+
 
     Raises
     ------
     HTTPException
         If the team is not found (404 status code).
-
-    Notes
-    -----
-    - The endpoint automatically fetches player details for both team members
-    - Team ELO is stored in the database and not recalculated on retrieval
-    - Debug logs are generated to track team data retrieval
     """
-    team_data = get_team(team_id)
-    logger.info(f"Team data: {team_data}")
-    if not team_data:
+    try:
+        return teams_service.get_team_by_id(team_id)
+
+    except TeamNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    except TeamOperationError as exc:
+        logger.error(f"Error retrieving team {team_id}: {exc}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Team with ID {team_id} not found",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An error occurred while retrieving the team"
         )
+    except Exception as exc:
+        logger.error(f"Unexpected error retrieving team {team_id}: {exc}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred")
 
-    # ##: Create response with player details.
-    response = TeamResponse(**team_data)
-    response.player1 = get_player(response.player1_id)
-    response.player2 = get_player(response.player2_id)
 
-    return response
+@router.get(
+    "/{team_id}/statistics",
+    response_model=Dict[str, Any],
+    summary="Get team statistics",
+    description="Retrieve detailed statistics for a specific team.",
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "model": ErrorResponse,
+            "description": "Team not found",
+        },
+    },
+)
+async def get_team_statistics_endpoint(
+    team_id: int = Path(..., gt=0, description="The ID of the team")
+) -> Dict[str, Any]:
+    """
+    Get detailed statistics for a specific team.
+
+    This endpoint provides comprehensive statistics for a team, including:
+    - Win/loss record
+    - ELO rating history
+    - Performance metrics
+
+    Parameters
+    ----------
+    team_id : int
+        The unique identifier of the team.
+
+    Returns
+    -------
+    Dict[str, Any]
+        A dictionary containing various statistics about the team.
+
+    Raises
+    ------
+    HTTPException
+        If the team is not found (404 status code) or other errors occur.
+    """
+    try:
+        return teams_service.get_team_statistics(team_id=team_id)
+
+    except TeamNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    except TeamOperationError as exc:
+        logger.error(f"Error retrieving statistics for team {team_id}: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while retrieving team statistics",
+        )
+    except Exception as exc:
+        logger.error(f"Unexpected error retrieving statistics for team {team_id}: {exc}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred")
 
 
 @router.get(
     "/{team_id}/matches",
     response_model=List[MatchResponse],
     summary="Get team matches",
-    description="Get all matches played by a specific team with optional pagination.",
+    description="Get a list of matches for a specific team with optional filtering.",
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "model": ErrorResponse,
+            "description": "Team not found",
+        },
+    },
 )
 async def get_team_matches_endpoint(
-    team_id: int = Path(..., gt=0, description="The ID of the team to retrieve matches for"),
-    limit: int = Query(50, ge=1, le=100, description="Maximum number of matches to return"),
+    team_id: int = Path(..., gt=0, description="The ID of the team"),
     skip: int = Query(0, ge=0, description="Number of matches to skip"),
-):
+    limit: int = Query(100, ge=1, le=100, description="Maximum number of matches to return"),
+) -> List[MatchResponse]:
     """
-    Get all matches played by a specific team.
+    Get a list of matches for a specific team with optional filtering.
 
-    This endpoint retrieves the match history for a specific team with support for:
+    This endpoint retrieves match history for a team with support for:
     - Pagination (skip and limit parameters)
-    - Verification of team existence
-    - Inclusion of complete match details including opponent information
 
     Parameters
     ----------
     team_id : int
-        ID of the team to retrieve matches for. Must be a positive integer.
-    limit : int, optional
-        Maximum number of matches to return, by default 50 (max 100).
+        The ID of the team to get matches for.
     skip : int, optional
         Number of matches to skip for pagination, by default 0.
+    limit : int, optional
+        Maximum number of matches to return, by default 100 (max 100).
 
     Returns
     -------
     List[MatchResponse]
-        List of matches played by the team, including both won and lost matches.
-        Each match includes complete details about the match and opponent team.
+        List of matches involving the specified team.
+    """
+    try:
+        return teams_service.get_team_matches(team_id=team_id, offset=skip, limit=limit)
+
+    except TeamNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    except TeamOperationError as exc:
+        logger.error(f"Error retrieving matches for team {team_id}: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An error occurred while retrieving team matches"
+        )
+    except Exception as exc:
+        logger.error(f"Unexpected error retrieving matches for team {team_id}: {exc}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred")
+
+
+@router.put(
+    "/{team_id}",
+    response_model=TeamResponse,
+    summary="Update team",
+    description="Update a team's details.",
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "model": ErrorResponse,
+            "description": "Team not found",
+        },
+        status.HTTP_400_BAD_REQUEST: {
+            "model": ErrorResponse,
+            "description": "Invalid team data",
+        },
+    },
+)
+async def update_team_endpoint(
+    team_data: TeamUpdate,
+    team_id: int = Path(..., gt=0, description="The ID of the team to update"),
+) -> TeamResponse:
+    """
+    Update a team's details.
+
+    This endpoint allows updating various team attributes including:
+    - Player assignments (player1_id, player2_id)
+    - ELO ratings (global_elo, current_elo)
+    - Team metadata (name, description, etc.)
+
+    Parameters
+    ----------
+    team_data : TeamUpdate
+        The updated team data. Only the fields that need to be updated should be included.
+    team_id : int
+        The ID of the team to update.
+
+    Returns
+    -------
+    TeamResponse
+        The updated team details with complete player information.
+
 
     Raises
     ------
     HTTPException
-        If the team is not found (404 status code).
-
-    Notes
-    -----
-    - Matches are returned in descending order by date (newest first)
-    - The endpoint includes both matches where the team won and where they lost
-    - Each match includes a 'won' field indicating whether the team won that match
-    - The team's existence is verified before retrieving matches
+        If the team is not found (404 status code) or the update fails.
     """
-    # ##: Verify that the team exists.
-    team_data = get_team(team_id)
-    if not team_data:
+    try:
+        return teams_service.update_existing_team(team_id=team_id, team_update=team_data)
+
+    except TeamNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    except InvalidTeamDataError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except TeamOperationError as exc:
+        logger.error(f"Error updating team {team_id}: {exc}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Team with ID {team_id} not found",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An error occurred while updating the team"
         )
-
-    # ##: Get matches for the team.
-    matches = get_matches_by_team(team_id)
-
-    # ##: Apply pagination.
-    matches = matches[skip : skip + limit]
-
-    # ##: Convert to response model.
-    result = [MatchResponse(**match) for match in matches]
-
-    return result
+    except Exception as exc:
+        logger.error(f"Unexpected error updating team {team_id}: {exc}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred")
 
 
 @router.delete(
@@ -413,44 +465,35 @@ async def get_team_matches_endpoint(
     summary="Delete team",
     description="Delete a team by ID. This operation cannot be undone.",
 )
-async def delete_team_endpoint(team_id: int = Path(..., gt=0, description="The ID of the team to delete")):
+async def delete_team_endpoint(team_id: int = Path(..., gt=0, description="The ID of the team to delete")) -> None:
     """
     Delete a team by ID.
 
-    This endpoint permanently removes a team from the database with the following process:
-    - Verifies that the team exists before attempting deletion
-    - Removes the team record from the database
-    - Returns a 204 No Content response on success
+    This endpoint allows administrators to delete a team from the system.
+    The team will be permanently removed from the database.
 
     Parameters
     ----------
     team_id : int
-        ID of the team to delete. Must be a positive integer.
+        The unique identifier of the team to delete.
+
 
     Raises
     ------
     HTTPException
-        If the team is not found (404 status code) or deletion fails (500 status code).
-
-    Notes
-    -----
-    - This operation cannot be undone
-    - Related match records are not deleted and will maintain references to the deleted team ID
-    - The endpoint performs validation before attempting deletion to provide appropriate error messages
-    - Returns no content (204) on successful deletion
+        If the team is not found (404 status code) or deletion fails.
     """
-    # ##: First check if the team exists.
-    existing_team = get_team(team_id)
-    if not existing_team:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Team with ID {team_id} not found",
-        )
+    try:
+        teams_service.delete_team(team_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-    # ##: Delete the team.
-    success = delete_team(team_id)
-    if not success:
+    except TeamNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    except TeamOperationError as exc:
+        logger.error(f"Error deleting team {team_id}: {exc}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete team with ID {team_id}",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An error occurred while deleting the team"
         )
+    except Exception as exc:
+        logger.error(f"Unexpected error deleting team {team_id}: {exc}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred")

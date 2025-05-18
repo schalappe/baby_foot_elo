@@ -67,8 +67,8 @@ def record_elo_update(
             if result and result[0]:
                 return result[0]
             return None
-    except Exception as e:
-        logger.error(f"Failed to record ELO update: {e}")
+    except Exception as exc:
+        logger.error(f"Failed to record ELO update: {exc}")
         return None
 
 
@@ -127,8 +127,8 @@ def batch_record_elo_updates(elo_updates: List[Dict[str, Any]]) -> List[Optional
                     history_ids.append(result[0])
 
         return history_ids
-    except Exception as e:
-        logger.error(f"Failed to batch record ELO updates: {e}")
+    except Exception as exc:
+        logger.error(f"Failed to batch record ELO updates: {exc}")
         return []
 
 
@@ -193,8 +193,8 @@ def get_player_elo_history(
             )
 
         return history_records
-    except Exception as e:
-        logger.error(f"Failed to get ELO history for player ID {player_id}: {e}")
+    except Exception as exc:
+        logger.error(f"Failed to get ELO history for player ID {player_id}: {exc}")
         return []
 
 
@@ -226,8 +226,8 @@ def get_elo_by_date(player_id: int, target_date: datetime) -> Optional[int]:
             .execute(fetch_all=False)
         )
         return result[0] if result else None
-    except Exception as e:
-        logger.error(f"Failed to get ELO by date for player ID {player_id}: {e}")
+    except Exception as exc:
+        logger.error(f"Failed to get ELO by date for player ID {player_id}: {exc}")
         return None
 
 
@@ -282,8 +282,8 @@ def get_monthly_elo_history(player_id: int, year: int, month: int) -> List[Dict[
             )
 
         return history_records
-    except Exception as e:
-        logger.error(f"Failed to get monthly ELO history for player ID {player_id}: {e}")
+    except Exception as exc:
+        logger.error(f"Failed to get monthly ELO history for player ID {player_id}: {exc}")
         return []
 
 
@@ -325,6 +325,39 @@ def get_elo_history_by_match(match_id: int) -> List[Dict[str, Any]]:
                 }
             )
         return history_records
-    except Exception as e:
-        logger.error(f"Failed to get ELO history for match {match_id}: {e}")
+    except Exception as exc:
+        logger.error(f"Failed to get ELO history for match {match_id}: {exc}")
         return []
+
+
+@with_retry(max_retries=3, retry_delay=0.5)
+def get_elo_history_by_player_match(player_id: int, match_id: int) -> Optional[Dict[str, Any]]:
+
+    try:
+        builder = (
+            SelectQueryBuilder("ELO_History")
+            .select("*")
+            .where("player_id = ?", player_id)
+            .where("match_id = ?", match_id)
+        )
+        results = builder.execute(fetch_all=True)
+
+        if not results:
+            return None
+
+        history_record = {
+            "history_id": results[0][0],
+            "player_id": results[0][1],
+            "match_id": results[0][2],
+            "old_elo": results[0][3],
+            "new_elo": results[0][4],
+            "difference": results[0][5],
+            "date": results[0][6],
+            "year": results[0][7],
+            "month": results[0][8],
+            "day": results[0][9],
+        }
+        return history_record
+    except Exception as exc:
+        logger.error(f"Failed to get ELO history for player {player_id} and match {match_id}: {exc}")
+        return None
