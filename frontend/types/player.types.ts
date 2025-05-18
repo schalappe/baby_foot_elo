@@ -7,6 +7,7 @@ export interface Player {
   matches_played: number;
   wins: number;
   losses: number;
+  win_rate: number;
   creation_date: string;
 }
 

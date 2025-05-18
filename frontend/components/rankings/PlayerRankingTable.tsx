@@ -65,19 +65,19 @@ export const columns: ColumnDef<Player>[] = [
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
-    cell: ({ row }) => <div className="text-right">{row.getValue('global_elo')}</div>,
+    cell: ({ row }) => <div className="text-center">{row.getValue('global_elo')}</div>,
     filterFn: (row, columnId, filterValue) => {
         // Type guard for the filter value
         const range = filterValue as [number | undefined, number | undefined];
         if (!Array.isArray(range)) {
-            return true; // No range filter applied if not an array
+            return true;
         }
         const [minElo, maxElo] = range;
 
         // Ensure row value is a number
         const elo = row.getValue('global_elo') as number;
         if (typeof elo !== 'number') {
-            return false; // Don't include if elo is not a number
+            return false;
         }
 
         const minCheck = minElo === undefined || elo >= minElo;
@@ -97,7 +97,7 @@ export const columns: ColumnDef<Player>[] = [
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-    cell: ({ row }) => <div className="text-right">{row.getValue('matches_played')}</div>,
+    cell: ({ row }) => <div className="text-center">{row.getValue('matches_played')}</div>,
   },
    {
     accessorKey: 'wins',
@@ -110,7 +110,7 @@ export const columns: ColumnDef<Player>[] = [
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-    cell: ({ row }) => <div className="text-right">{row.getValue('wins')}</div>,
+    cell: ({ row }) => <div className="text-center">{row.getValue('wins')}</div>,
   },
   {
     accessorKey: 'losses',
@@ -123,7 +123,7 @@ export const columns: ColumnDef<Player>[] = [
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-    cell: ({ row }) => <div className="text-right">{row.getValue('losses')}</div>,
+    cell: ({ row }) => <div className="text-center">{row.getValue('losses')}</div>,
   },
 ];
 
@@ -143,10 +143,11 @@ export function PlayerRankingTable({ data = [], isLoading, error }: PlayerRankin
   const [rowSelection, setRowSelection] = useState({});
 
   // Memoize data to prevent unnecessary recalculations
+  console.log("Data:", data);
   const memoizedData = useMemo(() => data, [data]);
 
   const table = useReactTable({
-    data: memoizedData, // Use memoized data
+    data: memoizedData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -243,9 +244,9 @@ export function PlayerRankingTable({ data = [], isLoading, error }: PlayerRankin
                     <TableCell colSpan={columns.length} className="h-24 text-center">
                          <Alert variant="destructive">
                             <AlertCircle className="h-4 w-4" />
-                            <AlertTitle>Error Fetching Data</AlertTitle>
+                            <AlertTitle>Erreur</AlertTitle>
                             <AlertDescription>
-                            {error.message || "Could not load player rankings."}
+                            {error.message || "Impossible de charger le classement des joueurs."}
                             </AlertDescription>
                         </Alert>
                     </TableCell>
@@ -269,7 +270,7 @@ export function PlayerRankingTable({ data = [], isLoading, error }: PlayerRankin
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
+                  Aucun résultat.
                 </TableCell>
               </TableRow>
             )}
@@ -280,35 +281,27 @@ export function PlayerRankingTable({ data = [], isLoading, error }: PlayerRankin
       <div className="flex items-center justify-between space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
            {/* Kept the selection count as it's useful, though not strictly pagination */}
-           {table.getFilteredSelectedRowModel().rows.length} of{" "}
-           {table.getFilteredRowModel().rows.length} row(s) selected.
+           {table.getFilteredSelectedRowModel().rows.length} de{" "}
+           {table.getFilteredRowModel().rows.length} ligne(s) sélectionnée(s).
         </div>
         <Pagination>
           <PaginationContent>
             <PaginationItem>
               <PaginationPrevious
-                href="#" // href is needed but we control via onClick
+                href="#"
                 onClick={(e) => {
-                  e.preventDefault(); // Prevent navigation
+                  e.preventDefault();
                   table.previousPage();
                 }}
                 className={!table.getCanPreviousPage() ? "pointer-events-none opacity-50" : "cursor-pointer"}
                 aria-disabled={!table.getCanPreviousPage()}
               />
             </PaginationItem>
-            {/* TODO: Add page number links here if needed */}
-            {/* Example:
-            <PaginationItem>
-              <PaginationLink href="#">1</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationEllipsis />
-            </PaginationItem> */}
             <PaginationItem>
               <PaginationNext
-                 href="#" // href is needed but we control via onClick
+                 href="#"
                  onClick={(e) => {
-                    e.preventDefault(); // Prevent navigation
+                    e.preventDefault();
                     table.nextPage();
                  }}
                  className={!table.getCanNextPage() ? "pointer-events-none opacity-50" : "cursor-pointer"}

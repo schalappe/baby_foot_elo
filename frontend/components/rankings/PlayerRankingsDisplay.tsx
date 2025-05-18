@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Player } from '@/types/player.types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { PlayerRankingTable } from './PlayerRankingTable';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from "@/components/ui/badge"
@@ -134,40 +134,13 @@ export function PlayerRankingsDisplay({ players = [], isLoading, error }: Player
 
       {/* Other Players - List */}
       {otherPlayers.length > 0 && (
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-xl">Autres Joueurs</CardTitle>
+        <Card className="shadow-lg border-2 border-primary">
+          <CardHeader className="bg-muted/50 border-b-2 border-primary rounded-t-md">
+            <CardTitle className="text-xl font-bold tracking-tight text-primary">Autres Joueurs</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[80px]">Rang</TableHead>
-                  <TableHead>Nom</TableHead>
-                  <TableHead className="text-right">ELO</TableHead>
-                  <TableHead className="text-right">Matchs Joués</TableHead>
-                  <TableHead className="text-right">Performance</TableHead> 
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {otherPlayers.map((player, index) => {
-                  const winrate = calculateWinrate(player.wins, player.matches_played);
-                  return (
-                    <TableRow key={player.player_id}>
-                      <TableCell className="font-medium">#{index + 4}</TableCell>
-                      <TableCell>
-                        <Link href={`/players/${player.player_id}`} className='hover:underline focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm'>
-                          {player.name}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="text-right">{player.global_elo}</TableCell>
-                      <TableCell className="text-right">{player.matches_played}</TableCell>
-                      <TableCell className="text-right">{player.wins}W - {player.losses}L ({winrate}%)</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            {/* Use the paginated PlayerRankingTable for 'otherPlayers' */}
+            <PlayerRankingTable data={otherPlayers} isLoading={false} error={null} />
           </CardContent>
         </Card>
       )}
