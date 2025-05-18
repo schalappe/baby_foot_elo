@@ -33,6 +33,37 @@ export const findOrCreateTeam = async (player1_id: number, player2_id: number): 
   }
 };
 
+// Fetch team details by ID (with player details)
+/**
+ * Fetch detailed information about a specific team by ID, including player details.
+ *
+ * Calls the backend endpoint `/teams/{team_id}` and returns a Team object with nested player1 and player2.
+ *
+ * Parameters
+ * ----------
+ * teamId : number
+ *     The ID of the team to fetch.
+ *
+ * Returns
+ * -------
+ * Promise<Team>
+ *     The team details, including player information.
+ *
+ * Throws
+ * ------
+ * Error
+ *     If the request fails or the team is not found.
+ */
+export const getTeamById = async (teamId: number): Promise<Team> => {
+  try {
+    const response = await axios.get<Team>(`${API_URL}/teams/${teamId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Échec de la récupération de l'équipe ${teamId}:`, error);
+    throw error;
+  }
+};
+
 /**
  * Fetch detailed statistics for a specific team by ID.
  *

@@ -347,7 +347,7 @@ async def get_team_statistics_endpoint(
 
 @router.get(
     "/{team_id}/matches",
-    response_model=List[MatchResponse],
+    response_model=List[MatchWithEloResponse],
     summary="Get team matches",
     description="Get a list of matches for a specific team with optional filtering.",
     responses={

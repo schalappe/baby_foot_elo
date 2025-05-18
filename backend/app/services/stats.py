@@ -213,6 +213,11 @@ def get_team_statistics(team_id: int) -> Dict[str, Any]:
                 "average_elo_change": round(recent_avg_elo_change, 2),
                 "elo_changes": recent_elo_changes,
             },
+            # ##: Player information.
+            "player1_id": team.player1_id,
+            "player2_id": team.player2_id,
+            "player1": team.player1,
+            "player2": team.player2,
         }
 
     except TeamNotFoundError:
