@@ -90,6 +90,14 @@ class TeamResponse(TeamBase):
         The date and time when the team was created.
     last_match_at : Optional[datetime]
         The date and time of the team's last match.
+    matches_played : int
+        The number of matches played by the team.
+    wins : int
+        The number of wins by the team.
+    losses : int
+        The number of losses by the team.
+    win_rate : float
+        The win rate of the team.
     player1 : Optional[PlayerResponse]
         Detailed information for player 1 (populated by service layer).
     player2 : Optional[PlayerResponse]
@@ -102,6 +110,10 @@ class TeamResponse(TeamBase):
     global_elo: float = Field(..., ge=0, description="Current global ELO rating of the team")
     created_at: datetime = Field(..., description="Timestamp of team creation")
     last_match_at: Optional[datetime] = Field(default=None, description="Timestamp of the team's last match")
+    matches_played: int = Field(..., ge=0, description="Number of matches played by the team")
+    wins: int = Field(..., ge=0, description="Number of wins by the team")
+    losses: int = Field(..., ge=0, description="Number of losses by the team")
+    win_rate: float = Field(..., ge=0, description="Win rate of the team")
 
     player1: Optional[PlayerResponse] = Field(default=None, description="Details for player 1")
     player2: Optional[PlayerResponse] = Field(default=None, description="Details for player 2")

@@ -13,6 +13,7 @@ from loguru import logger
 from app.db.repositories.elo_history import get_elo_history_by_player_match
 from app.db.repositories.matches import get_matches_by_team
 from app.db.repositories.players import get_player
+from app.db.repositories.stats import get_team_stats
 from app.db.repositories.teams import (
     create_team,
     delete_team,
@@ -72,7 +73,31 @@ def get_team_by_id(team_id: int) -> TeamResponse:
             raise TeamOperationError("Could not retrieve player details for the team.")
 
         # ##: Create and return the team response with player details.
-        return TeamResponse(**team, player1=player1, player2=player2)
+        stats = get_team_stats(team_id)
+        if not stats:
+            logger.warning(f"No stats found for team ID {team_id}")
+            stats = {
+                "matches_played": 0,
+                "wins": 0,
+                "losses": 0,
+                "win_rate": 0.0,
+            }
+
+        response = TeamResponse(
+            team_id=team_id,
+            global_elo=team["global_elo"],
+            created_at=team["created_at"],
+            last_match_at=team["last_match_at"],
+            matches_played=stats["matches_played"],
+            wins=stats["wins"],
+            losses=stats["losses"],
+            win_rate=stats["win_rate"],
+            player1_id=team["player1_id"],
+            player2_id=team["player2_id"],
+            player1=player1,
+            player2=player2,
+        )
+        return response
 
     except TeamNotFoundError:
         raise

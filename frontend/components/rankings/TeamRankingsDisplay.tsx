@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from "@/components/ui/badge"
 import { AlertCircle, Users } from 'lucide-react'; // Added Users icon for teams
 
 interface TeamRankingsDisplayProps {
@@ -81,29 +82,49 @@ export function TeamRankingsDisplay({ teams = [], isLoading, error }: TeamRankin
       {topTeams.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {topTeams.map((team, index) => {
-            let cardClasses = "flex flex-col items-center p-6 shadow-lg border-2"; // Common classes
-            if (index === 0) {
-              cardClasses += " border-yellow-500 scale-105"; // Gold
-            } else if (index === 1) {
-              cardClasses += " border-slate-400"; // Silver
-            } else if (index === 2) {
-              cardClasses += " border-orange-500"; // Bronze
-            }
+            // Card color styling
+            let borderColor = "border-yellow-500";
+            let rankColor = "text-yellow-400";
+            if (index === 1) { borderColor = "border-blue-400"; rankColor = "text-blue-400"; }
+            if (index === 2) { borderColor = "border-rose-500"; rankColor = "text-rose-500"; }
+            let scale = index === 0 ? "scale-105 z-10" : "";
+            // Winrate calculation
+            const matchesPlayed = team.matches_played ?? (team.wins + team.losses);
+            const winrate = matchesPlayed > 0 ? Math.round((team.wins / matchesPlayed) * 100) : 0;
             return (
-            <Card key={team.team_id} className={cardClasses}>
-              <div className="text-3xl font-bold text-primary mb-3">#{team.rank !== undefined ? team.rank : index + 1}</div>
-              <Users className="h-10 w-10 text-muted-foreground mb-3" />
-              <Link href={`/teams/${team.team_id}`} passHref legacyBehavior>
-                <a className='text-center hover:underline focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm'>
-                  <CardTitle className="text-lg font-semibold mb-1">
+              <Card
+                key={team.team_id}
+                className={`relative flex flex-col justify-between p-6 shadow-xl border-2 ${borderColor} ${scale} min-h-[300px]`}
+                style={{ background: 'var(--color-podium-card)' }}
+              >
+                {/* Rank and Winrate Row */}
+                <div className="flex justify-between items-start w-full mb-2">
+                  <span className={`text-4xl font-extrabold ${rankColor} drop-shadow-sm`}>{index + 1}</span>
+                  <Badge className="text-xs font-semibold px-2 py-1 rounded-lg ml-auto">{winrate}%</Badge>
+                </div>
+                {/* Team Name */}
+                <Link href={`/teams/${team.team_id}`} className="block text-center">
+                  <CardTitle className={`text-lg md:text-xl font-bold ${rankColor} mb-1 truncate`}>
                     {getTeamName(team)}
                   </CardTitle>
-                </a>
-              </Link>
-              <p className="text-md text-muted-foreground">{Math.round(team.global_elo)}</p>
-              {/* <p className="text-sm text-muted-foreground">Matches: {team.matches_played}</p> TODO: Add matches_played to Team interface if available */}
-            </Card>
-          )})}
+                </Link>
+                {/* ELO */}
+                <div className="flex flex-col items-center my-2">
+                  <span className={`text-3xl md:text-4xl font-extrabold ${rankColor} tracking-wide`}>{Math.round(team.global_elo)} <span className={`text-lg font-medium ${rankColor}`}>ELO</span></span>
+                </div>
+                {/* W-L and % */}
+                <div className="flex justify-center font-semibold mb-2">
+                  <span style={{color: "var(--win-text)"}}>{team.wins}W</span> &nbsp; - &nbsp; <span style={{color: "var(--lose-text)"}}>{team.losses}L</span>
+                </div>
+                {/* Bottom Row: Matches */}
+                <div className="flex justify-between items-end w-full mt-auto pt-2">
+                  <div className={`text-xs ${rankColor}`}>
+                    <span className={`font-bold ${rankColor}`}>{matchesPlayed}</span> parties
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
         </div>
       )}
 

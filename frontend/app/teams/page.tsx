@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import useSWR, { mutate } from 'swr';
-import { getTeamRankings, Team } from '@/services/teamService'; 
+import { Team } from '@/types/team.types';
+import { getTeamRankings } from '@/services/teamService'; 
 import { TeamRankingsDisplay } from '@/components/rankings/TeamRankingsDisplay';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';

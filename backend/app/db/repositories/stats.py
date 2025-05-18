@@ -9,6 +9,7 @@ from loguru import logger
 
 from app.db.builders import SelectQueryBuilder
 from app.db.repositories.players import get_player
+from app.db.repositories.teams import get_team
 from app.db.session import with_retry
 
 
@@ -76,6 +77,57 @@ def get_player_match_stats(player_id: int) -> Dict[str, Any]:
     }
 
 
+def get_team_match_stats(team_id: int) -> Dict[str, Any]:
+
+    # ##: Get match count via QueryBuilder
+    mc_result = (
+        SelectQueryBuilder("Matches m")
+        .select("COUNT(DISTINCT m.match_id)")
+        .join("Teams tw", "m.winner_team_id = tw.team_id")
+        .join("Teams tl", "m.loser_team_id = tl.team_id")
+        .where("tw.team_id = ? OR tl.team_id = ?", team_id, team_id)
+        .execute(fetch_all=False)
+    )
+    match_count = mc_result[0] if mc_result else 0
+
+    # ##: Get win count via QueryBuilder
+    wc_result = (
+        SelectQueryBuilder("Matches m")
+        .select("COUNT(*)")
+        .join("Teams t", "m.winner_team_id = t.team_id")
+        .where("t.team_id = ?", team_id)
+        .execute(fetch_all=False)
+    )
+    win_count = wc_result[0] if wc_result else 0
+
+    # ##: Get loss count via QueryBuilder
+    lc_result = (
+        SelectQueryBuilder("Matches m")
+        .select("COUNT(*)")
+        .join("Teams t", "m.loser_team_id = t.team_id")
+        .where("t.team_id = ?", team_id)
+        .execute(fetch_all=False)
+    )
+    loss_count = lc_result[0] if lc_result else 0
+
+    # ##: Get the team's last match date using SelectQueryBuilder.
+    last_match_query_result = (
+        SelectQueryBuilder("Matches m")
+        .select("MAX(m.played_at)")
+        .join("Teams tw", "m.winner_team_id = tw.team_id")
+        .join("Teams tl", "m.loser_team_id = tl.team_id")
+        .where("tw.team_id = ? OR tl.team_id = ?", team_id, team_id)
+        .execute(fetch_all=False)
+    )
+
+    return {
+        "matches_played": match_count,
+        "wins": win_count,
+        "losses": loss_count,
+        "last_match_at": last_match_query_result[0] if last_match_query_result else None,
+    }
+
+
 @with_retry(max_retries=3, retry_delay=0.5)
 def get_player_stats(player_id: int) -> Optional[Dict[str, Any]]:
     """
@@ -110,4 +162,27 @@ def get_player_stats(player_id: int) -> Optional[Dict[str, Any]]:
         }
     except Exception as e:
         logger.error("Failed to get player stats for ID %d: %s", player_id, e)
+        return None
+
+
+def get_team_stats(team_id: int) -> Optional[Dict[str, Any]]:
+    try:
+        # ##: Get team details.
+        team = get_team(team_id)
+        if not team:
+            return None
+        match_stats = get_team_match_stats(team_id)
+
+        # ##: Calculate win rate.
+        win_rate = (
+            (match_stats["wins"] / match_stats["matches_played"] * 100) if match_stats["matches_played"] > 0 else 0
+        )
+
+        return {
+            **team,
+            **match_stats,
+            "win_rate": win_rate,
+        }
+    except Exception as e:
+        logger.error("Failed to get team stats for ID %d: %s", team_id, e)
         return None

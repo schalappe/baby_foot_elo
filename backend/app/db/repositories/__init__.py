@@ -26,7 +26,7 @@ from app.db.repositories.players import (
     search_players,
     update_player,
 )
-from app.db.repositories.stats import get_player_stats
+from app.db.repositories.stats import get_player_stats, get_team_stats
 from app.db.repositories.teams import (
     batch_insert_teams,
     create_team,
@@ -66,4 +66,5 @@ __all__ = [
     "get_elo_history_by_player_match",
     # ##: Stats.
     "get_player_stats",
+    "get_team_stats",
 ]
