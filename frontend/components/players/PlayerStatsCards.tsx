@@ -41,7 +41,7 @@ const PlayerStatsCards: React.FC<PlayerStatsCardsProps> = ({ player }) => {
                   </span>
                 </div>
                 <div className="text-lg font-medium" style={{ color: sum >= 0 ? 'var(--win-text)' : 'var(--lose-text)' }}>
-                  Sur les 5 derniers matchs
+                  Sur les 5 derniers résultats
                 </div>
               </>
             );
@@ -59,7 +59,7 @@ const PlayerStatsCards: React.FC<PlayerStatsCardsProps> = ({ player }) => {
                 <TrendingUpIcon className="w-4 h-4 text-muted-foreground" />
                 <span className="text-muted-foreground">Stable</span>
               </div>
-              <div className="text-lg text-muted-foreground">Sur les 5 derniers matchs</div>
+              <div className="text-lg text-muted-foreground">Sur les 5 derniers résultats</div>
             </>
           )}
         </CardContent>
