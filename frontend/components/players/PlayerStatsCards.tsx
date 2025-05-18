@@ -1,5 +1,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { TrendingUpIcon, TrendingDownIcon } from 'lucide-react';
+
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { LineChart, Line, YAxis, CartesianGrid } from 'recharts';
 import { ResponsiveContainer, PieChart, Pie, Label } from 'recharts';
@@ -14,22 +17,50 @@ const PlayerStatsCards: React.FC<PlayerStatsCardsProps> = ({ player }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* ELO Card */}
-      <Card className="bg-card text-card-foreground shadow-lg rounded-xl overflow-hidden">
-        <CardContent className="flex flex-col items-center justify-center p-6 h-full text-center">
-          <div className="text-5xl sm:text-6xl font-bold">{player.global_elo}</div>
-          <div className="text-sm text-muted-foreground mb-2">ELO GLOBAL</div>
-          {player.recent && player.recent.elo_changes && player.recent.elo_changes.length > 0 ? (
-            (() => {
-              const lastChange = player.recent.elo_changes[0];
-              return (
-                <div className={`text-lg font-medium ${lastChange >= 0 ? '' : ''}`} style={{ color: lastChange >= 0 ? 'var(--win-text)' : 'var(--lose-text)' }}>
-                  {lastChange >= 0 ? '+' : ''}
-                  {lastChange.toFixed(0)} ELO (dernier match)
+      <Card className="bg-card text-card-foreground shadow-lg rounded-xl overflow-hidden relative">
+        <CardContent className="flex flex-col items-center justify-center p-6 h-full text-left">
+          {/* Top right badge with trending icon and percent */}
+          {player.recent && player.recent.elo_changes && player.recent.elo_changes.length > 0 ? (() => {
+            const changes = player.recent.elo_changes.slice(0, 5);
+            const sum = changes.reduce((acc: number, val: number) => acc + val, 0);
+            const trendingUp = sum >= 0;
+            return (
+              <>
+                <div className="absolute top-4 right-4">
+                  <Badge variant="outline" className="flex items-center gap-1 px-2 py-1 text-base">
+                    {trendingUp ? <TrendingUpIcon className="w-4 h-4 text-green-500" /> : <TrendingDownIcon className="w-4 h-4 text-red-500" />}
+                    {sum !== null ? `${trendingUp ? '+' : ''}${sum.toFixed(0)}` : (trendingUp ? '+0' : '-0')}
+                  </Badge>
                 </div>
-              );
-            })()
-          ) : (
-            <div className="text-lg text-muted-foreground">- ELO (dernier match)</div>
+                <div className="text-4xl sm:text-5xl font-bold mt-2 mb-1">{player.global_elo}</div>
+                <div className="text-sm text-muted-foreground mb-4">ELO GLOBAL</div>
+                <div className="text-base font-medium mb-1 flex items-center gap-1">
+                  {trendingUp ? <TrendingUpIcon className="w-4 h-4 text-green-500" /> : <TrendingDownIcon className="w-4 h-4 text-red-500" />}
+                  <span className={trendingUp ? 'text-green-500' : 'text-red-500'}>
+                    Tendance à la {trendingUp ? 'hausse' : 'baisse'}
+                  </span>
+                </div>
+                <div className="text-lg font-medium" style={{ color: sum >= 0 ? 'var(--win-text)' : 'var(--lose-text)' }}>
+                  Sur les 5 derniers matchs
+                </div>
+              </>
+            );
+          })() : (
+            <>
+              <div className="absolute top-4 right-4">
+                <Badge variant="outline" className="flex items-center gap-1 px-2 py-1 text-base">
+                  <TrendingUpIcon className="w-4 h-4 text-muted-foreground" />
+                  +0
+                </Badge>
+              </div>
+              <div className="text-4xl sm:text-5xl font-bold mt-2 mb-1">{player.global_elo}</div>
+              <div className="text-sm text-muted-foreground mb-4">ELO GLOBAL</div>
+              <div className="text-base font-medium mb-1 flex items-center gap-1">
+                <TrendingUpIcon className="w-4 h-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Stable</span>
+              </div>
+              <div className="text-lg text-muted-foreground">Sur les 5 derniers matchs</div>
+            </>
           )}
         </CardContent>
       </Card>
