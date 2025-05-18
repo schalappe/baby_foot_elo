@@ -1,7 +1,6 @@
 // frontend/services/teamService.ts
 import axios from 'axios';
-import { Team } from '../types/index';
-import { TeamStatistics } from '../types/team.types';
+import { Team, TeamStatistics, TeamMatchWithElo } from '@/types/team.types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -48,6 +47,35 @@ export const getTeamStatistics = async (team_id: number): Promise<TeamStatistics
     return response.data;
   } catch (error) {
     console.error(`Échec de la récupération des statistiques pour l'équipe ${team_id}:`, error);
+    throw error;
+  }
+};
+
+// Fetch team matches (paginated, with ELO change info)
+/**
+ * Fetch matches for a specific team by team ID, with pagination.
+ *
+ * Calls the backend endpoint `/teams/{team_id}/matches?skip=&limit=` and returns a TeamMatchWithElo[] array.
+ *
+ * @param teamId - The ID of the team to fetch matches for
+ * @param params - Optional pagination parameters: skip (number), limit (number)
+ * @returns Promise<TeamMatchWithElo[]> - Array of matches with ELO info
+ */
+
+export const getTeamMatches = async (
+  teamId: number,
+  params?: { skip?: number; limit?: number }
+): Promise<TeamMatchWithElo[]> => {
+  try {
+    const response = await axios.get<TeamMatchWithElo[]>(`${API_URL}/teams/${teamId}/matches`, {
+      params: {
+        skip: params?.skip,
+        limit: params?.limit,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch matches for team with ID ${teamId}:`, error);
     throw error;
   }
 };

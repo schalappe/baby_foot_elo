@@ -13,6 +13,11 @@ export interface Team {
   rank?: number | null;
 }
 
+// Represents a match with ELO change info for a team, as returned by /teams/{team_id}/matches
+import type { BackendMatchWithEloResponse } from './match.types';
+
+export type TeamMatchWithElo = BackendMatchWithEloResponse;
+
 /**
  * Team statistics structure returned from the backend statistics endpoint.
  *
