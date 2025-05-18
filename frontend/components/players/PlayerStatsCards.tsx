@@ -28,15 +28,15 @@ const PlayerStatsCards: React.FC<PlayerStatsCardsProps> = ({ player }) => {
               <>
                 <div className="absolute top-4 right-4">
                   <Badge variant="outline" className="flex items-center gap-1 px-2 py-1 text-base">
-                    {trendingUp ? <TrendingUpIcon className="w-4 h-4 text-green-500" /> : <TrendingDownIcon className="w-4 h-4 text-red-500" />}
+                    {trendingUp ? <TrendingUpIcon style={{ color: 'var(--win-text)' }} /> : <TrendingDownIcon style={{ color: 'var(--lose-text)' }} />}
                     {sum !== null ? `${trendingUp ? '+' : ''}${sum.toFixed(0)}` : (trendingUp ? '+0' : '-0')}
                   </Badge>
                 </div>
                 <div className="text-4xl sm:text-5xl font-bold mt-2 mb-1">{player.global_elo}</div>
                 <div className="text-sm text-muted-foreground mb-4">ELO GLOBAL</div>
                 <div className="text-base font-medium mb-1 flex items-center gap-1">
-                  {trendingUp ? <TrendingUpIcon className="w-4 h-4 text-green-500" /> : <TrendingDownIcon className="w-4 h-4 text-red-500" />}
-                  <span className={trendingUp ? 'text-green-500' : 'text-red-500'}>
+                  {trendingUp ? <TrendingUpIcon style={{ color: 'var(--win-text)' }} /> : <TrendingDownIcon style={{ color: 'var(--lose-text)' }} />}
+                  <span style={{ color: trendingUp ? 'var(--win-text)' : 'var(--lose-text)' }}>
                     Tendance à la {trendingUp ? 'hausse' : 'baisse'}
                   </span>
                 </div>

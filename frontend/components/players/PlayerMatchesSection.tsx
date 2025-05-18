@@ -1,4 +1,6 @@
 import React from 'react';
+import { TrophyIcon, SkullIcon, PartyPopperIcon, CircleXIcon } from 'lucide-react';
+import Link from 'next/link';
 import {
   Pagination,
   PaginationContent,
@@ -9,6 +11,7 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination';
 import { BackendMatchWithEloResponse } from '@/types/match.types';
+
 
 interface PlayerMatchesSectionProps {
   matches: BackendMatchWithEloResponse[];
@@ -66,8 +69,8 @@ const PlayerMatchesSection: React.FC<PlayerMatchesSectionProps> = ({
               const eloChange = match.elo_changes[playerId]?.difference ?? 0;
               const isFanny = match.is_fanny;
               const cardStyle = isWinner
-                ? { background: 'var(--match-win-bg)', borderColor: 'var(--match-win-border)' }
-                : { background: 'var(--match-lose-bg)', borderColor: 'var(--match-lose-border)' };
+                ? { background: 'var(--secondary)', borderColor: 'var(--match-win-border)' }
+                : { background: 'var(--secondary)', borderColor: 'var(--match-lose-border)' };
               return (
                 <div
                   key={match.match_id}
@@ -77,39 +80,46 @@ const PlayerMatchesSection: React.FC<PlayerMatchesSectionProps> = ({
                   <div className="flex flex-row items-center justify-between gap-2 px-4 py-3">
                     {/* ELO Change */}
                     <div className="flex flex-col items-center min-w-[70px]">
-                      <span className="font-extrabold text-3xl leading-none" style={{ color: eloChange >= 0 ? 'var(--win-text)' : 'var(--lose-text)' }}>{eloChange > 0 ? '+' : ''}{eloChange}</span>
+                      <span className="font-extrabold text-3xl leading-none" style={{ color: eloChange >= 0 ? 'var(--match-win-border)' : 'var(--match-lose-border)' }}>{eloChange > 0 ? '+' : ''}{eloChange}</span>
                     </div>
                     {/* Teams */}
                     <div className="flex flex-1 flex-col gap-1 items-center">
                       <div className="flex items-center gap-2 justify-center">
-                        {[playerTeam.player1, playerTeam.player2].map((p) => (
-                          <span
-                            key={p.player_id}
-                            className={`rounded-full px-3 py-1 font-semibold text-sm transition-all duration-100 ${p.player_id === playerId ? 'bg-white text-black shadow font-bold border border-gray-200' : 'bg-neutral-800 text-neutral-200'}`}
+                        {/* Player's team clickable */}
+                        <Link
+                          href={`/teams/${playerTeam.team_id}`}
+                          className="flex items-center gap-2 group"
+                          prefetch={false}
+                        >
+                          <span 
+                            className="px-4 py-2 text-lg font-semibold group-hover:underline" 
+                            style={{ color: isWinner ? 'var(--match-win-border)' : 'var(--match-lose-border)' }}
                           >
-                            {p.name}
+                            {playerTeam.player1.name} & {playerTeam.player2.name}
                           </span>
-                        ))}
+                        </Link>
                         <span className="mx-2 text-lg font-bold" style={{ color: 'var(--primary)'}}>VS</span>
-                        {[opponentTeam.player1, opponentTeam.player2].map((p) => (
-                          <span
-                            key={p.player_id}
-                            className="rounded-full px-3 py-1 font-semibold text-sm bg-neutral-800 text-neutral-200"
+                        {/* Opponent team clickable */}
+                        <Link
+                          href={`/teams/${opponentTeam.team_id}`}
+                          className="flex items-center gap-2 group"
+                          prefetch={false}
+                        >
+                          <span 
+                            className="px-4 py-2 text-lg font-semibold group-hover:underline"
+                            style={{ color: isWinner ? 'var(--match-lose-border)' : 'var(--match-win-border)' }}
                           >
-                            {p.name}
+                            {opponentTeam.player1.name} & {opponentTeam.player2.name}
                           </span>
-                        ))}
+                        </Link>
                       </div>
                     </div>
                     {/* Outcome: Only show Fanny icon if relevant */}
                     <div className="flex flex-col items-end min-w-[90px]">
-                      {isFanny && (
-                        <img
-                          src={isWinner ? '/icons/fanny-victory.png' : '/icons/fanny-defeat.png'}
-                          alt="Fanny icon"
-                          className="w-12 h-12 rounded-full"
-                        />
-                      )}
+                      {isFanny && !isWinner && <SkullIcon className="w-8 h-8" style={{ color: 'var(--match-lose-border)' }}/>}
+                      {isFanny && isWinner && <PartyPopperIcon className="w-8 h-8" style={{ color: 'var(--match-win-border)' }}/>}
+                      {!isFanny && isWinner && <TrophyIcon className="w-8 h-8" style={{ color: 'var(--match-win-border)' }}/>}
+                      {!isFanny && !isWinner && <CircleXIcon className="w-8 h-8" style={{ color: 'var(--match-lose-border)' }}/>}
                     </div>
                   </div>
                 </div>
