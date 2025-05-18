@@ -9,7 +9,7 @@ import PlayerMatchesSection from './PlayerMatchesSection';
 import PlayerLoadingSkeleton from './PlayerLoadingSkeleton';
 import PlayerErrorAlert from './PlayerErrorAlert';
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 10;
 
 interface PlayerDetailProps {
   playerId: number;

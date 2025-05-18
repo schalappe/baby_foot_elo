@@ -1,4 +1,13 @@
 import React from 'react';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { BackendMatchWithEloResponse } from '@/types/match.types';
 
 interface PlayerMatchesSectionProps {
@@ -111,46 +120,110 @@ const PlayerMatchesSection: React.FC<PlayerMatchesSectionProps> = ({
       ))}
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 border-t mt-8">
-          <div className="text-sm text-muted-foreground">
+        <div className="flex flex-col gap-2 px-4 py-3 border-t mt-8">
+          <div className="text-sm text-muted-foreground mb-1">
             Affichage de <span className="font-medium">{Math.min((currentPage - 1) * 5 + 1, totalMatches)}</span> à <span className="font-medium">{Math.min(currentPage * 5, totalMatches)}</span> sur <span className="font-medium">{totalMatches}</span> matchs
           </div>
-          <div className="flex gap-2">
-            <button
-              className="px-2 py-1 border rounded disabled:opacity-50"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              {'<'}
-            </button>
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              let pageNum;
-              if (currentPage <= 3) {
-                pageNum = i + 1;
-              } else if (currentPage >= totalPages - 2) {
-                pageNum = totalPages - 4 + i;
-              } else {
-                pageNum = currentPage - 2 + i;
-              }
-              if (pageNum < 1 || pageNum > totalPages) return null;
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => handlePageChange(pageNum)}
-                  className={`px-2 py-1 border rounded ${currentPage === pageNum ? 'bg-primary' : ''}`}
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  aria-label="Page précédente"
+                  aria-disabled={currentPage === 1}
+                  onClick={e => {
+                    e.preventDefault();
+                    if (currentPage > 1) handlePageChange(currentPage - 1);
+                  }}
                 >
-                  {pageNum}
-                </button>
-              );
-            })}
-            <button
-              className="px-2 py-1 border rounded disabled:opacity-50"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              {'>'}
-            </button>
-          </div>
+                </PaginationPrevious>
+              </PaginationItem>
+              {/* Page numbers logic with ellipsis */}
+              {(() => {
+                const items = [];
+                // Show first page
+                if (currentPage > 3) {
+                  items.push(
+                    <PaginationItem key={1}>
+                      <PaginationLink
+                        href="#"
+                        isActive={currentPage === 1}
+                        onClick={e => {
+                          e.preventDefault();
+                          handlePageChange(1);
+                        }}
+                      >
+                        1
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                  if (currentPage > 4) {
+                    items.push(
+                      <PaginationItem key="start-ellipsis">
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    );
+                  }
+                }
+                // Main page numbers
+                const start = Math.max(1, currentPage - 2);
+                const end = Math.min(totalPages, currentPage + 2);
+                for (let page = start; page <= end; page++) {
+                  items.push(
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        href="#"
+                        isActive={currentPage === page}
+                        onClick={e => {
+                          e.preventDefault();
+                          handlePageChange(page);
+                        }}
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                }
+                // Show end ellipsis and last page
+                if (currentPage < totalPages - 2) {
+                  if (currentPage < totalPages - 3) {
+                    items.push(
+                      <PaginationItem key="end-ellipsis">
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    );
+                  }
+                  items.push(
+                    <PaginationItem key={totalPages}>
+                      <PaginationLink
+                        href="#"
+                        isActive={currentPage === totalPages}
+                        onClick={e => {
+                          e.preventDefault();
+                          handlePageChange(totalPages);
+                        }}
+                      >
+                        {totalPages}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                }
+                return items;
+              })()}
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  aria-label="Page suivante"
+                  aria-disabled={currentPage === totalPages}
+                  onClick={e => {
+                    e.preventDefault();
+                    if (currentPage < totalPages) handlePageChange(currentPage + 1);
+                  }}
+                >
+                </PaginationNext>
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       )}
     </div>
