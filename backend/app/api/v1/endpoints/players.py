@@ -36,6 +36,7 @@ from app.models.elo_history import EloHistoryResponse
 from app.models.match import MatchWithEloResponse
 from app.models.player import PlayerCreate, PlayerResponse, PlayerUpdate
 from app.services import players as player_service
+from app.services import stats as stats_service
 from app.utils.error_handlers import ErrorResponse
 
 router = APIRouter(
@@ -544,7 +545,7 @@ async def get_player_statistics_endpoint(
         If the player is not found or an error occurs.
     """
     try:
-        statistics = player_service.get_player_statistics(player_id=player_id)
+        statistics = stats_service.get_player_statistics(player_id=player_id)
         return statistics
     except PlayerNotFoundError as e:
         logger.info(f"Player not found when fetching statistics, ID {player_id}: {e.detail}")

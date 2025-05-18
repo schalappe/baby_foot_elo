@@ -33,6 +33,7 @@ from app.exceptions.teams import (
 )
 from app.models.match import MatchResponse
 from app.models.team import TeamCreate, TeamResponse, TeamUpdate
+from app.services import stats as stats_service
 from app.services import teams as teams_service
 from app.utils.error_handlers import ErrorResponse
 
@@ -329,7 +330,7 @@ async def get_team_statistics_endpoint(
         If the team is not found (404 status code) or other errors occur.
     """
     try:
-        return teams_service.get_team_statistics(team_id=team_id)
+        return stats_service.get_team_statistics(team_id=team_id)
 
     except TeamNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))

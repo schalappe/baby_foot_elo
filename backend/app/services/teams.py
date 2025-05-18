@@ -6,14 +6,11 @@ It acts as an intermediary between the API routes and the database repositories.
 
 from datetime import datetime
 from statistics import mean
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from loguru import logger
 
-from app.db.repositories.elo_history import (
-    get_elo_history_by_match,
-    get_elo_history_by_player_match,
-)
+from app.db.repositories.elo_history import get_elo_history_by_player_match
 from app.db.repositories.matches import get_matches_by_team
 from app.db.repositories.players import get_player
 from app.db.repositories.teams import (
@@ -455,96 +452,3 @@ def get_active_team_rankings(limit: int = 100, days_since_last_match: Optional[i
     except Exception as exc:
         logger.error(f"Error retrieving team rankings: {exc}")
         raise TeamOperationError("Failed to retrieve team rankings") from exc
-
-
-def get_team_statistics(team_id: int) -> Dict[str, Any]:
-    """
-    Retrieve statistics for a specific team.
-
-    Parameters
-    ----------
-    team_id : int
-        The ID of the team.
-
-
-    Returns
-    -------
-    Dict[str, Any]
-        A dictionary containing the team's statistics.
-    """
-    try:
-        # ##: Get team details.
-        team = get_team_by_id(team_id)
-
-        # ##: Get team matches.
-        matches = get_matches_by_team(team_id)
-
-        # ##: Calculate statistics.
-        total_matches = len(matches)
-        wins = sum(1 for match in matches if match["winner_team_id"] == team_id)
-        losses = total_matches - wins
-        win_rate = (wins / total_matches * 100) if total_matches > 0 else 0
-
-        # ##: Get ELO history.
-        elo_differences = []
-        elo_values = []
-
-        for match in matches:
-            elo_changes = get_team_elo_history(team, match["match_id"])
-            if elo_changes:
-                elo_differences.append(elo_changes["difference"])
-                elo_values.append(elo_changes["new_elo"])
-
-        # ##: Get recent matches
-        recent_wins = 0
-        recent_losses = 0
-        recent_elo_changes = []
-
-        if elo_differences:
-            for record in elo_differences[:10]:
-                recent_elo_changes.append(record)
-                if record > 0:
-                    recent_wins += 1
-                elif record < 0:
-                    recent_losses += 1
-
-        # ##: Calculate average ELO change.
-        avg_elo_change = sum(elo_differences) / len(elo_differences) if elo_differences else 0
-        highest_elo = max(elo_values) if elo_values else team.global_elo
-        lowest_elo = min(elo_values) if elo_values else team.global_elo
-
-        # ##: Calculate recent stats
-        recent_matches_played = recent_wins + recent_losses
-        recent_win_rate = (recent_wins / recent_matches_played * 100) if recent_matches_played > 0 else 0
-        recent_avg_elo_change = sum(recent_elo_changes) / len(recent_elo_changes) if recent_elo_changes else 0
-
-        return {
-            "team_id": team_id,
-            "global_elo": team.global_elo,
-            "total_matches": total_matches,
-            "wins": wins,
-            "losses": losses,
-            "win_rate": round(win_rate, 2),
-            "elo_difference": elo_differences,
-            "elo_values": elo_values,
-            "average_elo_change": round(avg_elo_change, 2),
-            "highest_elo": highest_elo,
-            "lowest_elo": lowest_elo,
-            "created_at": team.created_at,
-            "last_match_at": team.last_match_at,
-            # ##: Recent performance (last 10 matches).
-            "recent": {
-                "matches_played": recent_matches_played,
-                "wins": recent_wins,
-                "losses": recent_losses,
-                "win_rate": round(recent_win_rate, 2),
-                "average_elo_change": round(recent_avg_elo_change, 2),
-                "elo_changes": recent_elo_changes,
-            },
-        }
-
-    except TeamNotFoundError:
-        raise
-    except Exception as exc:
-        logger.error(f"Error retrieving statistics for team {team_id}: {exc}")
-        raise TeamOperationError(f"Failed to retrieve statistics for team {team_id}") from exc
