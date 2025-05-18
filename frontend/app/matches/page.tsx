@@ -3,8 +3,10 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link'; 
-import { Match, getMatches, MatchPlayerInfo, MatchTeamInfo } from '@/services/matchService';
-import { Player, getPlayers as getPlayerList } from '@/services/playerService'; 
+import { Match, MatchPlayerInfo, MatchTeamInfo } from '@/types/match.types';
+import { Player } from '@/types/player.types';
+import { getMatches } from '@/services/matchService';
+import { getPlayers as getPlayerList } from '@/services/playerService'; 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -294,7 +296,6 @@ const MatchHistoryPage = () => {
                 <TableHead className="text-center">VS</TableHead>
                 <TableHead>Équipe</TableHead>
                 <TableHead className="text-center">Notes</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -396,13 +397,6 @@ const MatchHistoryPage = () => {
                             </span>
                           </div>
                         )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Link href={`/matches/${match.match_id}`} passHref>
-                          <Button variant="outline" size="sm">
-                            <Eye className="mr-2 h-4 w-4" /> Voir les détails
-                          </Button>
-                        </Link>
                       </TableCell>
                     </TableRow>
                   </React.Fragment>

@@ -14,10 +14,10 @@ export const getMatches = async (): Promise<Match[]> => {
   }
 };
 
-export const getMatchById = async (id: string): Promise<Match | undefined> => {
+export const getMatchById = async (id: string): Promise<BackendMatchWithEloResponse | undefined> => {
   try {
     const response = await axios.get(`${API_URL}/matches/${id}`);
-    return response.data as Match;
+    return response.data as BackendMatchWithEloResponse;
   } catch (error) {
     console.error(`Error fetching match with ID ${id}:`, error);
     return undefined;
