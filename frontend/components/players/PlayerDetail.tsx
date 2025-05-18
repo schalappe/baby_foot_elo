@@ -6,10 +6,12 @@ import { getPlayerStats, getPlayerMatches } from '@/services/playerService';
 import { BackendMatchWithEloResponse } from '@/types/match.types';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { ChartTooltipContent } from '@/components/ui/chart';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from "@/components/ui/skeleton";
-import { type ChartConfig, ChartContainer } from "@/components/ui/chart";
-import { PieChart, Pie, Label, ResponsiveContainer } from 'recharts';
+import { type ChartConfig, ChartContainer, ChartTooltip } from "@/components/ui/chart";
+import * as RechartsPrimitive from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, PieChart, Pie, Label, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
@@ -177,7 +179,6 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
   }
 
 
-
   return (
     <div className="w-full max-w-6xl mx-auto p-4 text-foreground space-y-8">
       <h1 className="text-4xl sm:text-5xl font-bold text-center">{player.name}</h1>
@@ -269,21 +270,62 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
         </Card>
       </div>
       
-      {/* Matches Section */}
-      <div className="mt-12">
-        <h2 className="text-2xl font-bold mb-6 text-center">Historique des matchs</h2>
-        {matchesLoading ? (
-          <div className="p-6 space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <Skeleton key={i} className="h-20 w-full rounded-xl" />
-            ))}
-          </div>
-        ) : matches.length === 0 ? (
-          <div className="p-6 text-center text-muted-foreground">
-            Aucun match trouvé pour ce joueur.
-          </div>
-        ) : (
-          <div className="space-y-8">
+      {/* Stats & ELO Evolution Card + Matches Section Layout */}
+      <div className="mt-12 flex flex-col lg:flex-row gap-8">
+        {/* --- ELO Evolution & Stats Card --- */}
+        <div className="lg:w-1/3 w-full">
+          <Card className="bg-gradient-to-br text-white shadow-xl rounded-2xl border-2 p-0 overflow-hidden">
+            <CardHeader className="flex flex-col items-center gap-2 pt-6 pb-2">
+            <CardTitle>Évolution ELO</CardTitle>
+            </CardHeader>
+            <CardContent className="pb-6 pt-0 px-2">
+              {/* ELO Evolution Line Chart */}
+              {player?.elo_values && player.elo_values.length > 1 ? (
+                <ChartContainer config={{ elo: { label: 'ELO', color: '#38bdf8' } }} className="w-full h-40">
+                  <LineChart data={player.elo_values.reverse().map((elo, idx) => ({ match: idx + 1, elo }))} margin={{ top: 0, right: 16, left: 12, bottom: 0 }}>
+                    <CartesianGrid vertical={false} />
+                    <YAxis domain={['auto', 'auto']} tickMargin={8} axisLine={false} tickLine={false} />
+                    <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                    <Line type="monotone" dataKey="elo" stroke="#38bdf8" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ChartContainer>
+              ) : (
+                <div className="h-40 flex items-center justify-center text-muted-foreground">Pas d'historique ELO</div>
+              )}
+              {/* Stats summary below chart */}
+              <div className="flex justify-between mt-4 px-2">
+                <div className="flex flex-col items-center">
+                  <span className="text-lg font-bold text-green-400">{player?.wins ?? 0}</span>
+                  <span className="text-xs text-muted-foreground">Victoires</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-lg font-bold text-red-400">{player?.losses ?? 0}</span>
+                  <span className="text-xs text-muted-foreground">Défaites</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-lg font-bold text-blue-300">{player ? `${Math.round((player.wins/(player.wins+player.losses||1))*100)}%` : '--'}</span>
+                  <span className="text-xs text-muted-foreground">Winrate</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* --- Matches Section --- */}
+        <div className="flex-1 w-full">
+          <h2 className="text-2xl font-bold mb-6 text-center">Historique des matchs</h2>
+          {matchesLoading ? (
+            <div className="p-6 space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-20 w-full rounded-xl" />
+              ))}
+            </div>
+          ) : matches.length === 0 ? (
+            <div className="p-6 text-center text-muted-foreground">
+              Aucun match trouvé pour ce joueur.
+            </div>
+          ) : (
+            <div className="space-y-8">
             {/* Group matches by date */}
             {Object.entries(
               matches.reduce((acc, match) => {
@@ -304,120 +346,115 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
                     const eloChange = match.elo_changes[playerId]?.difference ?? 0;
                     const isFanny = match.is_fanny;
                     // Cooler, less vivid color palette for a more pleasant look
-                    const cardColor = isWinner
-                      ? 'bg-teal-900/30 border-teal-700'
-                : 'bg-red-800/30 border-red-800';
-              return (
-                <Card
-                  key={match.match_id}
-                  className={`relative border-2 ${cardColor} shadow-lg rounded-xl overflow-hidden transition-colors min-h-[72px] w-full`}
-                >
-                  <CardContent className="flex flex-row items-center justify-between gap-2 px-4 py-3">
-                    {/* ELO Change */}
-                    <div className="flex flex-col items-center min-w-[70px]">
-                      <span className={`font-extrabold text-3xl leading-none ${eloChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>{eloChange > 0 ? '+' : ''}{eloChange}</span>
-                      <span className="text-[10px] text-muted-foreground -mt-1">ELO</span>
-                    </div>
-                    {/* Teams */}
-                    <div className="flex flex-1 flex-col gap-1 items-center">
-                      <div className="flex items-center gap-2 justify-center">
-                        {[playerTeam.player1, playerTeam.player2].map((p) => (
-                          <span
-                            key={p.player_id}
-                            className={`rounded-full px-3 py-1 font-semibold text-sm transition-all duration-100 ${p.player_id === playerId ? 'bg-white text-black shadow font-bold border border-gray-200' : 'bg-neutral-800 text-neutral-200'}`}
-                          >
-                            {p.name}
-                          </span>
-                        ))}
-                        <span className="mx-2 text-lg font-bold text-neutral-300">VS</span>
-                        {[opponentTeam.player1, opponentTeam.player2].map((p) => (
-                          <span
-                            key={p.player_id}
-                            className="rounded-full px-3 py-1 font-semibold text-sm bg-neutral-800 text-neutral-200"
-                          >
-                            {p.name}
-                          </span>
-                        ))}
+                    const cardColor = isWinner ? 'bg-teal-900/30 border-teal-700' : 'bg-red-800/30 border-red-800';
+                    return (
+                      <Card key={match.match_id} className={`relative border-2 ${cardColor} shadow-lg rounded-xl overflow-hidden transition-colors min-h-[72px] w-full`}>
+                        <CardContent className="flex flex-row items-center justify-between gap-2 px-4 py-3">
+                          {/* ELO Change */}
+                          <div className="flex flex-col items-center min-w-[70px]">
+                        <span className={`font-extrabold text-3xl leading-none ${eloChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>{eloChange > 0 ? '+' : ''}{eloChange}</span>
                       </div>
-                    </div>
-                    {/* Outcome: Only show Fanny icon if relevant */}
-                    <div className="flex flex-col items-end min-w-[90px]">
-                      {isFanny && (
-                        <Avatar className="w-15 h-15">
-                          <AvatarImage
-                            src={isWinner ? '/icons/fanny-victory.png' : '/icons/fanny-defeat.png'}
-                            alt="Fanny icon"
-                          />
-                          <AvatarFallback>F</AvatarFallback>
-                        </Avatar>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                      {/* Teams */}
+                      <div className="flex flex-1 flex-col gap-1 items-center">
+                        <div className="flex items-center gap-2 justify-center">
+                          {[playerTeam.player1, playerTeam.player2].map((p) => (
+                            <span
+                              key={p.player_id}
+                              className={`rounded-full px-3 py-1 font-semibold text-sm transition-all duration-100 ${p.player_id === playerId ? 'bg-white text-black shadow font-bold border border-gray-200' : 'bg-neutral-800 text-neutral-200'}`}
+                            >
+                              {p.name}
+                            </span>
+                          ))}
+                          <span className="mx-2 text-lg font-bold text-neutral-300">VS</span>
+                          {[opponentTeam.player1, opponentTeam.player2].map((p) => (
+                            <span
+                              key={p.player_id}
+                              className="rounded-full px-3 py-1 font-semibold text-sm bg-neutral-800 text-neutral-200"
+                            >
+                              {p.name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      {/* Outcome: Only show Fanny icon if relevant */}
+                      <div className="flex flex-col items-end min-w-[90px]">
+                        {isFanny && (
+                          <Avatar className="w-15 h-15">
+                            <AvatarImage
+                              src={isWinner ? '/icons/fanny-victory.png' : '/icons/fanny-defeat.png'}
+                              alt="Fanny icon"
+                            />
+                            <AvatarFallback>F</AvatarFallback>
+                          </Avatar>
+                        )}
+                      </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t mt-8">
+                <div className="text-sm text-muted-foreground">
+                  Affichage de <span className="font-medium">{Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, totalMatches)}</span> à <span className="font-medium">{Math.min(currentPage * ITEMS_PER_PAGE, totalMatches)}</span> sur <span className="font-medium">{totalMatches}</span> matchs
+                </div>
+                <Pagination className="m-0">
+                  <PaginationContent>
+                <PaginationItem>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                </PaginationItem>
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  if (pageNum < 1 || pageNum > totalPages) return null;
+                  return (
+                    <PaginationItem key={pageNum}>
+                      <PaginationLink
+                        isActive={currentPage === pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className="cursor-pointer"
+                      >
+                        {pageNum}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                })}
+                <PaginationItem>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+            </div>
+          )}
         </div>
-      ))}
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 border-t mt-8">
-          <div className="text-sm text-muted-foreground">
-            Affichage de <span className="font-medium">{Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, totalMatches)}</span> à <span className="font-medium">{Math.min(currentPage * ITEMS_PER_PAGE, totalMatches)}</span> sur <span className="font-medium">{totalMatches}</span> matchs
-          </div>
-          <Pagination className="m-0">
-            <PaginationContent>
-              <PaginationItem>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-              </PaginationItem>
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum;
-                if (currentPage <= 3) {
-                  pageNum = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
-                }
-                if (pageNum < 1 || pageNum > totalPages) return null;
-                return (
-                  <PaginationItem key={pageNum}>
-                    <PaginationLink
-                      isActive={currentPage === pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      className="cursor-pointer"
-                    >
-                      {pageNum}
-                    </PaginationLink>
-                  </PaginationItem>
-                );
-              })}
-              <PaginationItem>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
+      </div>
     </div>
-  )}
-</div>
-    </div>
-  );
-};
+);
+}
 
 export default PlayerDetail;
