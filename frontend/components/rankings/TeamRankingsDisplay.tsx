@@ -130,8 +130,8 @@ export function TeamRankingsDisplay({ teams = [], isLoading, error }: TeamRankin
 
       {/* Other Teams - List */}
       {otherTeams.length > 0 && (
-        <Card className="shadow-lg border-2 border-primary">
-          <CardHeader className="bg-muted/50 border-b-2 border-primary rounded-t-md">
+        <Card className="shadow-lg border-2">
+          <CardHeader className="border-b-2 rounded-t-md">
             <CardTitle className="text-xl font-bold tracking-tight text-primary">Autres Équipes</CardTitle>
           </CardHeader>
           <CardContent>

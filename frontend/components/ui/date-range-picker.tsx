@@ -15,10 +15,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
+import { fr } from "date-fns/locale";
+import { Locale } from "date-fns";
+
 interface DateRangePickerProps extends React.HTMLAttributes<HTMLDivElement> {
   initialDateRange?: DateRange;
   onUpdateFilter: (range: DateRange | undefined) => void;
   align?: "start" | "center" | "end";
+  locale?: Locale; // Add locale prop for localization
 }
 
 export function DateRangePicker({
@@ -26,6 +30,7 @@ export function DateRangePicker({
   initialDateRange,
   onUpdateFilter,
   align = "start",
+  locale = fr,
 }: DateRangePickerProps) {
   const [date, setDate] = React.useState<DateRange | undefined>(initialDateRange);
   const [isOpen, setIsOpen] = React.useState(false);
@@ -74,11 +79,11 @@ export function DateRangePicker({
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align={align}>
           <Calendar
-            initialFocus
             mode="range"
-            defaultMonth={date?.from}
             selected={date}
             onSelect={handleSelect}
+            initialFocus
+            locale={locale} // Pass locale to Calendar
             numberOfMonths={2}
           />
         </PopoverContent>

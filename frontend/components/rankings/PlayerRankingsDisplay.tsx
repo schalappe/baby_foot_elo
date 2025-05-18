@@ -134,8 +134,8 @@ export function PlayerRankingsDisplay({ players = [], isLoading, error }: Player
 
       {/* Other Players - List */}
       {otherPlayers.length > 0 && (
-        <Card className="shadow-lg border-2 border-primary">
-          <CardHeader className="bg-muted/50 border-b-2 border-primary rounded-t-md">
+        <Card className="shadow-lg border-2">
+          <CardHeader className="border-b-2 rounded-t-md">
             <CardTitle className="text-xl font-bold tracking-tight text-primary">Autres Joueurs</CardTitle>
           </CardHeader>
           <CardContent>
