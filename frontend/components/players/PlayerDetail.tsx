@@ -184,7 +184,7 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
       <h1 className="text-4xl sm:text-5xl font-bold text-center">{player.name}</h1>
       
       {/* Player Stats Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* ELO Card */}
         <Card className="bg-card text-card-foreground shadow-lg rounded-xl overflow-hidden">
           <CardContent className="flex flex-col items-center justify-center p-6 h-full text-center">
@@ -205,6 +205,49 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
             )}
           </CardContent>
         </Card>
+
+        {/* ELO Evolution & Stats Card */}
+        <div>
+          <Card className="bg-card text-card-foreground shadow-lg rounded-xl overflow-hidden">
+            <CardHeader className="flex flex-col items-center gap-2 pt-6 pb-2">
+              <CardTitle>Évolution ELO</CardTitle>
+            </CardHeader>
+            <CardContent className="pb-6 pt-0 px-2">
+              {/* ELO Evolution Line Chart */}
+              {player?.elo_values && player.elo_values.length > 1 ? (
+                <ChartContainer config={{ elo: { label: 'ELO', color: 'hsl(220,70%,50%)' } }} className="w-full h-40">
+                  <LineChart data={[...player.elo_values].reverse().map((elo, idx) => ({ match: idx + 1, elo }))} margin={{ top: 0, right: 16, left: 12, bottom: 0 }}>
+                    <CartesianGrid vertical={false} />
+                    <YAxis domain={['auto', 'auto']} tickMargin={8} axisLine={false} tickLine={false} />
+                    <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                    <Line type="monotone" dataKey="elo" stroke="hsl(220,70%,50%)" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ChartContainer>
+              ) : (
+                <div className="h-40 flex items-center justify-center text-muted-foreground">Pas d'historique ELO</div>
+              )}
+              {/* Stats summary below chart */}
+              <div className="flex justify-between mt-4 px-2">
+                <div className="flex flex-col items-center">
+                  <span className="text-lg font-bold text-green-400">{player?.wins ?? 0}</span>
+                  <span className="text-xs text-muted-foreground">Victoires</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-lg font-bold text-red-400">{player?.losses ?? 0}</span>
+                  <span className="text-xs text-muted-foreground">Défaites</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span
+                    className={`text-lg font-bold ${player ? (player.win_rate >= 0.5 ? 'text-green-400' : 'text-red-400') : 'text-blue-300'}`}
+                  >
+                    {player ? `${Math.round(player.win_rate*100)}%` : '--'}
+                  </span>
+                  <span className="text-xs text-muted-foreground">Winrate</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Win Rate Card */}
         <Card className="bg-card text-card-foreground shadow-lg rounded-xl overflow-hidden">
@@ -272,49 +315,6 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
       
       {/* Stats & ELO Evolution Card + Matches Section Layout */}
       <div className="mt-12 flex flex-col lg:flex-row gap-8">
-        {/* --- ELO Evolution & Stats Card --- */}
-        <div className="lg:w-1/3 w-full">
-          <Card className="bg-gradient-to-br text-white shadow-xl rounded-2xl border-2 p-0 overflow-hidden">
-            <CardHeader className="flex flex-col items-center gap-2 pt-6 pb-2">
-            <CardTitle>Évolution ELO</CardTitle>
-            </CardHeader>
-            <CardContent className="pb-6 pt-0 px-2">
-              {/* ELO Evolution Line Chart */}
-              {player?.elo_values && player.elo_values.length > 1 ? (
-                <ChartContainer config={{ elo: { label: 'ELO', color: 'hsl(220,70%,50%)' } }} className="w-full h-40">
-                  <LineChart data={[...player.elo_values].reverse().map((elo, idx) => ({ match: idx + 1, elo }))} margin={{ top: 0, right: 16, left: 12, bottom: 0 }}>
-                    <CartesianGrid vertical={false} />
-                    <YAxis domain={['auto', 'auto']} tickMargin={8} axisLine={false} tickLine={false} />
-                    <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-                    <Line type="monotone" dataKey="elo" stroke="hsl(220,70%,50%)" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ChartContainer>
-              ) : (
-                <div className="h-40 flex items-center justify-center text-muted-foreground">Pas d'historique ELO</div>
-              )}
-              {/* Stats summary below chart */}
-              <div className="flex justify-between mt-4 px-2">
-                <div className="flex flex-col items-center">
-                  <span className="text-lg font-bold text-green-400">{player?.wins ?? 0}</span>
-                  <span className="text-xs text-muted-foreground">Victoires</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <span className="text-lg font-bold text-red-400">{player?.losses ?? 0}</span>
-                  <span className="text-xs text-muted-foreground">Défaites</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <span
-                    className={`text-lg font-bold ${player ? (player.win_rate >= 0.5 ? 'text-green-400' : 'text-red-400') : 'text-blue-300'}`}
-                  >
-                    {player ? `${Math.round(player.win_rate*100)}%` : '--'}
-                  </span>
-                  <span className="text-xs text-muted-foreground">Winrate</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* --- Matches Section --- */}
         <div className="flex-1 w-full">
           <h2 className="text-2xl font-bold mb-6 text-center">Historique des matchs</h2>
