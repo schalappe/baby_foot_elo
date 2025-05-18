@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { PlayerStats } from '@/types/player.types';
 import { getPlayerStats, getPlayerMatches } from '@/services/playerService';
 import { BackendMatchWithEloResponse } from '@/types/match.types';
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from "@/components/ui/skeleton";
@@ -270,129 +271,151 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
       
       {/* Matches Section */}
       <div className="mt-12">
-        <h2 className="text-2xl font-bold mb-6">Historique des matchs</h2>
-        <Card>
-          <CardContent className="p-0">
-            {matchesLoading ? (
-              <div className="p-6 space-y-4">
-                {[...Array(3)].map((_, i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
-                ))}
-              </div>
-            ) : matches.length === 0 ? (
-              <div className="p-6 text-center text-muted-foreground">
-                Aucun match trouvé pour ce joueur.
-              </div>
-            ) : (
-              <>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Résultat</TableHead>
-                      <TableHead>Équipe</TableHead>
-                      <TableHead>Adversaire</TableHead>
-                      <TableHead className="text-right">Δ ELO</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {formattedMatches.map((match) => (
-                      <TableRow key={match.id}>
-                        <TableCell className="font-medium">
-                          {format(new Date(match.date), 'PPP', { locale: fr })}
-                        </TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            match.result === 'Victoire' 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
-                              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                          }`}>
-                            {match.result}
-                          </span>
-                          {match.isFanny && (
-                            <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 text-xs rounded-full">
-                              Fanny
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="max-w-[200px] truncate">{match.playerTeam}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">{match.opponentTeam}</TableCell>
-                        <TableCell className={`text-right font-medium ${
-                          match.result === 'Victoire' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                        }`}>
-                          {match.eloChange > 0 ? '+' : ''}{match.eloChange}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between px-4 py-3 border-t">
-                    <div className="text-sm text-muted-foreground">
-                      Affichage de <span className="font-medium">
-                        {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, totalMatches)}
-                      </span> à <span className="font-medium">
-                        {Math.min(currentPage * ITEMS_PER_PAGE, totalMatches)}
-                      </span> sur <span className="font-medium">{totalMatches}</span> matchs
+        <h2 className="text-2xl font-bold mb-6 text-center">Historique des matchs</h2>
+        {matchesLoading ? (
+          <div className="p-6 space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-20 w-full rounded-xl" />
+            ))}
+          </div>
+        ) : matches.length === 0 ? (
+          <div className="p-6 text-center text-muted-foreground">
+            Aucun match trouvé pour ce joueur.
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {/* Group matches by date */}
+            {Object.entries(
+              matches.reduce((acc, match) => {
+                const dateKey = format(new Date(match.played_at), 'd MMMM', { locale: fr });
+                if (!acc[dateKey]) acc[dateKey] = [];
+                acc[dateKey].push(match);
+                return acc;
+              }, {} as Record<string, typeof matches>)
+            ).map(([date, matchesForDate]) => (
+              <div key={date}>
+                <div className="text-md font-semibold mb-3 text-muted-foreground">{date}</div>
+                <div className="flex flex-col gap-4">
+                  {matchesForDate.map((match) => {
+                    // Determine if the player is on the winning team
+                    const isWinner = match.winner_team.player1.player_id === playerId || match.winner_team.player2.player_id === playerId;
+                    const playerTeam = isWinner ? match.winner_team : match.loser_team;
+                    const opponentTeam = isWinner ? match.loser_team : match.winner_team;
+                    const eloChange = match.elo_changes[playerId]?.difference ?? 0;
+                    const isFanny = match.is_fanny;
+                    // Cooler, less vivid color palette for a more pleasant look
+                    const cardColor = isWinner
+                      ? 'bg-teal-900/30 border-teal-700'
+                : 'bg-red-800/30 border-red-800';
+              return (
+                <Card
+                  key={match.match_id}
+                  className={`relative border-2 ${cardColor} shadow-lg rounded-xl overflow-hidden transition-colors min-h-[72px] w-full`}
+                >
+                  <CardContent className="flex flex-row items-center justify-between gap-2 px-4 py-3">
+                    {/* ELO Change */}
+                    <div className="flex flex-col items-center min-w-[70px]">
+                      <span className={`font-extrabold text-3xl leading-none ${eloChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>{eloChange > 0 ? '+' : ''}{eloChange}</span>
+                      <span className="text-[10px] text-muted-foreground -mt-1">ELO</span>
                     </div>
-                    <Pagination className="m-0">
-                      <PaginationContent>
-                        <PaginationItem>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
+                    {/* Teams */}
+                    <div className="flex flex-1 flex-col gap-1 items-center">
+                      <div className="flex items-center gap-2 justify-center">
+                        {[playerTeam.player1, playerTeam.player2].map((p) => (
+                          <span
+                            key={p.player_id}
+                            className={`rounded-full px-3 py-1 font-semibold text-sm transition-all duration-100 ${p.player_id === playerId ? 'bg-white text-black shadow font-bold border border-gray-200' : 'bg-neutral-800 text-neutral-200'}`}
                           >
-                            <ChevronLeft className="h-4 w-4" />
-                          </Button>
-                        </PaginationItem>
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                          // Show first 2 pages, current page, and last 2 pages
-                          let pageNum;
-                          if (currentPage <= 3) {
-                            pageNum = i + 1;
-                          } else if (currentPage >= totalPages - 2) {
-                            pageNum = totalPages - 4 + i;
-                          } else {
-                            pageNum = currentPage - 2 + i;
-                          }
-                          
-                          if (pageNum < 1 || pageNum > totalPages) return null;
-                          
-                          return (
-                            <PaginationItem key={pageNum}>
-                              <PaginationLink
-                                isActive={currentPage === pageNum}
-                                onClick={() => handlePageChange(pageNum)}
-                                className="cursor-pointer"
-                              >
-                                {pageNum}
-                              </PaginationLink>
-                            </PaginationItem>
-                          );
-                        })}
-                        <PaginationItem>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
+                            {p.name}
+                          </span>
+                        ))}
+                        <span className="mx-2 text-lg font-bold text-neutral-300">VS</span>
+                        {[opponentTeam.player1, opponentTeam.player2].map((p) => (
+                          <span
+                            key={p.player_id}
+                            className="rounded-full px-3 py-1 font-semibold text-sm bg-neutral-800 text-neutral-200"
                           >
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                            {p.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Outcome: Only show Fanny icon if relevant */}
+                    <div className="flex flex-col items-end min-w-[90px]">
+                      {isFanny && (
+                        <Avatar className="w-15 h-15">
+                          <AvatarImage
+                            src={isWinner ? '/icons/fanny-victory.png' : '/icons/fanny-defeat.png'}
+                            alt="Fanny icon"
+                          />
+                          <AvatarFallback>F</AvatarFallback>
+                        </Avatar>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-4 py-3 border-t mt-8">
+          <div className="text-sm text-muted-foreground">
+            Affichage de <span className="font-medium">{Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, totalMatches)}</span> à <span className="font-medium">{Math.min(currentPage * ITEMS_PER_PAGE, totalMatches)}</span> sur <span className="font-medium">{totalMatches}</span> matchs
+          </div>
+          <Pagination className="m-0">
+            <PaginationContent>
+              <PaginationItem>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              </PaginationItem>
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                if (pageNum < 1 || pageNum > totalPages) return null;
+                return (
+                  <PaginationItem key={pageNum}>
+                    <PaginationLink
+                      isActive={currentPage === pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className="cursor-pointer"
+                    >
+                      {pageNum}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              })}
+              <PaginationItem>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
+    </div>
+  )}
+</div>
     </div>
   );
 };
