@@ -1,6 +1,7 @@
 // frontend/services/teamService.ts
 import axios from 'axios';
 import { Team } from '../types/index';
+import { TeamStatistics } from '../types/team.types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -29,6 +30,24 @@ export const findOrCreateTeam = async (player1_id: number, player2_id: number): 
     return response.data;
   } catch (error) {
     console.error(`Échec de la recherche ou de la création de l'équipe pour les joueurs ${player1_id} et ${player2_id}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch detailed statistics for a specific team by ID.
+ *
+ * Calls the backend endpoint `/teams/{team_id}/statistics` and returns a TeamStatistics object.
+ *
+ * @param team_id - The ID of the team to fetch statistics for
+ * @returns Promise<TeamStatistics> - Team statistics data
+ */
+export const getTeamStatistics = async (team_id: number): Promise<TeamStatistics> => {
+  try {
+    const response = await axios.get<TeamStatistics>(`${API_URL}/teams/${team_id}/statistics`);
+    return response.data;
+  } catch (error) {
+    console.error(`Échec de la récupération des statistiques pour l'équipe ${team_id}:`, error);
     throw error;
   }
 };
