@@ -83,6 +83,7 @@ class PlayerResponse(PlayerBase):
     matches_played: int = Field(default=0, ge=0, description="Total matches played by the player")
     wins: int = Field(default=0, ge=0, description="Total matches won by the player")
     losses: int = Field(default=0, ge=0, description="Total matches lost by the player")
+    win_rate: float = Field(default=0.0, description="Win rate of the player")
 
     class Config:
         from_attributes = True

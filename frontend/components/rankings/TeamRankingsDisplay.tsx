@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link'; // Added Link import
 import { Team } from '@/types/team.types'; // Assuming Team interface is in teamService
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TeamRankingTable } from './TeamRankingTable';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from "@/components/ui/badge"
@@ -130,37 +130,12 @@ export function TeamRankingsDisplay({ teams = [], isLoading, error }: TeamRankin
 
       {/* Other Teams - List */}
       {otherTeams.length > 0 && (
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-xl">Autres Équipes</CardTitle>
+        <Card className="shadow-lg border-2 border-primary">
+          <CardHeader className="bg-muted/50 border-b-2 border-primary rounded-t-md">
+            <CardTitle className="text-xl font-bold tracking-tight text-primary">Autres Équipes</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[80px]">Rang</TableHead>
-                  <TableHead>Équipe</TableHead>
-                  <TableHead className="text-right">ELO</TableHead>
-                  {/* <TableHead className="text-right">Matchs Joués</TableHead> TODO: Add matches_played if available */}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {otherTeams.map((team, index) => (
-                  <TableRow key={team.team_id}>
-                    <TableCell className="font-medium">#{team.rank !== undefined ? team.rank : index + 4}</TableCell>
-                    <TableCell>
-                      <Link href={`/teams/${team.team_id}`} passHref legacyBehavior>
-                        <a className='hover:underline focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm'>
-                          {getTeamName(team)}
-                        </a>
-                      </Link>
-                    </TableCell>
-                    <TableCell className="text-right">{Math.round(team.global_elo)}</TableCell>
-                    {/* <TableCell className="text-right">{team.matches_played}</TableCell> TODO: Add matches_played if available */}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <TeamRankingTable data={otherTeams} isLoading={false} error={null} />
           </CardContent>
         </Card>
       )}

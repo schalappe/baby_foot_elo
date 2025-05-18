@@ -43,16 +43,12 @@ import {
 export const columns: ColumnDef<Player>[] = [
   {
     accessorKey: 'name',
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-      >
+    header: () => (
+      <Button variant="ghost">
         Nom
-        <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
-    cell: ({ row }) => <div>{row.getValue('name')}</div>,
+    cell: ({ row }) => <div className="text-center">{row.getValue('name')}</div>,
   },
   {
     accessorKey: 'global_elo',
@@ -62,7 +58,7 @@ export const columns: ColumnDef<Player>[] = [
         onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
       >
         Elo
-        <ArrowUpDown className="ml-2 h-4 w-4" />
+        <ArrowUpDown className="ml-2 h-2 w-2" />
       </Button>
     ),
     cell: ({ row }) => <div className="text-center">{row.getValue('global_elo')}</div>,
@@ -89,41 +85,54 @@ export const columns: ColumnDef<Player>[] = [
   {
     accessorKey: 'matches_played',
     header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Matchs joués
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+      >
+        Matchs joués
+        <ArrowUpDown className="ml-2 h-2 w-2" />
+      </Button>
+    ),
     cell: ({ row }) => <div className="text-center">{row.getValue('matches_played')}</div>,
   },
-   {
+  {
     accessorKey: 'wins',
     header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Victoires
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+      >
+        Victoires
+        <ArrowUpDown className="ml-2 h-2 w-2" />
+      </Button>
+    ),
     cell: ({ row }) => <div className="text-center">{row.getValue('wins')}</div>,
   },
   {
     accessorKey: 'losses',
     header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Défaites
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+      >
+        Défaites
+        <ArrowUpDown className="ml-2 h-2 w-2" />
+      </Button>
+    ),
     cell: ({ row }) => <div className="text-center">{row.getValue('losses')}</div>,
+  },
+  {
+    accessorKey: 'win_rate',
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+      >
+        Taux de victoires
+        <ArrowUpDown className="ml-2 h-2 w-2" />
+      </Button>
+    ),
+    cell: ({ row }) => <div className="text-center">{Math.round(row.getValue('win_rate'))}%</div>,
   },
 ];
 

@@ -139,7 +139,6 @@ export function PlayerRankingsDisplay({ players = [], isLoading, error }: Player
             <CardTitle className="text-xl font-bold tracking-tight text-primary">Autres Joueurs</CardTitle>
           </CardHeader>
           <CardContent>
-            {/* Use the paginated PlayerRankingTable for 'otherPlayers' */}
             <PlayerRankingTable data={otherPlayers} isLoading={false} error={null} />
           </CardContent>
         </Card>

@@ -78,6 +78,7 @@ def get_player_by_id(player_id: int) -> PlayerResponse:
             matches_played=stats.get("matches_played", 0),
             wins=stats.get("wins", 0),
             losses=stats.get("losses", 0),
+            win_rate=stats.get("win_rate", 0.0),
         )
     except PlayerNotFoundError:
         raise
