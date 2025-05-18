@@ -1,6 +1,6 @@
+import type { PlayerModel } from '../models/player';
 import { useRuntimeConfig } from 'nuxt/app';
 import { $fetch } from 'ofetch';
-import type { PlayerModel } from '../models/player';
 
 export const useApi = () => {
   const config = useRuntimeConfig();
@@ -14,7 +14,7 @@ export const useApi = () => {
   });
 
   // Create
-  const create = async <T extends PlayerModel>(endpoint: string, data: Omit<T, 'id'>): Promise<T> => {
+  const create = async <T extends PlayerModel>(endpoint: string, data: Omit<T, 'player_id'>): Promise<T> => {
     return await $http<T>(endpoint, {
       method: 'POST',
       body: JSON.stringify(data),
@@ -29,23 +29,23 @@ export const useApi = () => {
   };
 
   // Read one
-  const readOne = async <T extends PlayerModel>(endpoint: string, id: number): Promise<T> => {
-    return await $http<T>(`${endpoint}/${id}`, {
+  const readOne = async <T extends PlayerModel>(endpoint: string, player_id: number): Promise<T> => {
+    return await $http<T>(`${endpoint}/${player_id}`, {
       method: 'GET',
     });
   };
 
   // Update
-  const update = async <T extends PlayerModel>(endpoint: string, id: number, data: Partial<T>): Promise<T> => {
-    return await $http<T>(`${endpoint}/${id}`, {
+  const update = async <T extends PlayerModel>(endpoint: string, player_id: number, data: Partial<T>): Promise<T> => {
+    return await $http<T>(`${endpoint}/${player_id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   };
 
   // Delete
-  const remove = async (endpoint: string, id: number): Promise<void> => {
-    await $http(`${endpoint}/${id}`, {
+  const remove = async (endpoint: string, player_id: number): Promise<void> => {
+    await $http(`${endpoint}/${player_id}`, {
       method: 'DELETE',
     });
   };
