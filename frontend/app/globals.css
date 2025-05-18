@@ -5,6 +5,7 @@
 
 @theme inline {
   --color-background: var(--background);
+  --color-podium-card: var(--podium-card);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -45,6 +46,7 @@
 
 :root {
   --radius: 0.625rem;
+  --podium-card: linear-gradient(135deg, hsl(0, 0%, 100%) 0%, hsl(220, 30%, 97%) 100%);
   --background: hsl(0, 0%, 100%);
   --foreground: hsl(240, 10%, 3.9%);
   --card: hsl(0, 0%, 100%);
@@ -92,6 +94,7 @@ html, body {
 }
 
 .dark {
+  --podium-card: linear-gradient(135deg, hsl(240, 10%, 5.5%) 0%, hsl(240, 8%, 12%) 100%);
   --background: hsl(240, 10%, 3.9%);
   --foreground: hsl(0, 0%, 98%);
   --card: hsl(240, 10%, 3.9%);
