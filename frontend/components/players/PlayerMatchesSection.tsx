@@ -131,7 +131,7 @@ const PlayerMatchesSection: React.FC<PlayerMatchesSectionProps> = ({
                 <button
                   key={pageNum}
                   onClick={() => handlePageChange(pageNum)}
-                  className={`px-2 py-1 border rounded ${currentPage === pageNum ? 'bg-primary text-white' : ''}`}
+                  className={`px-2 py-1 border rounded ${currentPage === pageNum ? 'bg-primary' : ''}`}
                 >
                   {pageNum}
                 </button>

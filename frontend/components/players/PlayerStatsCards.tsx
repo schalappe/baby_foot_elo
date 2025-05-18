@@ -43,12 +43,12 @@ const PlayerStatsCards: React.FC<PlayerStatsCardsProps> = ({ player }) => {
           <CardContent className="pb-6 pt-0 px-2">
             {/* ELO Evolution Line Chart */}
             {player?.elo_values && player.elo_values.length > 1 ? (
-              <ChartContainer config={{ elo: { label: 'ELO', color: 'hsl(220,70%,50%)' } }} className="w-full h-40">
+              <ChartContainer config={{ elo: { label: 'ELO', color: 'var(--chart-1)' } }} className="w-full h-40">
                 <LineChart data={[...player.elo_values].reverse().map((elo, idx) => ({ match: idx + 1, elo }))} margin={{ top: 0, right: 16, left: 12, bottom: 0 }}>
                   <CartesianGrid vertical={false} />
                   <YAxis domain={['auto', 'auto']} tickMargin={8} axisLine={false} tickLine={false} />
                   <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-                  <Line type="monotone" dataKey="elo" stroke="hsl(220,70%,50%)" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="elo" stroke="var(--chart-1)" strokeWidth={2} dot={false} />
                 </LineChart>
               </ChartContainer>
             ) : (

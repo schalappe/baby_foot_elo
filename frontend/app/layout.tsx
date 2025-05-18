@@ -19,6 +19,7 @@ export const metadata: Metadata = {
 };
 
 import AppShell from "../components/AppShell";
+import { ThemeProvider } from "../components/ThemeProvider";
 
 export default function RootLayout({
   children,
@@ -28,7 +29,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <AppShell>{children}</AppShell>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <AppShell>{children}</AppShell>
+        </ThemeProvider>
         <Toaster />
       </body>
     </html>

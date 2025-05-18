@@ -8,7 +8,6 @@ import PlayerStatsCards from './PlayerStatsCards';
 import PlayerMatchesSection from './PlayerMatchesSection';
 import PlayerLoadingSkeleton from './PlayerLoadingSkeleton';
 import PlayerErrorAlert from './PlayerErrorAlert';
-// Remove unused imports from UI and chart libraries, as these are now handled in subcomponents.
 
 const ITEMS_PER_PAGE = 5;
 
@@ -26,7 +25,7 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
   const [totalMatches, setTotalMatches] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Fetch player stats
+  // Fetch player stats.
   useEffect(() => {
     if (playerId) {
       const fetchPlayer = async () => {
@@ -46,7 +45,7 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
     }
   }, [playerId]);
 
-  // Fetch player matches with pagination
+  // Fetch player matches with pagination.
   useEffect(() => {
     if (playerId) {
       const fetchMatches = async () => {
@@ -58,12 +57,8 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
             offset 
           });
           
-          // In a real app, you would get total count from the API
-          // For now, we'll just use the length of the returned array
-          // and assume there are more if we got a full page
           setMatches(matchesData);
           setTotalMatches(prev => {
-            // If we have a full page, there might be more
             const calculatedTotal = matchesData.length === ITEMS_PER_PAGE 
               ? currentPage * ITEMS_PER_PAGE + 1 
               : (currentPage - 1) * ITEMS_PER_PAGE + matchesData.length;
@@ -72,7 +67,6 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
           setTotalPages(Math.ceil(totalMatches / ITEMS_PER_PAGE) || 1);
         } catch (err) {
           console.error('Failed to fetch matches:', err);
-          // Don't show error in UI for matches to avoid hiding player data
         } finally {
           setMatchesLoading(false);
         }
@@ -81,7 +75,7 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
     }
   }, [playerId, currentPage, totalMatches]);
 
-  // Handle page change
+  // Handle page change.
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
@@ -89,7 +83,7 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
     }
   };
 
-  // Format match data for the table
+  // Format match data for the table.
   const formattedMatches = useMemo(() => {
     return matches.map(match => {
       const isWinner = match.winner_team.player1.player_id === playerId || 
