@@ -1,17 +1,37 @@
 <script setup lang="ts">
+  import { useApi } from './composable/useApi';
+  import { onMounted, provide, ref } from 'vue';
+  import type { NavLinkModel } from './models/NavLinkModel';
+  import type { PlayerModel } from './models/PlayerModel';
+  import type { TeamModel } from './models/TeamModel';
+  import type { MatchModel } from './models/MatchModel';
 
-// Typage explicite de `nav`
-interface NavLink {
-  label: string
-  to: string
-}
 
-const nav: NavLink[] = [
-  { label: 'ranking', to: '/' },
-  { label: 'players', to: '/players' },
-  { label: 'matchs', to: '/matchs' },
-  { label: 'test', to: '/test' },
-]
+  const nav: NavLinkModel[] = [
+    { label: 'ranking', to: '/' },
+    { label: 'players', to: '/players' },
+    { label: 'teams', to: '/teams' },
+    { label: 'matches', to: '/matches' },
+    { label: 'test', to: '/test' },
+  ]
+
+  const { read } = useApi();
+  const players = ref<PlayerModel[]>([]);
+  const teams = ref<TeamModel[]>([]);
+  const matches = ref<MatchModel[]>([]);
+
+  onMounted(async () => {
+      const playersData = await read<PlayerModel>('/players');
+      const teamsData = await read<TeamModel>('/teams');
+      const matchsData = await read<MatchModel>('/matches');
+      players.value = playersData;
+      teams.value = teamsData;
+      matches.value = matchsData;
+  });
+
+  provide('players', players);
+  provide('teams', teams);
+  provide('matches', matches);
 </script>
 
 
