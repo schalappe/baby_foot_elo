@@ -9,8 +9,48 @@ from app.db.repositories.elo_history import get_player_elo_history
 from app.db.repositories.matches import get_matches_by_team
 from app.exceptions.teams import TeamNotFoundError, TeamOperationError
 from app.models.elo_history import EloHistoryResponse
-from app.services.players import get_player_by_id
+from app.models.match import MatchWithEloResponse
+from app.services.players import get_player_by_id, get_matches_by_player
 from app.services.teams import get_team_by_id, get_team_elo_history
+
+
+def get_player_matches(player_id: int, limit: int = 10, offset: int = 0, **filters) -> List[MatchWithEloResponse]:
+    """
+    Retrieve a paginated list of matches for a specific player.
+
+    Parameters
+    ----------
+    player_id : int
+        The ID of the player.
+    limit : int, optional
+        Maximum number of matches to return (default: 10).
+    offset : int, optional
+        Number of matches to skip for pagination (default: 0).
+    **filters
+        Additional filters for the matches (e.g., start_date, end_date).
+
+    Returns
+    -------
+    List[MatchWithEloResponse]
+        A list of matches the player participated in.
+    """
+    try:
+        matches = get_matches_by_player(player_id, limit, offset, **filters)
+
+        # ##: Convert to response model.
+        response = []
+        for match in matches:
+            winner_team = get_team_by_id(match["winner_team_id"])
+            loser_team = get_team_by_id(match["loser_team_id"])
+            match_response = MatchWithEloResponse(**match)
+            match_response.winner_team = winner_team
+            match_response.loser_team = loser_team
+            response.append(match_response)
+
+        return response
+    except Exception as e:
+        logger.error(f"Error retrieving matches for player {player_id}: {e}")
+        return []
 
 
 def get_elo_history_by_id(player_id: int, limit: int = 20, offset: int = 0, **filters) -> List[EloHistoryResponse]:
