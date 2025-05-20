@@ -11,7 +11,6 @@ import {
   SidebarFooter,
   SidebarHeader
 } from "@/components/ui/sidebar"
-import { ThemeToggle } from "@/components/ThemeToggle"; 
 
 // Menu items.
 const items = [
@@ -75,17 +74,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <ThemeToggle />
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarFooter>
     </Sidebar>
   )
 }
