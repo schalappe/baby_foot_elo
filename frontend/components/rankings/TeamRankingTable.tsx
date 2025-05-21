@@ -14,7 +14,7 @@ import {
   ColumnFiltersState,
 } from '@tanstack/react-table';
 import { ArrowUpDown } from 'lucide-react';
-
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -62,8 +62,18 @@ export const columns: ColumnDef<Team>[] = [
     id: 'teamName',
     accessorFn: (row) => getTeamName(row),
     header: 'Team',
-    cell: ({ row }) => <div>{getTeamName(row.original)}</div>,
-    enableSorting: false, // Sorting by combined name might be complex/less useful
+    cell: ({ row }) => {
+      const teamId = row.original.team_id;
+      const teamName = getTeamName(row.original);
+      return (
+        <div className="text-center">
+          <Link href={`/teams/${teamId}`} className="text-primary underline focus:outline-none">
+            {teamName}
+          </Link>
+        </div>
+      );
+    },
+    enableSorting: false,
   },
   {
     accessorKey: 'global_elo',

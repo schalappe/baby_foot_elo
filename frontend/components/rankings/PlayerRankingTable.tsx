@@ -13,7 +13,7 @@ import {
   VisibilityState,
   useReactTable,
 } from '@tanstack/react-table';
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react';
+import { ArrowUpDown } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Player } from '@/types/player.types';
+import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
@@ -40,6 +41,12 @@ import {
 } from "@/components/ui/pagination"
 
 // --- Column Definitions ---
+/**
+ * Column definitions for the Player Ranking Table.
+ *
+ * - Player name is rendered as a clickable link to the player's profile page.
+ * - Uses ShadCN UI components for styling and consistency.
+ */
 export const columns: ColumnDef<Player>[] = [
   {
     accessorKey: 'name',
@@ -48,7 +55,17 @@ export const columns: ColumnDef<Player>[] = [
         Nom
       </Button>
     ),
-    cell: ({ row }) => <div className="text-center">{row.getValue('name')}</div>,
+    cell: ({ row }) => {
+      const playerId = row.original.player_id;
+      const playerName = String(row.getValue('name'));
+      return (
+        <div className="text-center">
+          <Link href={`/players/${playerId}`} className="text-primary underline focus:outline-none">
+            {playerName}
+          </Link>
+        </div>
+      );
+    },
   },
   {
     accessorKey: 'global_elo',
