@@ -6,7 +6,7 @@ import { ArrowUpDown } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Team } from "@/types/team.types";
-import { RankingTable } from "./common/RankingTable";
+import { RankingTable } from "@/components/common/RankingTable";
 
 // --- Helper to get Team Name ---
 const getTeamName = (team: Team): string => {

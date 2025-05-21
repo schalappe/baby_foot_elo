@@ -6,7 +6,7 @@ import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Player } from "@/types/player.types";
 import Link from "next/link";
-import { RankingTable } from "./common/RankingTable";
+import { RankingTable } from "@/components/common/RankingTable";
 
 // --- Column Definitions ---
 /**

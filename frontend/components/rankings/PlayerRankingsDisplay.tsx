@@ -7,7 +7,7 @@ import { PlayerRankingTable } from "./PlayerRankingTable";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { PodiumGrid } from "./common/PodiumGrid";
+import { PodiumGrid } from "@/components/common/PodiumGrid";
 
 interface PlayerRankingsDisplayProps {
   players: Player[];

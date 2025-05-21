@@ -7,7 +7,7 @@ import { TeamRankingTable } from "./TeamRankingTable";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { PodiumGrid } from "./common/PodiumGrid";
+import { PodiumGrid } from "@/components/common/PodiumGrid";
 
 interface TeamRankingsDisplayProps {
   teams: Team[];
