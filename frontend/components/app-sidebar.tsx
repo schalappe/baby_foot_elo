@@ -1,4 +1,4 @@
-import { Library, Home, Info, Volleyball, Command } from "lucide-react"
+import { Library, Home, Volleyball, Command } from "lucide-react"
 
 import {
   Sidebar,
@@ -8,7 +8,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarFooter,
   SidebarHeader
 } from "@/components/ui/sidebar"
 
@@ -28,11 +27,6 @@ const items = [
     title: "Parties",
     url: "/matches",
     icon: Library,
-  },
-  {
-    title: "À propos",
-    url: "/about",
-    icon: Info,
   },
 ]
 
