@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Player } from '@/types/player.types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlayerRankingTable } from './PlayerRankingTable';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
-import { PodiumGrid } from './common/PodiumGrid';
+import React from "react";
+import { Player } from "@/types/player.types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PlayerRankingTable } from "./PlayerRankingTable";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import { PodiumGrid } from "./common/PodiumGrid";
 
 interface PlayerRankingsDisplayProps {
   players: Player[];
@@ -22,7 +22,11 @@ const calculateWinrate = (wins: number, matchesPlayed: number): number => {
   return Math.round((wins / matchesPlayed) * 100);
 };
 
-export function PlayerRankingsDisplay({ players = [], isLoading, error }: PlayerRankingsDisplayProps) {
+export function PlayerRankingsDisplay({
+  players = [],
+  isLoading,
+  error,
+}: PlayerRankingsDisplayProps) {
   if (isLoading) {
     return (
       <div className="w-full space-y-8">
@@ -45,7 +49,10 @@ export function PlayerRankingsDisplay({ players = [], isLoading, error }: Player
           </CardHeader>
           <CardContent>
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex justify-between items-center py-3 border-b last:border-b-0">
+              <div
+                key={i}
+                className="flex justify-between items-center py-3 border-b last:border-b-0"
+              >
                 <div className="flex items-center gap-4">
                   <Skeleton className="h-8 w-8" />
                   <Skeleton className="h-5 w-24" />
@@ -90,17 +97,24 @@ export function PlayerRankingsDisplay({ players = [], isLoading, error }: Player
           getLink={(player) => `/players/${player.player_id}`}
           getName={(player) => player.name}
           getElo={(player) => player.global_elo}
-          getWinrate={(player) => `${calculateWinrate(player.wins, player.matches_played)}%`}
+          getWinrate={(player) =>
+            `${calculateWinrate(player.wins, player.matches_played)}%`
+          }
           renderExtra={(player) => (
             <>
               {/* W-L and % */}
               <div className="flex justify-center font-semibold mb-2">
-                <span style={{color: "var(--win-text)"}}>{player.wins}W</span> &nbsp; - &nbsp; <span style={{color: "var(--lose-text)"}}>{player.losses}L</span>
+                <span style={{ color: "var(--win-text)" }}>{player.wins}W</span>{" "}
+                &nbsp; - &nbsp;{" "}
+                <span style={{ color: "var(--lose-text)" }}>
+                  {player.losses}L
+                </span>
               </div>
               {/* Bottom Row: Matches */}
               <div className="flex justify-between items-end w-full mt-auto pt-2">
                 <div className={`text-xs`}>
-                  <span className={`font-bold`}>{player.matches_played}</span> parties
+                  <span className={`font-bold`}>{player.matches_played}</span>{" "}
+                  parties
                 </div>
               </div>
             </>
@@ -112,10 +126,16 @@ export function PlayerRankingsDisplay({ players = [], isLoading, error }: Player
       {otherPlayers.length > 0 && (
         <Card className="shadow-lg border-2">
           <CardHeader className="border-b-2 rounded-t-md">
-            <CardTitle className="text-xl font-bold tracking-tight text-primary">Autres Joueurs</CardTitle>
+            <CardTitle className="text-xl font-bold tracking-tight text-primary">
+              Autres Joueurs
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <PlayerRankingTable data={otherPlayers} isLoading={false} error={null} />
+            <PlayerRankingTable
+              data={otherPlayers}
+              isLoading={false}
+              error={null}
+            />
           </CardContent>
         </Card>
       )}

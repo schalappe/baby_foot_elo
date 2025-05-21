@@ -26,7 +26,9 @@ interface PlayerRegistrationFormProps {
   onPlayerRegistered: () => void;
 }
 
-export function PlayerRegistrationForm({ onPlayerRegistered }: PlayerRegistrationFormProps) {
+export function PlayerRegistrationForm({
+  onPlayerRegistered,
+}: PlayerRegistrationFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -46,16 +48,20 @@ export function PlayerRegistrationForm({ onPlayerRegistered }: PlayerRegistratio
       // Check for duplicate player name (409 Conflict status)
       if (error.response && error.response.status === 409) {
         toast.error("Nom de joueur déjà utilisé", {
-          description: "Un joueur avec ce nom existe déjà. Veuillez choisir un nom différent.",
+          description:
+            "Un joueur avec ce nom existe déjà. Veuillez choisir un nom différent.",
         });
         // Set form error
         form.setError("name", {
           type: "manual",
-          message: "Ce nom est déjà utilisé par un autre joueur"
+          message: "Ce nom est déjà utilisé par un autre joueur",
         });
       } else {
         toast.error("Création du joueur echouée", {
-          description: error instanceof Error ? error.message : "Une erreur inconnue est survenue.",
+          description:
+            error instanceof Error
+              ? error.message
+              : "Une erreur inconnue est survenue.",
         });
       }
       console.error("Création du joueur echouée:", error);
@@ -78,9 +84,15 @@ export function PlayerRegistrationForm({ onPlayerRegistered }: PlayerRegistratio
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {form.formState.isSubmitting ? 'Création...' : 'Créer le joueur'}
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={form.formState.isSubmitting}
+        >
+          {form.formState.isSubmitting && (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          )}
+          {form.formState.isSubmitting ? "Création..." : "Créer le joueur"}
         </Button>
       </form>
     </Form>

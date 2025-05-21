@@ -1,19 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Team, TeamStatistics } from '@/types/team.types';
-import { BackendMatchWithEloResponse } from '@/types/match.types';
-import TeamStatsCards from './TeamStatsCards';
-import TeamMatchesSection from './TeamMatchesSection';
-import TeamLoadingSkeleton from './TeamLoadingSkeleton';
-import TeamErrorAlert from './TeamErrorAlert';
-import { Player } from '@/types/player.types';
-import { getTeamStatistics, getTeamMatches } from '@/services/teamService';
+import React, { useState, useEffect } from "react";
+import { Team, TeamStatistics } from "@/types/team.types";
+import { BackendMatchWithEloResponse } from "@/types/match.types";
+import TeamStatsCards from "./TeamStatsCards";
+import TeamMatchesSection from "./TeamMatchesSection";
+import TeamLoadingSkeleton from "./TeamLoadingSkeleton";
+import TeamErrorAlert from "./TeamErrorAlert";
+import { getTeamStatistics, getTeamMatches } from "@/services/teamService";
 
 interface TeamDetailProps {
   teamId: number;
 }
-
 
 const ITEMS_PER_PAGE = 10;
 
@@ -62,11 +60,15 @@ const TeamDetail: React.FC<TeamDetailProps> = ({ teamId }) => {
           player1: data.player1,
           player2: data.player2,
           last_match_at: data.last_match_at,
+          matches_played: 0,
+          wins: data.wins,
+          losses: data.losses,
+          win_rate: data.win_rate,
         });
       })
-      .catch((err) => {
+      .catch(() => {
         if (!isMounted) return;
-        setError('Failed to fetch team statistics.');
+        setError("Failed to fetch team statistics.");
       })
       .finally(() => {
         if (!isMounted) return;
@@ -82,16 +84,32 @@ const TeamDetail: React.FC<TeamDetailProps> = ({ teamId }) => {
     let isMounted = true;
     setMatchesLoading(true);
     setError(null);
-    getTeamMatches(teamId, { skip: (currentPage - 1) * ITEMS_PER_PAGE, limit: ITEMS_PER_PAGE })
+    getTeamMatches(teamId, {
+      skip: (currentPage - 1) * ITEMS_PER_PAGE,
+      limit: ITEMS_PER_PAGE,
+    })
       .then((data) => {
         if (!isMounted) return;
         setMatches(data);
-        setTotalMatches(data.length < ITEMS_PER_PAGE && currentPage === 1 ? data.length : ITEMS_PER_PAGE * currentPage); // Approximate
-        setTotalPages(Math.max(1, Math.ceil((data.length < ITEMS_PER_PAGE && currentPage === 1 ? data.length : ITEMS_PER_PAGE * currentPage) / ITEMS_PER_PAGE)));
+        setTotalMatches(
+          data.length < ITEMS_PER_PAGE && currentPage === 1
+            ? data.length
+            : ITEMS_PER_PAGE * currentPage,
+        ); // Approximate
+        setTotalPages(
+          Math.max(
+            1,
+            Math.ceil(
+              (data.length < ITEMS_PER_PAGE && currentPage === 1
+                ? data.length
+                : ITEMS_PER_PAGE * currentPage) / ITEMS_PER_PAGE,
+            ),
+          ),
+        );
       })
-      .catch((err) => {
+      .catch(() => {
         if (!isMounted) return;
-        setError('Failed to fetch team matches.');
+        setError("Failed to fetch team matches.");
       })
       .finally(() => {
         if (!isMounted) return;
@@ -105,7 +123,7 @@ const TeamDetail: React.FC<TeamDetailProps> = ({ teamId }) => {
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 

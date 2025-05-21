@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from 'react';
-import { PlayerStats } from '@/types/player.types';
-import { getPlayerStats, getPlayerMatches } from '@/services/playerService';
-import { BackendMatchWithEloResponse } from '@/types/match.types';
-import PlayerStatsCards from './PlayerStatsCards';
-import PlayerMatchesSection from './PlayerMatchesSection';
-import PlayerLoadingSkeleton from './PlayerLoadingSkeleton';
-import PlayerErrorAlert from './PlayerErrorAlert';
+import React, { useEffect, useState } from "react";
+import { PlayerStats } from "@/types/player.types";
+import { getPlayerStats, getPlayerMatches } from "@/services/playerService";
+import { BackendMatchWithEloResponse } from "@/types/match.types";
+import PlayerStatsCards from "./PlayerStatsCards";
+import PlayerMatchesSection from "./PlayerMatchesSection";
+import PlayerLoadingSkeleton from "./PlayerLoadingSkeleton";
+import PlayerErrorAlert from "./PlayerErrorAlert";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -35,7 +35,7 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
           setPlayer(data);
           setError(null);
         } catch (err) {
-          setError('Failed to fetch player details.');
+          setError("Failed to fetch player details.");
           console.error(err);
         } finally {
           setLoading(false);
@@ -52,21 +52,22 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
         try {
           setMatchesLoading(true);
           const offset = (currentPage - 1) * ITEMS_PER_PAGE;
-          const matchesData = await getPlayerMatches(playerId, { 
-            limit: ITEMS_PER_PAGE, 
-            offset 
+          const matchesData = await getPlayerMatches(playerId, {
+            limit: ITEMS_PER_PAGE,
+            offset,
           });
-          
+
           setMatches(matchesData);
-          setTotalMatches(prev => {
-            const calculatedTotal = matchesData.length === ITEMS_PER_PAGE 
-              ? currentPage * ITEMS_PER_PAGE + 1 
-              : (currentPage - 1) * ITEMS_PER_PAGE + matchesData.length;
+          setTotalMatches((prev) => {
+            const calculatedTotal =
+              matchesData.length === ITEMS_PER_PAGE
+                ? currentPage * ITEMS_PER_PAGE + 1
+                : (currentPage - 1) * ITEMS_PER_PAGE + matchesData.length;
             return Math.max(prev, calculatedTotal);
           });
           setTotalPages(Math.ceil(totalMatches / ITEMS_PER_PAGE) || 1);
         } catch (err) {
-          console.error('Failed to fetch matches:', err);
+          console.error("Failed to fetch matches:", err);
         } finally {
           setMatchesLoading(false);
         }
@@ -79,39 +80,9 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
-
-  // Format match data for the table.
-  const formattedMatches = useMemo(() => {
-    return matches.map(match => {
-      const isWinner = match.winner_team.player1.player_id === playerId || 
-                      match.winner_team.player2.player_id === playerId;
-      
-      const opponentTeam = isWinner ? match.loser_team : match.winner_team;
-      const opponentNames = [
-        opponentTeam.player1.name,
-        opponentTeam.player2.name
-      ].filter(Boolean).join(' & ');
-      
-      const playerTeam = isWinner ? match.winner_team : match.loser_team;
-      const playerNames = [
-        playerTeam.player1.name,
-        playerTeam.player2.name
-      ].filter(Boolean).join(' & ');
-
-      return {
-        id: match.match_id,
-        date: match.played_at,
-        result: isWinner ? 'Victoire' : 'Défaite',
-        playerTeam: playerNames,
-        opponentTeam: opponentNames,
-        eloChange: match.elo_changes[playerId].difference,
-        isFanny: match.is_fanny,
-      };
-    });
-  }, [matches, playerId]);
 
   if (loading) {
     return <PlayerLoadingSkeleton />;
@@ -126,7 +97,9 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
 
   return (
     <div className="w-full max-w-6xl mx-auto p-4 text-foreground space-y-8">
-      <h1 className="text-4xl sm:text-5xl font-bold text-center">{player.name}</h1>
+      <h1 className="text-4xl sm:text-5xl font-bold text-center">
+        {player.name}
+      </h1>
       <PlayerStatsCards player={player} />
       <div className="mt-12 flex flex-col lg:flex-row gap-8">
         <div className="flex-1 w-full">
@@ -143,6 +116,6 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
       </div>
     </div>
   );
-}
+};
 
 export default PlayerDetail;

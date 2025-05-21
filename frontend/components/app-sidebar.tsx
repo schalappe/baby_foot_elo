@@ -1,4 +1,4 @@
-import { Library, Home, Volleyball, Command } from "lucide-react"
+import { Library, Home, Volleyball, Command } from "lucide-react";
 
 import {
   Sidebar,
@@ -8,8 +8,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarHeader
-} from "@/components/ui/sidebar"
+  SidebarHeader,
+} from "@/components/ui/sidebar";
 
 // Menu items.
 const items = [
@@ -28,7 +28,7 @@ const items = [
     url: "/matches",
     icon: Library,
   },
-]
+];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
@@ -69,5 +69,5 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
-  )
+  );
 }

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Skeleton } from '@/components/ui/skeleton';
+import React from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * Generic loading skeleton for entity detail views (player, team, etc).

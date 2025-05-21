@@ -1,5 +1,5 @@
-import React from 'react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import React from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface EntityErrorAlertProps {
   error?: string;
@@ -24,7 +24,11 @@ interface EntityErrorAlertProps {
  * JSX.Element | null
  *     The rendered alert or null if no error.
  */
-const EntityErrorAlert: React.FC<EntityErrorAlertProps> = ({ error, notFound, notFoundText }) => {
+const EntityErrorAlert: React.FC<EntityErrorAlertProps> = ({
+  error,
+  notFound,
+  notFoundText,
+}) => {
   if (error) {
     return (
       <Alert variant="destructive" className="max-w-4xl mx-auto">

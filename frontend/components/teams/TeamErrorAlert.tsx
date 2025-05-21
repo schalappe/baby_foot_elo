@@ -1,5 +1,5 @@
-import React from 'react';
-import EntityErrorAlert from '@/components/common/EntityErrorAlert';
+import React from "react";
+import EntityErrorAlert from "@/components/common/EntityErrorAlert";
 
 interface TeamErrorAlertProps {
   error?: string;

@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { addDays, format } from "date-fns";
+import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { DateRange } from "react-day-picker";
 
@@ -32,13 +32,15 @@ export function DateRangePicker({
   align = "start",
   locale = fr,
 }: DateRangePickerProps) {
-  const [date, setDate] = React.useState<DateRange | undefined>(initialDateRange);
+  const [date, setDate] = React.useState<DateRange | undefined>(
+    initialDateRange,
+  );
   const [isOpen, setIsOpen] = React.useState(false);
 
   React.useEffect(() => {
     // If an initial date range is provided, set it.
     if (initialDateRange) {
-        setDate(initialDateRange);
+      setDate(initialDateRange);
     }
   }, [initialDateRange]);
 
@@ -46,7 +48,7 @@ export function DateRangePicker({
     setDate(selectedRange);
     onUpdateFilter(selectedRange);
     // Optionally close popover on selection, or require explicit close
-    // setIsOpen(false); 
+    // setIsOpen(false);
   };
 
   return (
@@ -58,16 +60,15 @@ export function DateRangePicker({
             variant={"outline"}
             className={cn(
               "w-full justify-start text-left font-normal md:w-[300px]", // md:w-[300px] for a decent default width
-              !date && "text-muted-foreground"
+              !date && "text-muted-foreground",
             )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {date?.from ? (
               date.to ? (
                 <>
-                  {format(date.from, "LLL dd, y")} - {
-                    format(date.to, "LLL dd, y")
-                  }
+                  {format(date.from, "LLL dd, y")} -{" "}
+                  {format(date.to, "LLL dd, y")}
                 </>
               ) : (
                 format(date.from, "LLL dd, y")

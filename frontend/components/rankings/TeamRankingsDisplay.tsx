@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Team } from '@/types/team.types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TeamRankingTable } from './TeamRankingTable';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
-import { PodiumGrid } from './common/PodiumGrid';
+import React from "react";
+import { Team } from "@/types/team.types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TeamRankingTable } from "./TeamRankingTable";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import { PodiumGrid } from "./common/PodiumGrid";
 
 interface TeamRankingsDisplayProps {
   teams: Team[];
@@ -18,10 +18,14 @@ interface TeamRankingsDisplayProps {
 const getTeamName = (team: Team): string => {
   const p1Name = team.player1?.name || `Joueur ID ${team.player1_id}`;
   const p2Name = team.player2?.name || `Joueur ID ${team.player2_id}`;
-  return [p1Name, p2Name].sort().join(' & ');
+  return [p1Name, p2Name].sort().join(" & ");
 };
 
-export function TeamRankingsDisplay({ teams = [], isLoading, error }: TeamRankingsDisplayProps) {
+export function TeamRankingsDisplay({
+  teams = [],
+  isLoading,
+  error,
+}: TeamRankingsDisplayProps) {
   if (isLoading) {
     return (
       <div className="w-full space-y-8">
@@ -42,7 +46,10 @@ export function TeamRankingsDisplay({ teams = [], isLoading, error }: TeamRankin
           </CardHeader>
           <CardContent>
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex justify-between items-center py-3 border-b last:border-b-0">
+              <div
+                key={i}
+                className="flex justify-between items-center py-3 border-b last:border-b-0"
+              >
                 <div className="flex items-center gap-4">
                   <Skeleton className="h-8 w-8" />
                   <Skeleton className="h-5 w-32" />
@@ -86,16 +93,22 @@ export function TeamRankingsDisplay({ teams = [], isLoading, error }: TeamRankin
           getName={(team) => getTeamName(team)}
           getElo={(team) => Math.round(team.global_elo)}
           getWinrate={(team) => {
-            const matchesPlayed = team.matches_played ?? (team.wins + team.losses);
+            const matchesPlayed =
+              team.matches_played ?? team.wins + team.losses;
             return `${matchesPlayed > 0 ? Math.round((team.wins / matchesPlayed) * 100) : 0}%`;
           }}
           renderExtra={(team) => {
-            const matchesPlayed = team.matches_played ?? (team.wins + team.losses);
+            const matchesPlayed =
+              team.matches_played ?? team.wins + team.losses;
             return (
               <>
                 {/* W-L and % */}
                 <div className="flex justify-center font-semibold mb-2">
-                  <span style={{color: "var(--win-text)"}}>{team.wins}W</span> &nbsp; - &nbsp; <span style={{color: "var(--lose-text)"}}>{team.losses}L</span>
+                  <span style={{ color: "var(--win-text)" }}>{team.wins}W</span>{" "}
+                  &nbsp; - &nbsp;{" "}
+                  <span style={{ color: "var(--lose-text)" }}>
+                    {team.losses}L
+                  </span>
                 </div>
                 {/* Bottom Row: Matches */}
                 <div className="flex justify-between items-end w-full mt-auto pt-2">
@@ -113,10 +126,16 @@ export function TeamRankingsDisplay({ teams = [], isLoading, error }: TeamRankin
       {otherTeams.length > 0 && (
         <Card className="shadow-lg border-2">
           <CardHeader className="border-b-2 rounded-t-md">
-            <CardTitle className="text-xl font-bold tracking-tight text-primary">Autres Équipes</CardTitle>
+            <CardTitle className="text-xl font-bold tracking-tight text-primary">
+              Autres Équipes
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <TeamRankingTable data={otherTeams} isLoading={false} error={null} />
+            <TeamRankingTable
+              data={otherTeams}
+              isLoading={false}
+              error={null}
+            />
           </CardContent>
         </Card>
       )}

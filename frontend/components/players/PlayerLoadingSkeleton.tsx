@@ -1,5 +1,5 @@
-import React from 'react';
-import EntityLoadingSkeleton from '@/components/common/EntityLoadingSkeleton';
+import React from "react";
+import EntityLoadingSkeleton from "@/components/common/EntityLoadingSkeleton";
 
 const PlayerLoadingSkeleton: React.FC = () => <EntityLoadingSkeleton />;
 

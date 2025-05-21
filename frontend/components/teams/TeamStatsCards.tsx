@@ -1,6 +1,6 @@
-import React from 'react';
-import EntityStatsCards from '@/components/common/EntityStatsCards';
-import { TeamStatistics } from '@/types/team.types';
+import React from "react";
+import EntityStatsCards from "@/components/common/EntityStatsCards";
+import { TeamStatistics } from "@/types/team.types";
 
 interface TeamStatsCardsProps {
   stats: TeamStatistics;

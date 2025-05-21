@@ -19,11 +19,14 @@ export default function BackendTestInfo() {
       .then((res) => {
         if (!res.ok) {
           // Try to parse error from backend if available
-          return res.json().then(errData => {
-            throw new Error(errData.detail || "API request failed");
-          }).catch(() => {
-            throw new Error(`API request failed with status: ${res.status}`);
-          });
+          return res
+            .json()
+            .then((errData) => {
+              throw new Error(errData.detail || "API request failed");
+            })
+            .catch(() => {
+              throw new Error(`API request failed with status: ${res.status}`);
+            });
         }
         return res.json();
       })
@@ -57,9 +60,15 @@ export default function BackendTestInfo() {
       </CardHeader>
       <CardContent>
         <ul className="space-y-1 text-sm">
-          <li><strong>Project:</strong> {info.project}</li>
-          <li><strong>Status:</strong> {info.status}</li>
-          <li><strong>Backend:</strong> {info.backend}</li>
+          <li>
+            <strong>Project:</strong> {info.project}
+          </li>
+          <li>
+            <strong>Status:</strong> {info.status}
+          </li>
+          <li>
+            <strong>Backend:</strong> {info.backend}
+          </li>
         </ul>
       </CardContent>
     </Card>
