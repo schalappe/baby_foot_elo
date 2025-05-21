@@ -113,7 +113,7 @@ def get_player_statistics(player_id: int) -> Dict[str, Any]:
             elo_values = [record.new_elo for record in elo_history if record.new_elo is not None]
 
         # ##: Calculate win rate.
-        win_rate = player.wins / player.matches_played if player.matches_played > 0 else 0
+        win_rate = player.wins / player.matches_played * 100 if player.matches_played > 0 else 0
 
         # ##: Process recent matches (last 30).
         recent_wins = 0
