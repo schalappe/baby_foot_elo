@@ -423,9 +423,7 @@ async def get_player_matches_endpoint(
         if end_date:
             filters["end_date"] = end_date
 
-        matches_response = stats_service.get_player_matches(
-            player_id=player_id, limit=limit, offset=offset, **filters
-        )
+        matches_response = stats_service.get_player_matches(player_id=player_id, limit=limit, offset=offset, **filters)
         return matches_response
     except PlayerNotFoundError as e:
         logger.info(f"Player not found when fetching matches, ID {player_id}: {e.detail}")

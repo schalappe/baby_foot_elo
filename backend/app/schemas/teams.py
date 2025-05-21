@@ -33,3 +33,11 @@ CREATE INDEX IF NOT EXISTS idx_teams_player1_id ON Teams(player1_id);
 CREATE_INDEX_TEAMS_PLAYER2_ID = """
 CREATE INDEX IF NOT EXISTS idx_teams_player2_id ON Teams(player2_id);
 """
+
+CREATE_INDEX_TEAMS_TEAM_ID = """
+CREATE INDEX IF NOT EXISTS idx_teams_team_id ON Teams(team_id);
+"""
+
+CREATE_INDEX_TEAMS_LAST_MATCH_AT = """
+CREATE INDEX IF NOT EXISTS idx_teams_last_match_at ON Teams(last_match_at);
+"""

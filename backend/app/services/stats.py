@@ -10,7 +10,7 @@ from app.db.repositories.matches import get_matches_by_team
 from app.exceptions.teams import TeamNotFoundError, TeamOperationError
 from app.models.elo_history import EloHistoryResponse
 from app.models.match import MatchWithEloResponse
-from app.services.players import get_player_by_id, get_matches_by_player
+from app.services.players import get_matches_by_player, get_player_by_id
 from app.services.teams import get_team_by_id, get_team_elo_history
 
 

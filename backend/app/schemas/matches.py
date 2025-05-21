@@ -21,6 +21,10 @@ CREATE TABLE IF NOT EXISTS Matches (
 );
 """
 
+CREATE_INDEX_MATCHES_MATCH_ID = """
+CREATE INDEX IF NOT EXISTS idx_matches_match_id ON Matches(match_id);
+"""
+
 CREATE_INDEX_MATCHES_WINNER_TEAM_ID = """
 CREATE INDEX IF NOT EXISTS idx_matches_winner_team_id ON Matches(winner_team_id);
 """
