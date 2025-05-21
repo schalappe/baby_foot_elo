@@ -1,8 +1,8 @@
 export interface MatchModel {
-    match_id: Number;
-    year: Number;
-    month: Number;
-    day: Number;
-    winner_team: Number;
-    loser_team: Number; 
+    match_id: number;
+    year: number;
+    month: number;
+    day: number;
+    winner_team: number;
+    loser_team: number; 
 }

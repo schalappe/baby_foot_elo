@@ -3,21 +3,43 @@
   import { useApi } from '@/composable/useApi';
   import { inject, ref, type Ref} from 'vue';
 
-  const { create } = useApi();
-  const players =  inject<Ref<PlayerModel[]>>('players');
+  const players =  inject<Ref<PlayerModel[] | null>>('players');
+  const createError = ref<Error | null>(null);
   const playerName = ref('');
 
+  const { create, remove } = useApi();
+
   const addPlayer = async () => {
+    createError.value = null;
+    if(!playerName.value.trim()) {
+      createError.value = new Error('Le nom du joueur ne peut pas être vide.')
+      return;
+    }
     try {
       const newPlayer = await create<PlayerModel>('/players', { name: playerName.value });
       if (players?.value) {
         players.value.push(newPlayer);
         console.log('Nouveau joueur ajouté:', newPlayer);
+        playerName.value = '';
       }
-    } catch (error) {
-      console.error('Erreur lors de l\'ajout du joueur:', error);
+    } catch (err) {
+      console.error('Erreur lors de l\'ajout du joueur:', err);
+      createError.value = err as Error;
     }
   };
+
+  const deletePlayer = async (id: number) => {
+    try {
+      await remove('players', id);
+      console.log('Joueur supprimé:', id);
+      if (players?.value) {
+        players.value = players.value.filter((player) => player.player_id !== id);
+      }
+    } catch (err) {
+      console.error('Erreur lors de la suppression du joueur:', err);
+      // Gérer l'erreur de suppression, par exemple afficher un toast spécifique
+    }
+};
 </script>
 
 <template>
@@ -43,5 +65,13 @@
             </div>
             <button class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" type="submit">Ajouter Joueur</button>
         </form>
+        <p v-if="createError" class="error-message">Erreur lors de l'ajout: {{ createError.message }}</p>
     </div>
 </template>
+
+<style scoped>
+  .error-message {
+  color: red;
+  margin-top: 10px;
+  }
+</style>

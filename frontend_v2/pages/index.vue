@@ -2,7 +2,7 @@
   import type { PlayerModel } from '@/models/PlayerModel';
   import type { TeamModel } from '@/models/TeamModel';
   import type { MatchModel } from '@/models/MatchModel';
-  import { inject, type Ref } from 'vue';
+  import { inject, ref, type Ref } from 'vue';
 
   const players =  inject<Ref<PlayerModel[]>>('players');
   const teams = inject<Ref<TeamModel[]>>('teams');
