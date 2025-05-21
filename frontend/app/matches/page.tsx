@@ -328,6 +328,7 @@ const MatchHistoryPage = () => {
                 return format(dateObj, 'dd/MM/yy');
               };
 
+              // Render a team cell with clickable team name
               const renderTeamCell = (team: MatchTeamInfo, isWinner: boolean, isFannyLoser: boolean) => {
                 let cellClasses = "flex items-center p-2 rounded-md";
                 let icon = null;
@@ -340,22 +341,35 @@ const MatchHistoryPage = () => {
                   icon = <Skull className="h-4 w-4 mr-2 text-red-700" />;
                 }
 
+                const teamLink = team.team_id ? `/teams/${team.team_id}` : undefined;
+
                 return (
-  <div className={cellClasses + " w-full"}>
-    {icon}
-    <div className="truncate overflow-hidden whitespace-nowrap w-full block">
-      {renderPlayerName(team.player1)}
-      {team.player2 && <span className="mx-1">,</span>}
-      {team.player2 && renderPlayerName(team.player2)}
-    </div>
-    {isFannyLoser && <Badge variant="destructive" className="ml-2">Fanny!</Badge>}
-  </div>
-);
+                  <div className={cellClasses + " w-full"}>
+                    {icon}
+                    {teamLink ? (
+                      <Link
+                        href={teamLink}
+                        className="truncate overflow-hidden whitespace-nowrap w-full block hover:underline focus:outline-none focus:ring-2 focus:ring-primary rounded"
+                        aria-label={`Voir la page de l'équipe ${team.player1?.name}${team.player2 ? ' et ' + team.player2.name : ''}`}
+                      >
+                        {renderPlayerName(team.player1)}
+                        {team.player2 && <span className="mx-1">&</span>}
+                        {team.player2 && renderPlayerName(team.player2)}
+                      </Link>
+                    ) : (
+                      <div className="truncate overflow-hidden whitespace-nowrap w-full block">
+                        {renderPlayerName(team.player1)}
+                        {team.player2 && <span className="mx-1">&</span>}
+                        {team.player2 && renderPlayerName(team.player2)}
+                      </div>
+                    )}
+                    {isFannyLoser && <Badge variant="destructive" className="ml-2">Fanny!</Badge>}
+                  </div>
+                );
               };
 
               let team_A_data: MatchTeamInfo;
               let team_B_data: MatchTeamInfo;
-
               if (match.winner_team.team_id < match.loser_team.team_id) {
                 team_A_data = match.winner_team;
                 team_B_data = match.loser_team;
@@ -373,11 +387,11 @@ const MatchHistoryPage = () => {
                 <React.Fragment key={match.match_id}>
                   <TableRow>
                     <TableCell className="w-1/10 text-center">{renderFormattedDate(match.played_at)}</TableCell>
-                    <TableCell className="w-1/3">
+                    <TableCell className="w-1/4">
                       {renderTeamCell(team_A_data, isTeamAWinner, isTeamAFannyLoser)}
                     </TableCell>
                     <TableCell className="text-center font-semibold">VS</TableCell>
-                    <TableCell className="w-1/3">
+                    <TableCell className="w-1/4">
                       {renderTeamCell(team_B_data, isTeamBWinner, isTeamBFannyLoser)}
                     </TableCell>
                     <TableCell className="max-w-xs w-full overflow-hidden text-ellipsis text-center">
