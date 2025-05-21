@@ -1,3 +1,12 @@
+/**
+ * ThemeToggle.tsx
+ *
+ * Displays a button to toggle between light and dark themes.
+ * Uses ShadCN Button and lucide-react icons.
+ *
+ * Exports:
+ *   - ThemeToggle: React.FC for theme toggle button.
+ */
 "use client";
 import * as React from "react";
 import { useTheme } from "next-themes";

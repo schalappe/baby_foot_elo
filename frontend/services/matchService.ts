@@ -1,3 +1,14 @@
+/**
+ * matchService.ts
+ *
+ * Provides API functions for fetching, creating, and retrieving matches from the backend.
+ * Uses axios for HTTP requests. Used throughout the app for match-related data.
+ *
+ * Exports:
+ *   - getMatches: Fetch all matches
+ *   - getMatchById: Fetch a match by ID
+ *   - createMatch: Create a new match
+ */
 // frontend/services/matchService.ts
 import axios from 'axios';
 import { Match, BackendMatchCreatePayload, BackendMatchWithEloResponse } from '../types/index';

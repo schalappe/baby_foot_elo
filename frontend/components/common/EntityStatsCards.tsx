@@ -1,3 +1,12 @@
+/**
+ * EntityStatsCards.tsx
+ *
+ * Displays a statistics card for player/team entity pages.
+ * Used to show ELO, win rate, and other stats in a card format for entities.
+ *
+ * Exports:
+ *   - EntityStatsCards: React.FC for entity statistics display.
+ */
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

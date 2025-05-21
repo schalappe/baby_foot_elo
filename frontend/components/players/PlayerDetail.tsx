@@ -1,3 +1,13 @@
+/**
+ * PlayerDetail.tsx
+ *
+ * Displays the detailed view for a single player, including stats and matches.
+ * Fetches player data and renders PlayerStatsCards and PlayerMatchesSection.
+ * Handles loading and error states.
+ *
+ * Exports:
+ *   - PlayerDetail: React.FC for player detail view.
+ */
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -11,10 +21,21 @@ import PlayerErrorAlert from "./PlayerErrorAlert";
 
 const ITEMS_PER_PAGE = 10;
 
+/**
+ * Props for PlayerDetail component.
+ * @property playerId - The ID of the player to display
+ */
 interface PlayerDetailProps {
   playerId: number;
 }
 
+/**
+ * Displays the detailed view for a single player, including stats and matches.
+ * Handles data fetching, loading, and error states.
+ *
+ * @param playerId - The ID of the player to display
+ * @returns The rendered player detail view
+ */
 const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
   const [player, setPlayer] = useState<PlayerStats | null>(null);
   const [matches, setMatches] = useState<BackendMatchWithEloResponse[]>([]);

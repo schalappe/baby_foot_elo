@@ -1,3 +1,13 @@
+/**
+ * PodiumGrid.tsx
+ *
+ * Displays a podium for the top 3 entities (player, team, etc) in a grid layout.
+ * Used for ranking displays and highlights on leaderboard pages.
+ *
+ * Exports:
+ *   - PodiumGrid: Generic React.FC for podium display.
+ *   - PodiumGridProps: Props interface for PodiumGrid.
+ */
 import React from "react";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

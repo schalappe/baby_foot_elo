@@ -1,3 +1,14 @@
+/**
+ * PlayerRankingTable.tsx
+ *
+ * Displays a sortable, paginated ranking table for players.
+ * Defines column configuration and renders RankingTable from common components.
+ * Used in player leaderboard and rankings pages.
+ *
+ * Exports:
+ *   - PlayerRankingTable: React.FC for player ranking table.
+ *   - columns: ColumnDef<Player>[] for table columns.
+ */
 "use client";
 
 import React from "react";

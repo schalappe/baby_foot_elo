@@ -1,3 +1,12 @@
+/**
+ * player.types.ts
+ *
+ * TypeScript interfaces and types for player-related data structures.
+ * Used throughout the app for type safety in API responses and UI.
+ *
+ * Exports:
+ *   - Player, PlayerStats, PlayerMatches, GetPlayersParams, etc.
+ */
 // frontend/types/player.types.ts
 
 export interface Player {

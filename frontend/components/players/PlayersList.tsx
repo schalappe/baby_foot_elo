@@ -1,3 +1,12 @@
+/**
+ * PlayersList.tsx
+ *
+ * Displays a searchable, sortable list of all players with registration dialog.
+ * Used for player directory and leaderboard pages.
+ *
+ * Exports:
+ *   - PlayersList: React.FC for player listing.
+ */
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import {
@@ -33,6 +42,12 @@ import { PlayerRegistrationForm } from "./PlayerRegistrationForm";
 
 type SortKey = keyof Pick<Player, "name" | "global_elo" | "matches_played">;
 
+/**
+ * Displays a searchable, sortable list of all players with registration dialog.
+ * Handles data fetching, search, and sorting.
+ *
+ * @returns The rendered players list
+ */
 const PlayersList: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState<boolean>(true);

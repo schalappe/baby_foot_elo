@@ -1,3 +1,13 @@
+/**
+ * app-sidebar.tsx
+ *
+ * Displays the main application sidebar with navigation menu.
+ * Uses ShadCN sidebar components and lucide-react icons.
+ * Used across all pages for primary navigation.
+ *
+ * Exports:
+ *   - AppSidebar: React.FC for sidebar navigation.
+ */
 import { Library, Home, Volleyball, Command } from "lucide-react";
 
 import {

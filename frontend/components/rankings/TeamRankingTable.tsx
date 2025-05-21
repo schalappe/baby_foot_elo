@@ -1,3 +1,14 @@
+/**
+ * TeamRankingTable.tsx
+ *
+ * Displays a sortable, paginated ranking table for teams.
+ * Defines column configuration and renders RankingTable from common components.
+ * Used in team leaderboard and rankings pages.
+ *
+ * Exports:
+ *   - TeamRankingTable: React.FC for team ranking table.
+ *   - columns: ColumnDef<Team>[] for table columns.
+ */
 "use client";
 
 import React from "react";

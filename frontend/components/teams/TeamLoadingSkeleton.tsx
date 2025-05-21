@@ -1,3 +1,12 @@
+/**
+ * TeamLoadingSkeleton.tsx
+ *
+ * Displays a loading skeleton for team detail pages.
+ * Wraps EntityLoadingSkeleton for team-specific loading UI.
+ *
+ * Exports:
+ *   - TeamLoadingSkeleton: React.FC for team loading state display.
+ */
 import React from "react";
 import EntityLoadingSkeleton from "@/components/common/EntityLoadingSkeleton";
 

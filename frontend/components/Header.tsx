@@ -1,7 +1,21 @@
+/**
+ * Header.tsx
+ *
+ * Displays the application header bar, including the sidebar trigger, title, and theme toggle.
+ * Used at the top of every page for navigation and quick actions.
+ *
+ * Exports:
+ *   - SiteHeader: React.FC for the main app header.
+ */
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
+/**
+ * Renders the main application header bar with sidebar trigger, title, and theme toggle.
+ *
+ * @returns The header JSX element.
+ */
 export function SiteHeader() {
   return (
     <header className="group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 flex h-12 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear">

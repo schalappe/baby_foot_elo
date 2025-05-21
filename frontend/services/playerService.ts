@@ -1,3 +1,17 @@
+/**
+ * playerService.ts
+ *
+ * Provides API functions for fetching, creating, and retrieving player data from the backend.
+ * Uses axios for HTTP requests. Used throughout the app for player-related data.
+ *
+ * Exports:
+ *   - getPlayers: Fetch all players (with optional filters)
+ *   - getPlayerById: Fetch a player by ID
+ *   - createPlayer: Create a new player
+ *   - getPlayerRankings: Fetch player rankings
+ *   - getPlayerStats: Fetch player statistics
+ *   - getPlayerMatches: Fetch matches for a player
+ */
 // frontend/services/playerService.ts
 import axios from 'axios';
 import { Player, PlayerStats, GetPlayersParams } from '../types/index';

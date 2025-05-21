@@ -1,3 +1,12 @@
+/**
+ * match.types.ts
+ *
+ * TypeScript interfaces and types for match-related data structures.
+ * Used throughout the app for type safety in API responses and UI.
+ *
+ * Exports:
+ *   - Match, BackendMatchCreatePayload, BackendMatchWithEloResponse, etc.
+ */
 // frontend/types/match.types.ts
 import { Player } from './player.types';
 

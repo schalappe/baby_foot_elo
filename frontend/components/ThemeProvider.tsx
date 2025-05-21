@@ -1,3 +1,13 @@
+/**
+ * ThemeProvider.tsx
+ *
+ * Provides theme context (light/dark) to the application using next-themes.
+ * Used to wrap the app and enable theme switching.
+ *
+ * Exports:
+ *   - ThemeProvider: React.FC for theme context provider.
+ *   - useTheme: Re-export from next-themes for convenience.
+ */
 "use client";
 
 import * as React from "react";

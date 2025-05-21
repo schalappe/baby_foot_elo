@@ -1,3 +1,12 @@
+/**
+ * EntityErrorAlert.tsx
+ *
+ * Displays a generic error or not-found alert for entity detail pages (player, team, etc).
+ * Used throughout the app for consistent error UI in entity-related views.
+ *
+ * Exports:
+ *   - EntityErrorAlert: React.FC for error/not-found display.
+ */
 import React from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 

@@ -1,3 +1,13 @@
+/**
+ * TeamDetail.tsx
+ *
+ * Displays the detailed view for a single team, including stats and matches.
+ * Fetches team data and renders TeamStatsCards and TeamMatchesSection.
+ * Handles loading and error states.
+ *
+ * Exports:
+ *   - TeamDetail: React.FC for team detail view.
+ */
 "use client";
 
 import React, { useState, useEffect } from "react";

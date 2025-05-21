@@ -1,3 +1,12 @@
+/**
+ * EntityMatchesSection.tsx
+ *
+ * Displays a paginated matches section for player/team entity pages.
+ * Used to show a list of matches with pagination controls in entity detail views.
+ *
+ * Exports:
+ *   - EntityMatchesSection: React.FC for paginated match lists.
+ */
 import React from "react";
 import {
   Pagination,

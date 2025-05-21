@@ -1,3 +1,12 @@
+/**
+ * team.types.ts
+ *
+ * TypeScript interfaces and types for team-related data structures.
+ * Used throughout the app for type safety in API responses and UI.
+ *
+ * Exports:
+ *   - Team, TeamMatchWithElo, TeamStatistics, etc.
+ */
 // frontend/types/team.types.ts
 import { Player } from '@/types/player.types';
 import { BackendMatchWithEloResponse } from '@/types/match.types';

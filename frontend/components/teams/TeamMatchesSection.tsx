@@ -1,3 +1,12 @@
+/**
+ * TeamMatchesSection.tsx
+ *
+ * Displays a paginated list of matches for a team, grouped by date.
+ * Used in team detail pages to show match history.
+ *
+ * Exports:
+ *   - TeamMatchesSection: React.FC for team match list.
+ */
 import React from "react";
 import {
   TrophyIcon,

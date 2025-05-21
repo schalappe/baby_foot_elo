@@ -1,3 +1,12 @@
+/**
+ * PlayerRankingsDisplay.tsx
+ *
+ * Displays the full player rankings page, including podium and table.
+ * Handles loading, error, and empty states for player ranking data.
+ *
+ * Exports:
+ *   - PlayerRankingsDisplay: React.FC for player rankings display.
+ */
 "use client";
 
 import React from "react";

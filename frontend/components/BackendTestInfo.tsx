@@ -1,3 +1,12 @@
+/**
+ * BackendTestInfo.tsx
+ *
+ * Displays backend connection and status info for development/debugging.
+ * Fetches data from /test-info endpoint and shows status or error.
+ *
+ * Exports:
+ *   - BackendTestInfo: React.FC for backend info display.
+ */
 "use client";
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

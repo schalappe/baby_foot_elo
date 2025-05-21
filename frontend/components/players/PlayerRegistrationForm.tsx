@@ -1,3 +1,12 @@
+/**
+ * PlayerRegistrationForm.tsx
+ *
+ * Displays a form for registering a new player. Handles validation and submission.
+ * Used in dialogs or registration pages.
+ *
+ * Exports:
+ *   - PlayerRegistrationForm: React.FC for player registration form.
+ */
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -22,10 +31,20 @@ const formSchema = z.object({
   }),
 });
 
+/**
+ * Props for PlayerRegistrationForm component.
+ * @property onPlayerRegistered - Callback when a player is successfully registered
+ */
 interface PlayerRegistrationFormProps {
   onPlayerRegistered: () => void;
 }
 
+/**
+ * Displays a form for registering a new player. Handles validation and submission.
+ *
+ * @param onPlayerRegistered - Callback when a player is successfully registered
+ * @returns The rendered player registration form
+ */
 export function PlayerRegistrationForm({
   onPlayerRegistered,
 }: PlayerRegistrationFormProps) {

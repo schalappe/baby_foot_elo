@@ -1,3 +1,16 @@
+/**
+ * teamService.ts
+ *
+ * Provides API functions for fetching, creating, and retrieving team data from the backend.
+ * Uses axios for HTTP requests. Used throughout the app for team-related data.
+ *
+ * Exports:
+ *   - getTeamRankings: Fetch team rankings
+ *   - findOrCreateTeam: Find or create a team
+ *   - getTeamById: Fetch team details by ID
+ *   - getTeamStatistics: Fetch team statistics
+ *   - getTeamMatches: Fetch matches for a team
+ */
 // frontend/services/teamService.ts
 import axios from 'axios';
 import { Team, TeamStatistics, TeamMatchWithElo } from '@/types/team.types';

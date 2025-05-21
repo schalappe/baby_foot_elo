@@ -1,3 +1,14 @@
+/**
+ * RankingTable.tsx
+ *
+ * Displays a sortable, paginated ranking table for entities (players, teams, etc).
+ * Built on top of TanStack Table and ShadCN UI table components.
+ * Used for leaderboard and ranking pages.
+ *
+ * Exports:
+ *   - RankingTable: Generic React.FC for ranking tables.
+ *   - RankingTableProps: Props interface for RankingTable.
+ */
 import React, { useState } from "react";
 import {
   ColumnDef,
@@ -30,6 +41,15 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
+/**
+ * Props for the RankingTable component.
+ *
+ * @template T - Entity type for the table rows
+ * @property data - Array of entities to display
+ * @property columns - Column definitions for TanStack Table
+ * @property isLoading - Whether the table is in loading state
+ * @property error - Error object if loading failed
+ */
 export interface RankingTableProps<T> {
   data: T[];
   columns: ColumnDef<T, any>[];
@@ -37,6 +57,16 @@ export interface RankingTableProps<T> {
   error: Error | null;
 }
 
+/**
+ * RankingTable component for displaying sortable, paginated rankings of entities.
+ *
+ * @template T - Entity type for the table rows
+ * @param data - Array of entities to display
+ * @param columns - Column definitions for TanStack Table
+ * @param isLoading - Whether the table is in loading state
+ * @param error - Error object if loading failed
+ * @returns The rendered ranking table component
+ */
 export function RankingTable<T>({
   data,
   columns,

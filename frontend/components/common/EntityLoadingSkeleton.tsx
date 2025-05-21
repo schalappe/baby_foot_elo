@@ -1,3 +1,12 @@
+/**
+ * EntityLoadingSkeleton.tsx
+ *
+ * Displays a generic skeleton loader for entity detail pages (player, team, etc).
+ * Used throughout the app to provide a consistent loading UI for entity-related views.
+ *
+ * Exports:
+ *   - EntityLoadingSkeleton: React.FC for loading state display.
+ */
 import React from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 

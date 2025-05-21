@@ -1,3 +1,12 @@
+/**
+ * TeamRankingsDisplay.tsx
+ *
+ * Displays the full team rankings page, including podium and table.
+ * Handles loading, error, and empty states for team ranking data.
+ *
+ * Exports:
+ *   - TeamRankingsDisplay: React.FC for team rankings display.
+ */
 "use client";
 
 import React from "react";

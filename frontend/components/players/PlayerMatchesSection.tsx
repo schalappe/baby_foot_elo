@@ -1,3 +1,12 @@
+/**
+ * PlayerMatchesSection.tsx
+ *
+ * Displays a paginated list of matches for a player, with stats and navigation.
+ * Used in player detail pages to show match history.
+ *
+ * Exports:
+ *   - PlayerMatchesSection: React.FC for player match list.
+ */
 import React from "react";
 import {
   TrophyIcon,
@@ -17,6 +26,16 @@ import {
 } from "@/components/ui/pagination";
 import { BackendMatchWithEloResponse } from "@/types/match.types";
 
+/**
+ * Props for PlayerMatchesSection component.
+ * @property matches - Array of match objects for the player
+ * @property playerId - The ID of the player
+ * @property matchesLoading - Whether the matches are loading
+ * @property currentPage - Current page number
+ * @property totalPages - Total number of pages
+ * @property totalMatches - Total number of matches
+ * @property handlePageChange - Callback to change the page
+ */
 interface PlayerMatchesSectionProps {
   matches: BackendMatchWithEloResponse[];
   playerId: number;
@@ -27,6 +46,18 @@ interface PlayerMatchesSectionProps {
   handlePageChange: (page: number) => void;
 }
 
+/**
+ * Displays a paginated list of matches for a player, with stats and navigation.
+ *
+ * @param matches - Array of match objects for the player
+ * @param playerId - The ID of the player
+ * @param matchesLoading - Whether the matches are loading
+ * @param currentPage - Current page number
+ * @param totalPages - Total number of pages
+ * @param totalMatches - Total number of matches
+ * @param handlePageChange - Callback to change the page
+ * @returns The rendered player matches section
+ */
 const PlayerMatchesSection: React.FC<PlayerMatchesSectionProps> = ({
   matches,
   playerId,
