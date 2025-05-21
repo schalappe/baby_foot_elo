@@ -1,3 +1,13 @@
+/**
+ * teams/page.tsx
+ *
+ * Displays team rankings in the Baby Foot ELO app.
+ *
+ * - Fetches and displays a list of ranked teams.
+ * - Handles loading and error states.
+ *
+ * Usage: Routed to '/teams' by Next.js.
+ */
 'use client';
 
 import { useState, useEffect } from 'react';

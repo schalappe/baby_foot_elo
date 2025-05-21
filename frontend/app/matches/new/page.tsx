@@ -1,12 +1,23 @@
-// frontend/app/matches/new/page.tsx
+/**
+ * matches/new/page.tsx
+ *
+ * Page for creating a new match in the Baby Foot ELO app.
+ *
+ * - Provides a form to create and submit a new match.
+ * - Fetches players and teams for match assignment.
+ * - Uses react-hook-form and ShadCN UI components.
+ *
+ * Usage: Routed to '/matches/new' by Next.js.
+ */
 "use client";
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Player } from '@/services/playerService';
+import { Player } from '@/types/player.types';
+import { BackendMatchCreatePayload } from '@/types/match.types';
 import { getPlayers } from '@/services/playerService';
 import { findOrCreateTeam } from '@/services/teamService';
-import { createMatch, BackendMatchCreatePayload } from '@/services/matchService';
+import { createMatch } from '@/services/matchService';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';

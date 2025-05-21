@@ -1,4 +1,14 @@
-// frontend/app/matches/page.tsx
+/**
+ * matches/page.tsx
+ *
+ * Displays a list of all matches with filtering and details for the Baby Foot ELO app.
+ *
+ * - Fetches matches and player data from the backend.
+ * - Allows filtering by date range and other criteria.
+ * - Uses ShadCN UI components for table and controls.
+ *
+ * Usage: Routed to '/matches' by Next.js.
+ */
 "use client";
 
 import React, { useEffect, useState, useMemo } from 'react';

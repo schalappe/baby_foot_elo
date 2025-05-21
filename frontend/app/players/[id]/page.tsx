@@ -1,3 +1,13 @@
+/**
+ * players/[id]/page.tsx
+ *
+ * Displays detailed information about a specific player in the Baby Foot ELO app.
+ *
+ * - Fetches and renders player details based on dynamic route 'id'.
+ * - Handles invalid or missing player IDs with error messaging.
+ *
+ * Usage: Routed to '/players/[id]' by Next.js.
+ */
 "use client";
 
 import React from 'react';

@@ -1,3 +1,13 @@
+/**
+ * players/page.tsx
+ *
+ * Displays a list of all players in the Baby Foot ELO app.
+ *
+ * - Renders the PlayersList component.
+ * - Used for browsing and managing players.
+ *
+ * Usage: Routed to '/players' by Next.js.
+ */
 "use client";
 
 import React from 'react';

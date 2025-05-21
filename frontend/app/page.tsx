@@ -1,3 +1,14 @@
+/**
+ * page.tsx
+ *
+ * Main landing page for player rankings in the Baby Foot ELO app.
+ *
+ * - Displays player rankings and registration dialog.
+ * - Fetches player ranking data from the backend.
+ * - Allows users to register new players.
+ *
+ * Usage: This file is routed to '/' by Next.js.
+ */
 'use client';
 
 import { useState, useEffect } from 'react';

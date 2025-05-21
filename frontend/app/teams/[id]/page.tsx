@@ -1,3 +1,13 @@
+/**
+ * teams/[id]/page.tsx
+ *
+ * Displays detailed information about a specific team in the Baby Foot ELO app.
+ *
+ * - Fetches and renders team details based on dynamic route 'id'.
+ * - Handles invalid or missing team IDs with error messaging.
+ *
+ * Usage: Routed to '/teams/[id]' by Next.js.
+ */
 "use client";
 
 import React from 'react';

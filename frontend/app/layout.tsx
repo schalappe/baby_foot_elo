@@ -1,3 +1,16 @@
+/**
+ * layout.tsx
+ *
+ * Root layout component for the Baby Foot ELO Next.js app.
+ *
+ * - Sets up global fonts, theme provider, sidebar, and header.
+ * - Wraps all pages with shared UI and providers.
+ * - Imports global styles.
+ *
+ * Props: None (used as the root layout in Next.js app directory).
+ *
+ * Usage: Do not import directly. Used automatically by Next.js as the root layout.
+ */
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
