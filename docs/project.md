@@ -18,13 +18,13 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 ### Gestion des équipes
 
 - Formation d'équipes de deux joueurs
-- Suggestion automatique des paires d'équipes possibles à partir des joueurs enregistrés
-- Calcul de l'ELO d'équipe (basé sur les ELO individuels, calculé dynamiquement)
+- Attribution d'un ELO initial (par défaut: 1000)
+- Suivi de l'évolution de l'ELO au fil du temps
 - Classement dynamique des équipes (basé sur l'ELO d'équipe calculé)
 
 ### Gestion des matchs
 
-- Enregistrement des résultats de matchs (vainqueur, perdant, score)
+- Enregistrement des résultats de matchs (vainqueur, perdant)
 - Support pour les matchs "fanny" (symbolique, sans impact sur l'ELO)
 - Calcul automatique des points ELO gagnés/perdus
 - Historique complet des matchs joués
@@ -91,11 +91,8 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
   - `loser_team_id` (INTEGER REFERENCES Teams)
   - `is_fanny` (BOOLEAN)
   - `date` (TIMESTAMP)
-  - `year` (INTEGER)
-  - `month` (INTEGER)
-  - `day` (INTEGER)
 
-- **ELO_History**:
+- **Player_History**:
   - `history_id` (INTEGER PRIMARY KEY)
   - `player_id` (INTEGER REFERENCES Players)
   - `match_id` (INTEGER REFERENCES Matches)
@@ -103,22 +100,30 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
   - `new_elo` (INTEGER)
   - `difference` (INTEGER)
   - `date` (TIMESTAMP)
-  - `year` (INTEGER)
-  - `month` (INTEGER)
-  - `day` (INTEGER)
+
+- **Team_History**:
+  - `history_id` (INTEGER PRIMARY KEY)
+  - `team_id` (INTEGER REFERENCES Teams)
+  - `match_id` (INTEGER REFERENCES Matches)
+  - `old_elo` (INTEGER)
+  - `new_elo` (INTEGER)
+  - `difference` (INTEGER)
+  - `date` (TIMESTAMP)
 
 #### Diagramme Entité-Relation (Conceptuel)
 
 ```mermaid
 erDiagram
-    Players ||--o{ ELO_History : "tracks changes for"
+    Players ||--o{ Player_History : "tracks changes for"
     Players }o--|| Teams : "forms (joueur1)"
     Players }o--|| Teams : "forms (joueur2)"
 
+    Teams ||--o{ Team_History : "tracks changes for"
     Teams ||--o{ Matches : "wins"
     Teams ||--o{ Matches : "loses"
 
-    Matches ||--|{ ELO_History : "results in"
+    Matches ||--|{ Player_History : "results in"
+    Matches ||--|{ Team_History : "results in"
 
     Players {
         INTEGER player_id PK
@@ -142,12 +147,9 @@ erDiagram
         INTEGER loser_team_id FK
         BOOLEAN is_fanny
         TIMESTAMP date
-        INTEGER year
-        INTEGER month
-        INTEGER day
     }
 
-    ELO_History {
+    Player_History {
         INTEGER history_id PK
         INTEGER player_id FK
         INTEGER match_id FK
@@ -155,9 +157,16 @@ erDiagram
         INTEGER new_elo
         INTEGER difference
         TIMESTAMP date
-        INTEGER year
-        INTEGER month
-        INTEGER day
+    }
+
+    Team_History {
+        INTEGER history_id PK
+        INTEGER team_id FK
+        INTEGER match_id FK
+        INTEGER old_elo
+        INTEGER new_elo
+        INTEGER difference
+        TIMESTAMP date
     }
 ```
 
