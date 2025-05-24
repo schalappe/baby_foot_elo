@@ -10,7 +10,6 @@ from typing import Dict, List, Optional
 
 from loguru import logger
 
-from app.db.repositories.elo_history import get_elo_history_by_player_match
 from app.db.repositories.matches import get_matches_by_team
 from app.db.repositories.players import get_player
 from app.db.repositories.stats import get_team_stats
@@ -59,8 +58,8 @@ def get_team_by_id(team_id: int) -> TeamResponse:
         If there's an error retrieving the team's data.
     """
     try:
-        # ##: Get basic team data.
-        team = get_team(team_id)
+        # ##: Get team stats.
+        team = get_team_stats(team_id)
         if not team:
             raise TeamNotFoundError(f"ID: {team_id}")
 
@@ -72,26 +71,15 @@ def get_team_by_id(team_id: int) -> TeamResponse:
             logger.error(f"One or both players not found for team {team_id}")
             raise TeamOperationError("Could not retrieve player details for the team.")
 
-        # ##: Create and return the team response with player details.
-        stats = get_team_stats(team_id)
-        if not stats:
-            logger.warning(f"No stats found for team ID {team_id}")
-            stats = {
-                "matches_played": 0,
-                "wins": 0,
-                "losses": 0,
-                "win_rate": 0.0,
-            }
-
         response = TeamResponse(
             team_id=team_id,
             global_elo=team["global_elo"],
             created_at=team["created_at"],
             last_match_at=team["last_match_at"],
-            matches_played=stats["matches_played"],
-            wins=stats["wins"],
-            losses=stats["losses"],
-            win_rate=stats["win_rate"],
+            matches_played=team["matches_played"],
+            wins=team["wins"],
+            losses=team["losses"],
+            win_rate=team["win_rate"],
             player1_id=team["player1_id"],
             player2_id=team["player2_id"],
             player1=player1,
@@ -99,7 +87,7 @@ def get_team_by_id(team_id: int) -> TeamResponse:
         )
         return response
 
-    except TeamNotFoundError:
+    except (TeamNotFoundError, TeamOperationError):
         raise
     except Exception as exc:
         logger.error(f"Error retrieving team with ID {team_id}: {exc}")
