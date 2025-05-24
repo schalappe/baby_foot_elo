@@ -53,6 +53,92 @@ def get_player_matches(player_id: int, limit: int = 10, offset: int = 0, **filte
         return []
 
 
+def get_team_elo_history(team: TeamResponse, match_id: int) -> Dict[str, int]:
+    """
+    Retrieve the ELO history for a team based on a specific match.
+
+    Parameters
+    ----------
+    team : TeamResponse
+        The team for which to retrieve the ELO history.
+    match_id : int
+        The ID of the match for which to retrieve the ELO history.
+
+    Returns
+    -------
+    Dict[str, int]
+        A dictionary containing the old ELO, new ELO, and difference in ELO.
+    """
+    elo_history = get_team_elo_history_by_team_match(team.team_id, match_id)
+
+    return {
+        "old_elo": elo_history["old_elo"],
+        "new_elo": elo_history["new_elo"],
+        "difference": int(elo_history["difference"]),
+    }
+
+
+def get_team_matches(team_id: int, limit: int = 100, offset: int = 0) -> List[MatchWithEloResponse]:
+    """
+    Retrieve a paginated list of matches for a specific team.
+
+    Parameters
+    ----------
+    team_id : int
+        The ID of the team.
+    limit : int, optional
+        Maximum number of matches to return (default: 100).
+    offset : int, optional
+        Number of matches to skip for pagination (default: 0).
+
+    Returns
+    -------
+    List[MatchWithEloResponse]
+        A list of matches the team participated in.
+    """
+    try:
+        # ##: Check if team exists
+        if not get_team(team_id):
+            raise TeamNotFoundError(f"ID: {team_id}")
+
+        # ##: Get matches from repository
+        matches = get_matches_by_team(team_id, limit=limit, offset=offset)
+
+        # ##: Convert to MatchWithEloResponse models
+        result = []
+        for match in matches:
+            try:
+                # ##: Get teams.
+                winner_team = get_team_by_id(match["winner_team_id"])
+                loser_team = get_team_by_id(match["loser_team_id"])
+
+                # ##: Get ELO change.
+                elo_changes = {
+                    winner_team.team_id: get_team_elo_history(winner_team, match["match_id"]),
+                    loser_team.team_id: get_team_elo_history(loser_team, match["match_id"]),
+                }
+
+                # ##: Create match response.
+                match_response = MatchWithEloResponse(
+                    **match,
+                    winner_team=winner_team,
+                    loser_team=loser_team,
+                    elo_changes=elo_changes,
+                )
+                result.append(match_response)
+            except Exception as e:
+                logger.warning(f"Skipping match {match.get('match_id')} due to error: {e}")
+                continue
+
+        return result
+
+    except TeamNotFoundError:
+        raise
+    except Exception as exc:
+        logger.error(f"Error retrieving matches for team {team_id}: {exc}")
+        raise TeamOperationError(f"Failed to retrieve matches for team {team_id}") from exc
+
+
 def get_elo_history_by_id(player_id: int, limit: int = 20, offset: int = 0, **filters) -> List[EloHistoryResponse]:
     """
     Retrieve ELO history for a specific player.
@@ -265,3 +351,62 @@ def get_team_statistics(team_id: int) -> Dict[str, Any]:
     except Exception as exc:
         logger.error(f"Error retrieving statistics for team {team_id}: {exc}")
         raise TeamOperationError(f"Failed to retrieve statistics for team {team_id}") from exc
+
+
+def get_active_team_rankings(limit: int = 100, days_since_last_match: Optional[int] = None) -> List[TeamResponse]:
+    """
+    Retrieve team rankings based on ELO ratings.
+
+    Parameters
+    ----------
+    limit : int, optional
+        Maximum number of teams to return, by default 100.
+    days_since_last_match : Optional[int], optional
+        Only include teams whose last match was at least this many days ago, by default None.
+
+    Returns
+    -------
+    List[TeamResponse]
+        A list of teams sorted by ELO in descending order, with rank information.
+
+    Raises
+    ------
+    TeamOperationError
+        If there's an error retrieving the rankings.
+    """
+    try:
+        # ##: Get team rankings from repository.
+        teams = get_team_rankings(limit=limit)
+
+        # ##: Apply additional filters.
+        if days_since_last_match is not None:
+            filtered_teams = []
+            for team in teams:
+                if team["last_match_at"] is None:
+                    continue
+
+                days = (datetime.now() - team["last_match_at"]).days
+                if days >= days_since_last_match:
+                    continue
+
+                filtered_teams.append(team)
+
+            # ##: Re-sort after filtering.
+            teams = sorted(filtered_teams, key=lambda x: x["global_elo"], reverse=True)
+
+        # ##: Convert to TeamResponse models with rank information.
+        result = []
+        for rank, team in enumerate(teams, 1):
+            try:
+                team_response = get_team_by_id(team["team_id"])
+                team_response.rank = rank
+                result.append(team_response)
+            except Exception as e:
+                logger.warning(f"Skipping team {team.get('team_id')} in rankings due to error: {e}")
+                continue
+
+        return result
+
+    except Exception as exc:
+        logger.error(f"Error retrieving team rankings: {exc}")
+        raise TeamOperationError("Failed to retrieve team rankings") from exc

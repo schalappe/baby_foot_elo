@@ -221,7 +221,7 @@ async def get_team_rankings_endpoint(
         Each team includes complete player details and ELO ratings.
     """
     try:
-        return teams_service.get_active_team_rankings(limit=limit, days_since_last_match=days_since_last_match)
+        return stats_service.get_active_team_rankings(limit=limit, days_since_last_match=days_since_last_match)
 
     except Exception as exc:
         logger.error(f"Error retrieving team rankings: {exc}")
