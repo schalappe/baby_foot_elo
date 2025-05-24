@@ -21,14 +21,11 @@ To correct this, the system will distribute a total of -61 ELO points back to th
 - New sum of changes: +31 + (-31) = 0 ELO (zero-sum maintained)
 """
 
-from ast import Tuple
-from math import pow
 from statistics import mean
-from typing import Any, Dict, List
+from typing import Any, Dict, Tuple
 
 from loguru import logger
 
-from app.models.player import PlayerResponse
 from app.models.team import TeamResponse
 
 # ##: K-factors for established players.
@@ -106,9 +103,9 @@ def determine_k_factor(competitor_elo: int) -> int:
     Determine the K factor based on competitor's ELO rating.
 
     K factor tiers:
-    - 100 for ELO < 1200
-    - 50 for 1200 <= ELO < 1800
-    - 24 for ELO >= 1800
+    - 200 for ELO < 1200
+    - 100 for 1200 <= ELO < 1800
+    - 50 for ELO >= 1800
 
     Parameters
     ----------
@@ -179,6 +176,52 @@ def calculate_elo_change(competitor_elo: int, win_probability: float, match_resu
     return change
 
 
+def calculate_elo_changes_with_pool_correction(
+    competitors_data: Dict[Any, Dict[str, Any]],
+) -> Dict[Any, Dict[str, Any]]:
+    """
+    Calculate ELO changes for a group of competitors, applying a "pool" system correction
+    to ensure the sum of ELO changes is zero.
+
+    Parameters
+    ----------
+    competitors_data : Dict[Any, Dict[str, Any]]
+        A dictionary where keys are competitor IDs and values are dictionaries
+        containing 'old_elo', 'win_prob', 'match_result', and 'k_factor' for each competitor.
+
+    Returns
+    -------
+    Dict[Any, Dict[str, Any]]
+        Mapping competitor IDs to a dict with 'old_elo', 'new_elo', and 'change'.
+    """
+    initial_elo_changes = {}
+    total_k_factor = 0
+    sum_of_initial_changes = 0
+
+    for comp_id, data in competitors_data.items():
+        initial_change = calculate_elo_change(data["old_elo"], data["win_prob"], data["match_result"])
+        initial_elo_changes[comp_id] = initial_change
+        total_k_factor += data["k_factor"]
+        sum_of_initial_changes += initial_change
+
+    # ##: Apply pool system correction.
+    corrected_elo_changes = {}
+    if total_k_factor != 0:
+        correction_factor_per_k = -sum_of_initial_changes / total_k_factor
+    else:
+        correction_factor_per_k = 0
+
+    for comp_id, data in competitors_data.items():
+        initial_change = initial_elo_changes[comp_id]
+        corrected_change = initial_change + int(data["k_factor"] * correction_factor_per_k)
+        corrected_elo_changes[comp_id] = {
+            "old_elo": data["old_elo"],
+            "new_elo": data["old_elo"] + corrected_change,
+            "change": corrected_change,
+        }
+    return corrected_elo_changes
+
+
 def calculate_players_elo_change(winning_team: TeamResponse, losing_team: TeamResponse) -> Dict[str, Any]:
     """
     Calculate ELO changes for each player in a match.
@@ -198,42 +241,40 @@ def calculate_players_elo_change(winning_team: TeamResponse, losing_team: TeamRe
     Dict[str, Any]
         Mapping player IDs to a dict with 'old_elo', 'new_elo', and 'change'.
     """
+    all_players_data = {}
     elo_winner = calculate_team_elo(winning_team.player1.global_elo, winning_team.player2.global_elo)
     elo_loser = calculate_team_elo(losing_team.player1.global_elo, losing_team.player2.global_elo)
     win_prob = calculate_win_probability(competitor_a_elo=elo_winner, competitor_b_elo=elo_loser)
 
-    results = {}
-    all_players_changes = []
+    # ##: Winning team players.
+    all_players_data[winning_team.player1.player_id] = {
+        "old_elo": winning_team.player1.global_elo,
+        "win_prob": win_prob,
+        "match_result": 1,
+        "k_factor": determine_k_factor(winning_team.player1.global_elo),
+    }
+    all_players_data[winning_team.player2.player_id] = {
+        "old_elo": winning_team.player2.global_elo,
+        "win_prob": win_prob,
+        "match_result": 1,
+        "k_factor": determine_k_factor(winning_team.player2.global_elo),
+    }
 
-    # ##: Calculate ELO changes for winning team.
-    for player in [winning_team.player1, winning_team.player2]:
-        change = calculate_elo_change(competitor_elo=player.global_elo, win_probability=win_prob, match_result=1)
-        all_players_changes.append((player, change, determine_k_factor(player.global_elo)))
+    # ##: Losing team players.
+    all_players_data[losing_team.player1.player_id] = {
+        "old_elo": losing_team.player1.global_elo,
+        "win_prob": 1 - win_prob,
+        "match_result": 0,
+        "k_factor": determine_k_factor(losing_team.player1.global_elo),
+    }
+    all_players_data[losing_team.player2.player_id] = {
+        "old_elo": losing_team.player2.global_elo,
+        "win_prob": 1 - win_prob,
+        "match_result": 0,
+        "k_factor": determine_k_factor(losing_team.player2.global_elo),
+    }
 
-    # ##: Calculate ELO changes for losing team.
-    for player in [losing_team.player1, losing_team.player2]:
-        change = calculate_elo_change(competitor_elo=player.global_elo, win_probability=1 - win_prob, match_result=0)
-        all_players_changes.append((player, change, determine_k_factor(player.global_elo)))
-
-    # ##: Apply pool system correction.
-    sum_delta_elo = sum(change for _, change, _ in all_players_changes)
-    if sum_delta_elo != 0:
-        total_k_factor = sum(k for _, _, k in all_players_changes)
-        correction_factor_per_k = -sum_delta_elo / total_k_factor
-        logger.debug(
-            f"Applying ELO pool correction: sum_delta_elo={sum_delta_elo}, total_k_factor={total_k_factor}, correction_factor_per_k={correction_factor_per_k:.4f}"
-        )
-
-        for i, (player, change, k_factor) in enumerate(all_players_changes):
-            corrected_change = change + (k_factor * correction_factor_per_k)
-            all_players_changes[i] = (player, int(corrected_change), k_factor)
-
-    for player, change, _ in all_players_changes:
-        new_elo = player.global_elo + change
-        logger.debug(f"Player {player.player_id}: ELO {player.global_elo} -> {new_elo} (Change: {change})")
-        results[player.player_id] = {"old_elo": player.global_elo, "new_elo": new_elo, "change": change}
-
-    return results
+    return calculate_elo_changes_with_pool_correction(all_players_data)
 
 
 def calculate_team_elo_change(winning_team: TeamResponse, losing_team: TeamResponse) -> Dict[str, Any]:
@@ -255,44 +296,24 @@ def calculate_team_elo_change(winning_team: TeamResponse, losing_team: TeamRespo
     Dict[str, Any]
         Mapping team IDs to a dict with 'old_elo', 'new_elo', and 'change'.
     """
-
-    results = {}
-    all_teams_changes = []
-
     # ##: Calculate initial ELO changes for winning and losing teams.
-    win_change = calculate_elo_change(
-        competitor_elo=winning_team.global_elo,
-        win_probability=calculate_win_probability(winning_team.global_elo, losing_team.global_elo),
-        match_result=1,
-    )
-    all_teams_changes.append((winning_team, win_change, determine_k_factor(winning_team.global_elo)))
+    win_probability = calculate_win_probability(winning_team.global_elo, losing_team.global_elo)
 
-    lose_change = calculate_elo_change(
-        competitor_elo=losing_team.global_elo,
-        win_probability=calculate_win_probability(losing_team.global_elo, winning_team.global_elo),
-        match_result=0,
-    )
-    all_teams_changes.append((losing_team, lose_change, determine_k_factor(losing_team.global_elo)))
-
-    # ##: Apply pool system correction.
-    sum_delta_elo = sum(change for _, change, _ in all_teams_changes)
-    if sum_delta_elo != 0:
-        total_k_factor = sum(k for _, _, k in all_teams_changes)
-        correction_factor_per_k = -sum_delta_elo / total_k_factor
-        logger.debug(
-            f"Applying ELO pool correction for teams: sum_delta_elo={sum_delta_elo}, total_k_factor={total_k_factor}, correction_factor_per_k={correction_factor_per_k:.4f}"
-        )
-
-        for i, (team, change, k_factor) in enumerate(all_teams_changes):
-            corrected_change = change + (k_factor * correction_factor_per_k)
-            all_teams_changes[i] = (team, int(corrected_change), k_factor)
-
-    for team, change, _ in all_teams_changes:
-        new_elo = team.global_elo + change
-        logger.debug(f"Team {team.team_id}: ELO {team.global_elo} -> {new_elo} (Change: {change})")
-        results[team.team_id] = {"old_elo": team.global_elo, "new_elo": new_elo, "change": change}
-
-    return results
+    teams_data = {
+        winning_team.team_id: {
+            "old_elo": winning_team.global_elo,
+            "win_prob": win_probability,
+            "match_result": 1,
+            "k_factor": determine_k_factor(winning_team.global_elo),
+        },
+        losing_team.team_id: {
+            "old_elo": losing_team.global_elo,
+            "win_prob": 1 - win_probability,
+            "match_result": 0,
+            "k_factor": determine_k_factor(losing_team.global_elo),
+        },
+    }
+    return calculate_elo_changes_with_pool_correction(teams_data)
 
 
 def process_match_result(
