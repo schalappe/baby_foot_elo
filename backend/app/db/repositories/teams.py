@@ -22,7 +22,7 @@ from app.db.session import transaction, with_retry
 def create_team(
     player1_id: int,
     player2_id: int,
-    global_elo: float = 1000.0,
+    global_elo: int = 1000,
     last_match_at: Optional[Union[str, datetime]] = None,
 ) -> Optional[int]:
     """
@@ -34,8 +34,8 @@ def create_team(
         ID of the first player.
     player2_id : int
         ID of the second player.
-    global_elo : float, optional
-        Initial global ELO rating, by default 1000.0.
+    global_elo : int, optional
+        Initial global ELO rating, by default 1000.
     last_match_at : Optional[Union[str, datetime]], optional
         Timestamp of the last match, by default None.
 
@@ -90,7 +90,7 @@ def create_team(
 
 def update_team(
     team_id: int,
-    global_elo: Optional[float] = None,
+    global_elo: Optional[int] = None,
     last_match_at: Optional[Union[str, datetime]] = None,
 ) -> bool:
     """
