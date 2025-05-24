@@ -3,7 +3,7 @@ This module provides business logic and data transformation for player-related o
 It acts as an intermediary between the API routes and the database repositories.
 """
 
-from typing import List, Optional
+from typing import List
 
 from loguru import logger
 
@@ -11,9 +11,7 @@ from app.db.repositories.players import (
     create_player,
     delete_player,
     get_all_players,
-    get_player,
     get_player_by_name,
-    search_players,
     update_player,
 )
 from app.db.repositories.stats import get_player_stats
@@ -128,9 +126,9 @@ def create_new_player(player_data: PlayerCreate) -> PlayerResponse:
 
         # ##: Return the complete player data.
         return get_player_by_id(player_id)
-    except Exception as e:
-        logger.error(f"Error creating player '{player_data.name}': {e}")
-        raise PlayerOperationError(f"Failed to create player: {str(e)}") from e
+    except Exception as exc:
+        logger.error(f"Error creating player '{player_data.name}': {exc}")
+        raise PlayerOperationError(f"Failed to create player: {str(exc)}") from exc
 
 
 def update_existing_player(player_id: int, player_update: PlayerUpdate) -> PlayerResponse:
@@ -160,14 +158,14 @@ def update_existing_player(player_id: int, player_update: PlayerUpdate) -> Playe
     """
     try:
         # ##: Check if player exists.
-        existing_player = get_player(player_id)
+        existing_player = get_player_by_id(player_id)
         if not existing_player:
             raise PlayerNotFoundError(f"ID: {player_id}")
 
         # ##: If name is being updated, check for conflicts
-        if player_update.name and player_update.name != existing_player["name"]:
+        if player_update.name and player_update.name != existing_player.name:
             conflict_player = get_player_by_name(player_update.name)
-            if conflict_player and conflict_player["player_id"] != player_id:
+            if conflict_player and conflict_player.player_id != player_id:
                 raise PlayerAlreadyExistsError(player_update.name)
 
         # ##: Update the player.
@@ -178,11 +176,13 @@ def update_existing_player(player_id: int, player_update: PlayerUpdate) -> Playe
         return get_player_by_id(player_id)
     except (PlayerNotFoundError, PlayerAlreadyExistsError):
         raise
-    except Exception as e:
-        logger.error(f"Error updating player with ID {player_id}: {e}")
-        raise PlayerOperationError(f"Failed to update player with ID {player_id}") from e
+    except Exception as exc:
+        logger.error(f"Error updating player with ID {player_id}: {exc}")
+        raise PlayerOperationError(f"Failed to update player with ID {player_id}") from exc
 
 
+# ##: TODO: Delete a player should also delete all teams and matches associated with it.
+# and recalculate ELO ratings for all players.
 def delete_player_by_id(player_id: int) -> bool:
     """
     Delete a player by their ID.
@@ -204,18 +204,19 @@ def delete_player_by_id(player_id: int) -> bool:
     """
     try:
         # ##: Check if player exists first
-        existing_player = get_player(player_id)
+        existing_player = get_player_by_id(player_id)
         if not existing_player:
             raise PlayerNotFoundError(f"ID: {player_id}")
+
         success = delete_player(player_id)
         if not success:
             raise PlayerOperationError(f"Failed to delete player with ID {player_id}")
         return True
     except PlayerNotFoundError:
         raise
-    except Exception as e:
-        logger.error(f"Error deleting player with ID {player_id}: {e}")
-        raise PlayerOperationError(f"Failed to delete player with ID {player_id}") from e
+    except Exception as exc:
+        logger.error(f"Error deleting player with ID {player_id}: {exc}")
+        raise PlayerOperationError(f"Failed to delete player with ID {player_id}") from exc
 
 
 def get_all_players_with_stats() -> List[PlayerResponse]:
@@ -264,48 +265,3 @@ def get_all_players_with_stats() -> List[PlayerResponse]:
     except Exception as exc:
         logger.error(f"Error retrieving all players with stats: {exc}")
         raise PlayerOperationError("Failed to retrieve all players with statistics") from exc
-
-
-def search_players_service(name_pattern: str, limit: int = 10) -> List[PlayerResponse]:
-    """
-    Search for players by name pattern.
-
-    Parameters
-    ----------
-    name_pattern : str
-        Name pattern to search for.
-    limit : int, optional
-        Maximum number of results to return (default 10).
-
-    Returns
-    -------
-    List[PlayerResponse]
-        List of matching players as PlayerResponse objects.
-
-    Raises
-    ------
-    PlayerOperationError
-        If the search operation fails.
-    """
-    try:
-        players = search_players(name_pattern, limit)
-        responses = []
-        for player in players:
-            # ##: Since this is a search, stats may not be available; set to defaults
-            responses.append(
-                PlayerResponse(
-                    player_id=player["player_id"],
-                    name=player["name"],
-                    global_elo=player["global_elo"],
-                    created_at=player["created_at"],
-                    last_match_at=None,
-                    matches_played=0,
-                    wins=0,
-                    losses=0,
-                    win_rate=0.0,
-                )
-            )
-        return responses
-    except Exception as exc:
-        logger.error(f"Error searching players with pattern '{name_pattern}': {exc}")
-        raise PlayerOperationError(f"Failed to search players: {exc}") from exc

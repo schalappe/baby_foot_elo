@@ -20,7 +20,6 @@ from app.db.repositories.players import (
     get_all_players,
     get_player,
     get_player_by_name,
-    search_players,
     update_player,
 )
 from app.db.repositories.players_elo_history import (
@@ -58,7 +57,6 @@ __all__ = [
     "update_player",
     "delete_player",
     "batch_insert_players",
-    "search_players",
     # ##: Teams.
     "create_team",
     "get_team",
