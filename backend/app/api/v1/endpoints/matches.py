@@ -234,9 +234,9 @@ async def export_matches() -> List[MatchResponse]:
 
 
 @router.get(
-    "/{match_id}",
+    "/{match_id}/player",
     response_model=MatchWithEloResponse,
-    summary="Get match details",
+    summary="Get match with player details",
     description="Retrieves detailed information about a specific match.",
     responses={
         status.HTTP_200_OK: {"description": "Match details retrieved successfully"},
@@ -244,7 +244,7 @@ async def export_matches() -> List[MatchResponse]:
         status.HTTP_500_INTERNAL_SERVER_ERROR: {"description": "Internal server error"},
     },
 )
-async def get_match_details(match_id: int) -> MatchWithEloResponse:
+async def get_match_with_player_details(match_id: int) -> MatchWithEloResponse:
     """
     Get detailed information about a specific match.
 
@@ -252,7 +252,6 @@ async def get_match_details(match_id: int) -> MatchWithEloResponse:
     - Basic match details (winner/loser teams, date, etc.)
     - ELO changes for all players involved
     - Team information for both winner and loser teams
-    - Player details and statistics
 
     Parameters
     ----------
@@ -262,7 +261,7 @@ async def get_match_details(match_id: int) -> MatchWithEloResponse:
     Returns
     -------
     MatchWithEloResponse
-        Match details including ELO changes and team/player information
+        Match details including ELO changes and player information
 
     Raises
     ------
@@ -272,7 +271,62 @@ async def get_match_details(match_id: int) -> MatchWithEloResponse:
     """
     try:
         # ##: Get match details with ELO information using the service layer.
-        match_with_elo = service_matches.get_match_with_elo(match_id)
+        match_with_elo = service_matches.get_match_with_elo_player(match_id)
+
+        if not match_with_elo:
+            raise MatchNotFoundError(f"Match with ID {match_id} not found")
+        return match_with_elo
+
+    except MatchNotFoundError as exc:
+        logger.warning(f"Match not found: {str(exc)}")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc) or "Match not found")
+    except Exception as exc:
+        logger.error(f"Error retrieving match details: {str(exc)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while retrieving match details",
+        )
+
+
+@router.get(
+    "/{match_id}/team",
+    response_model=MatchWithEloResponse,
+    summary="Get match with team details",
+    description="Retrieves detailed information about a specific match.",
+    responses={
+        status.HTTP_200_OK: {"description": "Match details retrieved successfully"},
+        status.HTTP_404_NOT_FOUND: {"description": "Match not found"},
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {"description": "Internal server error"},
+    },
+)
+async def get_match_with_team_details(match_id: int) -> MatchWithEloResponse:
+    """
+    Get detailed information about a specific match.
+
+    This endpoint retrieves comprehensive match information including:
+    - Basic match details (winner/loser teams, date, etc.)
+    - ELO changes for all players involved
+    - Team information for both winner and loser teams
+
+    Parameters
+    ----------
+    match_id : int
+        ID of the match to retrieve
+
+    Returns
+    -------
+    MatchWithEloResponse
+        Match details including ELO changes and team information
+
+    Raises
+    ------
+    HTTPException
+        - 404: If the match is not found
+        - 500: If there's an internal server error
+    """
+    try:
+        # ##: Get match details with ELO information using the service layer.
+        match_with_elo = service_matches.get_match_with_elo_team(match_id)
 
         if not match_with_elo:
             raise MatchNotFoundError(f"Match with ID {match_id} not found")

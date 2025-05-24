@@ -378,7 +378,7 @@ async def get_team_matches_endpoint(
         List of matches involving the specified team.
     """
     try:
-        return teams_service.get_team_matches(team_id=team_id, offset=skip, limit=limit)
+        return stats_service.get_team_matches(team_id=team_id, offset=skip, limit=limit)
 
     except TeamNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))

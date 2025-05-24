@@ -490,7 +490,7 @@ async def get_player_elo_history_endpoint(
         if elo_type:
             filters["elo_type"] = elo_type
 
-        elo_history_response = player_service.get_elo_history_by_id(
+        elo_history_response = player_service.get_player_elo_history_by_id(
             player_id=player_id, limit=limit, offset=offset, **filters
         )
         return elo_history_response

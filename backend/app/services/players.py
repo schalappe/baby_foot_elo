@@ -14,6 +14,7 @@ from app.db.repositories.players import (
     get_player_by_name,
     update_player,
 )
+from app.db.repositories.players_elo_history import get_player_elo_history
 from app.db.repositories.stats import get_player_stats
 from app.db.repositories.teams import create_team
 from app.exceptions.players import (
@@ -22,6 +23,7 @@ from app.exceptions.players import (
     PlayerNotFoundError,
     PlayerOperationError,
 )
+from app.models.elo_history import EloHistoryResponse
 from app.models.player import PlayerCreate, PlayerResponse, PlayerUpdate
 
 
@@ -240,3 +242,33 @@ def get_all_players_with_stats() -> List[PlayerResponse]:
     except Exception as exc:
         logger.error(f"Error retrieving all players with stats: {exc}")
         raise PlayerOperationError("Failed to retrieve all players with statistics") from exc
+
+
+def get_player_elo_history_by_id(
+    player_id: int, limit: int = 100, offset: int = 0, **filters
+) -> List[EloHistoryResponse]:
+    """
+    Retrieve a paginated list of ELO history records for a specific player.
+
+    Parameters
+    ----------
+    player_id : int
+        The ID of the player.
+    limit : int, optional
+        Maximum number of records to return (default: 100).
+    offset : int, optional
+        Number of records to skip for pagination (default: 0).
+    **filters
+        Additional filters for the ELO history (e.g., start_date, end_date).
+
+    Returns
+    -------
+    List[EloHistoryResponse]
+        A list of ELO history records for the player.
+    """
+    try:
+        elo_history = get_player_elo_history(player_id, limit, offset, **filters)
+        return [EloHistoryResponse(**history) for history in elo_history]
+    except Exception as exc:
+        logger.error(f"Error retrieving ELO history for player {player_id}: {exc}")
+        raise PlayerOperationError(f"Failed to retrieve ELO history for player {player_id}") from exc
