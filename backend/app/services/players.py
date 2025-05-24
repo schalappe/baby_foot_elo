@@ -3,7 +3,7 @@ This module provides business logic and data transformation for player-related o
 It acts as an intermediary between the API routes and the database repositories.
 """
 
-from typing import List
+from typing import List, Optional
 
 from loguru import logger
 
@@ -17,6 +17,7 @@ from app.db.repositories.players import (
     update_player,
 )
 from app.db.repositories.stats import get_player_stats
+from app.db.repositories.teams import create_team
 from app.exceptions.players import (
     InvalidPlayerDataError,
     PlayerAlreadyExistsError,
@@ -108,6 +109,22 @@ def create_new_player(player_data: PlayerCreate) -> PlayerResponse:
         player_id = create_player(player_data.name, global_elo=player_data.global_elo)
         if not player_id:
             raise PlayerOperationError("Failed to create player in the database")
+
+        # ##: Dynamically create teams with existing players.
+        all_players = get_all_players()
+        for existing_player in all_players:
+            existing_player_id = existing_player.get("player_id")
+            if existing_player_id is not None and existing_player_id != player_id:
+                p1_id = min(player_id, existing_player_id)
+                p2_id = max(player_id, existing_player_id)
+                logger.info(f"Attempting to create team for players {p1_id} and {p2_id}.")
+                created_team_id = create_team(player1_id=p1_id, player2_id=p2_id)
+                if created_team_id:
+                    logger.info(
+                        f"Successfully created/ensured team for {p1_id} and {p2_id} with team ID: {created_team_id}"
+                    )
+                else:
+                    logger.info(f"Team for {p1_id} and {p2_id} already exists or could not be created.")
 
         # ##: Return the complete player data.
         return get_player_by_id(player_id)

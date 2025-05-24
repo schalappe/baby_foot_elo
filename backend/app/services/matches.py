@@ -9,10 +9,6 @@ from typing import List, Optional, Union
 
 from loguru import logger
 
-from app.db.repositories.players_elo_history import (
-    batch_record_elo_updates,
-    get_elo_history_by_match,
-)
 from app.db.repositories.matches import (
     create_match,
     delete_match,
@@ -23,6 +19,10 @@ from app.db.repositories.matches import (
     get_matches_by_team,
 )
 from app.db.repositories.players import update_player
+from app.db.repositories.players_elo_history import (
+    batch_record_elo_updates,
+    get_elo_history_by_match,
+)
 from app.db.repositories.teams import update_team
 from app.exceptions.matches import (
     InvalidMatchTeamsError,

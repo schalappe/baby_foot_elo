@@ -13,7 +13,6 @@ from app.db.builders import (
     SelectQueryBuilder,
     UpdateQueryBuilder,
 )
-from app.db.repositories.teams import create_team
 from app.db.session.retry import with_retry
 from app.db.session.transaction import transaction
 
@@ -47,25 +46,10 @@ def create_player(name: str, global_elo: int = 1000) -> Optional[int]:
 
         if new_player_id is not None:
             logger.info(f"Player '{name}' created with ID: {new_player_id}.")
-            # ##: Dynamically create teams with existing players.
-            all_players = get_all_players()
-            for existing_player in all_players:
-                existing_player_id = existing_player.get("player_id")
-                if existing_player_id is not None and existing_player_id != new_player_id:
-                    p1_id = min(new_player_id, existing_player_id)
-                    p2_id = max(new_player_id, existing_player_id)
-                    logger.info(f"Attempting to create team for players {p1_id} and {p2_id}.")
-                    created_team_id = create_team(player1_id=p1_id, player2_id=p2_id)
-                    if created_team_id:
-                        logger.info(
-                            f"Successfully created/ensured team for {p1_id} and {p2_id} with team ID: {created_team_id}"
-                        )
-                    else:
-                        logger.info(f"Team for {p1_id} and {p2_id} already exists or could not be created.")
             return new_player_id
-        else:
-            logger.error(f"Failed to retrieve ID for new player '{name}'.")
-            return None
+
+        logger.error(f"Failed to create player '{name}'.")
+        return None
 
     except Exception as exc:
         logger.error(f"Failed to create player '{name}': {exc}")
