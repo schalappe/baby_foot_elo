@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS Teams_ELO_History (
     new_elo INTEGER NOT NULL,
     difference INTEGER NOT NULL,
     date TIMESTAMP NOT NULL,
-    FOREIGN KEY (team_id) REFERENCES Teams(team_id)
+    FOREIGN KEY (team_id) REFERENCES Teams(team_id),
     FOREIGN KEY (match_id) REFERENCES Matches(match_id)
 );
 """
