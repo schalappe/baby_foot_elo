@@ -170,6 +170,64 @@ def update_player(
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
+def batch_update_players(players: List[Dict[str, Any]]) -> List[bool]:
+    """
+    Batch update players in the database.
+
+    Parameters
+    ----------
+    players : List[Dict[str, Any]]
+        A list of dictionaries, where each dictionary represents a player
+        and contains 'player_id' and other fields to update (e.g., 'name', 'global_elo').
+
+    Returns
+    -------
+    List[bool]
+        A list of booleans indicating the success of each individual player update.
+    """
+    results: List[bool] = []
+    queries_and_params: List[tuple[str, tuple]] = []
+
+    for player_data in players:
+        player_id = player_data.get("player_id")
+        if player_id is None:
+            logger.warning("Skipping player data without 'player_id' in batch update.")
+            results.append(False)
+            continue
+
+        update_builder = UpdateQueryBuilder("Players")
+        updated_fields = False
+        if "name" in player_data:
+            update_builder.set(name=player_data["name"])
+            updated_fields = True
+        if "global_elo" in player_data:
+            update_builder.set(global_elo=player_data["global_elo"])
+            updated_fields = True
+
+        if not updated_fields:
+            logger.warning(f"No fields to update for player ID {player_id}.")
+            results.append(False)
+            continue
+
+        update_builder.where("player_id = ?", player_id)
+        query, params = update_builder.build()
+        queries_and_params.append((query, params))
+
+    if not queries_and_params:
+        return []
+
+    with transaction() as db_manager:
+        for query, params in queries_and_params:
+            try:
+                result = db_manager.fetchone(query, params)
+                results.append(bool(result[0]) if result else False)
+            except Exception as exc:
+                logger.error(f"Error updating player in batch: {exc}")
+                results.append(False)
+    return results
+
+
+@with_retry(max_retries=3, retry_delay=0.5)
 def delete_player(player_id: int) -> bool:
     """
     Delete a player from the database.
