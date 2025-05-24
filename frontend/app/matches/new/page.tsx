@@ -39,6 +39,11 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 
+interface NewMatchPageProps {
+  onMatchCreated?: () => void;
+  isDialog?: boolean;
+}
+
 const matchFormSchema = z.object({
   teamAPlayer1: z.string().min(1, { message: "Joueur 1 de l'équipe A est requis." }),
   teamAPlayer2: z.string().min(1, { message: "Joueur 2 de l'équipe A est requis." }),
@@ -55,7 +60,7 @@ const matchFormSchema = z.object({
 
 type MatchFormValues = z.infer<typeof matchFormSchema>;
 
-const NewMatchPage = () => {
+const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
   const router = useRouter();
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [loadingPlayers, setLoadingPlayers] = useState<boolean>(true); // Renamed for clarity
@@ -149,9 +154,13 @@ const NewMatchPage = () => {
       };
 
       await createMatch(matchPayload);
-      setSubmissionStatus({ type: 'success', message: 'Match créé avec succès! Redirection...' });
+      setSubmissionStatus({ type: 'success', message: 'Match créé avec succès!' });
       reset();
-      setTimeout(() => router.push('/'), 1500);
+      if (isDialog && onMatchCreated) {
+        onMatchCreated(); // Close dialog
+      } else {
+        setTimeout(() => router.push('/'), 1500); // Redirect if not in dialog
+      }
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Une erreur inconnue est survenue.';

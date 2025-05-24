@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { PlayerRegistrationForm } from '@/components/players/PlayerRegistrationForm';
 import { toast } from 'sonner';
+import { NewMatchDialog } from '@/components/matches/NewMatchDialog';
 
 const PLAYERS_API_ENDPOINT = '/api/v1/players/rankings?limit=100';
 
@@ -67,9 +68,9 @@ export default function Home() {
             </DialogContent>
           </Dialog>
 
-          <Link href="/matches/new" passHref>
+          <NewMatchDialog>
             <Button variant="outline" size="lg">Ajouter une Partie</Button>
-          </Link>
+          </NewMatchDialog>
         </div>
       </div>
       <PlayerRankingsDisplay 

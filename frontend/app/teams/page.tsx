@@ -17,7 +17,7 @@ import { getTeamRankings } from '@/services/teamService';
 import { TeamRankingsDisplay } from '@/components/rankings/TeamRankingsDisplay';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import Link from 'next/link'; 
+import { NewMatchDialog } from '@/components/matches/NewMatchDialog';
 
 const TEAMS_API_ENDPOINT = '/api/v1/teams/rankings?limit=100';
 
@@ -38,9 +38,9 @@ export default function TeamRankingsPage() {
           Classement des Équipes
         </h1>
         <div className="flex space-x-2">
-          <Link href="/matches/new" passHref>
+          <NewMatchDialog>
             <Button variant="outline" size="lg">Ajouter une Partie</Button>
-          </Link> 
+          </NewMatchDialog>
         </div>
       </div>
       <TeamRankingsDisplay 

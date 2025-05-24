@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertCircle, CalendarDays, UserSearch, Users, Trophy, Eye, Download, Skull, MessageSquareText } from 'lucide-react'; 
 import { format, startOfDay, endOfDay } from 'date-fns';
+import { NewMatchDialog } from '@/components/matches/NewMatchDialog';
 
 import { DateRange } from 'react-day-picker'; 
 import { DateRangePicker } from '@/components/ui/date-range-picker';
@@ -218,9 +219,9 @@ const MatchHistoryPage = () => {
               </SelectGroup>
             </SelectContent>
           </Select>
-          <Link href="/matches/new" passHref>
+          <NewMatchDialog>
             <Button variant="default" className="w-full md:w-auto">Ajouter une Partie</Button>
-          </Link>
+          </NewMatchDialog>
         </div>
         <Card>
           <CardContent className="pt-6">
@@ -285,9 +286,9 @@ const MatchHistoryPage = () => {
             </SelectGroup>
           </SelectContent>
         </Select>
-        <Link href="/matches/new" passHref>
+        <NewMatchDialog>
           <Button variant="default" className="w-full md:w-auto">Ajouter une Partie</Button>
-        </Link>
+        </NewMatchDialog>
       </div>
       <Card>
         <CardContent className="p-0">
