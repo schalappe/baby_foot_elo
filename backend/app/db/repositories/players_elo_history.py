@@ -55,7 +55,7 @@ def record_elo_update(
                     old_elo=old_elo,
                     new_elo=new_elo,
                     difference=difference,
-                    date=date
+                    date=date,
                 )
                 .build()
             )
@@ -204,7 +204,12 @@ def get_elo_history_by_match(match_id: int) -> List[Dict[str, Any]]:
         List of ELO history records for the match
     """
     try:
-        results = SelectQueryBuilder("Players_ELO_History").select("*").where("match_id = ?", match_id).execute(fetch_all=True)
+        results = (
+            SelectQueryBuilder("Players_ELO_History")
+            .select("*")
+            .where("match_id = ?", match_id)
+            .execute(fetch_all=True)
+        )
 
         if not results:
             return []

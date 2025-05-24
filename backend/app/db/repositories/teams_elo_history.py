@@ -62,9 +62,7 @@ def record_team_elo_update(
 
             result = db.fetchone(f"{query} RETURNING history_id", params)
             if result and result[0]:
-                logger.info(
-                    f"Recorded ELO update for team {team_id}: {old_elo} -> {new_elo} (diff: {difference:+d})"
-                )
+                logger.info(f"Recorded ELO update for team {team_id}: {old_elo} -> {new_elo} (diff: {difference:+d})")
                 return result[0]
             return None
     except Exception as exc:
@@ -157,11 +155,7 @@ def get_team_elo_history(
     """
     try:
         with transaction() as db:
-            query_builder = (
-                SelectQueryBuilder("Teams_ELO_History")
-                .select("*")
-                .where("team_id = ?", team_id)
-            )
+            query_builder = SelectQueryBuilder("Teams_ELO_History").select("*").where("team_id = ?", team_id)
 
             if start_date:
                 query_builder.where("date >= ?", start_date)

@@ -140,7 +140,6 @@ def get_player_by_name(name: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-
 @with_retry(max_retries=3, retry_delay=0.5)
 def update_player(
     player_id: int,
