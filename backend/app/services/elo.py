@@ -3,6 +3,22 @@
 ELO Calculation Module
 
 This module provides functions to calculate team ELO, win probabilities, K factors, and ELO changes.
+
+It implements a "pool" system with a correction factor to ensure that the total ELO points in the system remain
+constant after each match, even when using variable K-factors. This prevents ELO inflation or deflation over time.
+
+Example of pool system correction:
+If Player A (ELO 1100, K=100) beats Player B (ELO 1900, K=24):
+- Initial calculated change for A: +80 ELO
+- Initial calculated change for B: -19 ELO
+- Sum of changes: +61 ELO (inflation)
+
+To correct this, the system will distribute a total of -61 ELO points back to the players, proportional to their K-factors:
+- Total K-factor: 100 + 24 = 124
+- Correction factor per K: -61 / 124 ≈ -0.49
+- Corrected change for A: 80 + (100 * -0.49) = 80 - 49 = +31 ELO
+- Corrected change for B: -19 + (24 * -0.49) = -19 - 12 = -31 ELO
+- New sum of changes: +31 + (-31) = 0 ELO (zero-sum maintained)
 """
 
 from ast import Tuple
@@ -167,6 +183,9 @@ def calculate_players_elo_change(winning_team: TeamResponse, losing_team: TeamRe
     """
     Calculate ELO changes for each player in a match.
 
+    This function applies a "pool" system correction to ensure that the sum of ELO changes
+    for all players in a match is zero, preventing ELO inflation/deflation.
+
     Parameters
     ----------
     winning_team : TeamResponse
@@ -220,6 +239,9 @@ def calculate_players_elo_change(winning_team: TeamResponse, losing_team: TeamRe
 def calculate_team_elo_change(winning_team: TeamResponse, losing_team: TeamResponse) -> Dict[str, Any]:
     """
     Calculate ELO changes for a team match.
+
+    This function applies a "pool" system correction to ensure that the sum of ELO changes
+    for all teams in a match is zero, preventing ELO inflation/deflation.
 
     Parameters
     ----------
