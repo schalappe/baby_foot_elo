@@ -120,7 +120,7 @@ def create_new_team(team_data: TeamCreate) -> TeamResponse:
         If there's an error creating the team.
     """
     try:
-        # ##: Calculate initial team ELO based on player ELOs.
+        # ##: Get players to check if they exist.
         player1 = get_player(team_data.player1_id)
         player2 = get_player(team_data.player2_id)
 
@@ -132,20 +132,12 @@ def create_new_team(team_data: TeamCreate) -> TeamResponse:
                 missing_players.append(str(team_data.player2_id))
             raise InvalidTeamDataError(f"Players not found: {', '.join(missing_players)}")
 
-        # ##: Calculate team ELO as average of player ELOs if not provided.
-        team_elo = (
-            team_data.global_elo
-            if team_data.global_elo
-            else calculate_team_elo(player1["global_elo"], player2["global_elo"])
-        )
-
         # ##: Create the team in the database.
         team_id = create_team(
             player1_id=team_data.player1_id,
             player2_id=team_data.player2_id,
-            global_elo=team_elo,
+            global_elo=team_data.global_elo,
         )
-
         if not team_id:
             raise TeamOperationError("Failed to create team in the database.")
 
