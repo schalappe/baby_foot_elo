@@ -23,10 +23,10 @@ from app.db.repositories.players import (
     update_player,
 )
 from app.db.repositories.players_elo_history import (
-    batch_record_elo_updates,
-    get_elo_history_by_match,
-    get_elo_history_by_player_match,
+    batch_record_player_elo_updates,
     get_player_elo_history,
+    get_player_elo_history_by_match,
+    get_player_elo_history_by_player_match,
     record_elo_update,
 )
 from app.db.repositories.stats import get_player_stats, get_team_stats
@@ -77,10 +77,10 @@ __all__ = [
     "get_fanny_matches",
     # ##: Players ELO History.
     "record_elo_update",
-    "batch_record_elo_updates",
+    "batch_record_player_elo_updates",
     "get_player_elo_history",
-    "get_elo_history_by_match",
-    "get_elo_history_by_player_match",
+    "get_player_elo_history_by_match",
+    "get_player_elo_history_by_player_match",
     # ##: Teams ELO History.
     "record_team_elo_update",
     "batch_record_team_elo_updates",

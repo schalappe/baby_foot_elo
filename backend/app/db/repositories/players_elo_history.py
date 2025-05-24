@@ -71,7 +71,7 @@ def record_elo_update(
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def batch_record_elo_updates(elo_updates: List[Dict[str, Any]]) -> List[Optional[int]]:
+def batch_record_player_elo_updates(elo_updates: List[Dict[str, Any]]) -> List[Optional[int]]:
     """
     Record multiple ELO updates in a single transaction.
 
@@ -189,7 +189,7 @@ def get_player_elo_history(
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_elo_history_by_match(match_id: int) -> List[Dict[str, Any]]:
+def get_player_elo_history_by_match(match_id: int) -> List[Dict[str, Any]]:
     """
     Get all ELO history records for a specific match.
 
@@ -234,7 +234,7 @@ def get_elo_history_by_match(match_id: int) -> List[Dict[str, Any]]:
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_elo_history_by_player_match(player_id: int, match_id: int) -> Optional[Dict[str, Any]]:
+def get_player_elo_history_by_player_match(player_id: int, match_id: int) -> Optional[Dict[str, Any]]:
 
     try:
         builder = (

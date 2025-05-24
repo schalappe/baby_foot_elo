@@ -20,10 +20,14 @@ from app.db.repositories.matches import (
 )
 from app.db.repositories.players import batch_update_players, update_player
 from app.db.repositories.players_elo_history import (
-    batch_record_elo_updates,
-    get_elo_history_by_match,
+    batch_record_player_elo_updates,
+    get_player_elo_history_by_match,
 )
 from app.db.repositories.teams import batch_update_teams, update_team
+from app.db.repositories.teams_elo_history import (
+    batch_record_team_elo_updates,
+    get_team_elo_history_by_match,
+)
 from app.exceptions.matches import (
     InvalidMatchTeamsError,
     MatchCreationError,
@@ -31,7 +35,7 @@ from app.exceptions.matches import (
     MatchNotFoundError,
 )
 from app.models.match import MatchCreate, MatchResponse, MatchWithEloResponse
-from app.services.elo import calculate_team_elo, process_match_result
+from app.services.elo import process_match_result
 from app.services.teams import get_team_by_id
 
 
@@ -96,7 +100,7 @@ def create_new_match(match_data: MatchCreate) -> MatchWithEloResponse:
         )
 
         # ##: Update players' ELO history.
-        batch_record_elo_updates(
+        batch_record_player_elo_updates(
             [
                 {
                     "player_id": player_id,
@@ -118,7 +122,7 @@ def create_new_match(match_data: MatchCreate) -> MatchWithEloResponse:
         )
 
         # ##: Update teams' ELO history.
-        batch_record_elo_updates(
+        batch_record_team_elo_updates(
             [
                 {
                     "team_id": team_id,
@@ -231,10 +235,10 @@ def get_matches(
             start_date = start_date or datetime.min
             end_date = end_date or datetime.now(timezone.utc)
             matches_data = get_matches_by_date_range(start_date, end_date)
-            matches_data = matches_data[skip : skip + limit]  # Apply pagination
+            matches_data = matches_data[skip : skip + limit]
         elif is_fanny is not None:
             matches_data = get_fanny_matches()
-            matches_data = matches_data[skip : skip + limit]  # Apply pagination
+            matches_data = matches_data[skip : skip + limit]
         else:
             matches_data = get_all_matches(limit=limit, offset=skip)
 
@@ -301,7 +305,7 @@ def delete_match_by_id(match_id: int) -> bool:
         raise
 
 
-def get_match_with_elo(match_id: int) -> MatchWithEloResponse:
+def get_match_with_elo_player(match_id: int) -> MatchWithEloResponse:
     """
     Get a match with ELO changes for all players.
 
@@ -329,7 +333,7 @@ def get_match_with_elo(match_id: int) -> MatchWithEloResponse:
             raise MatchNotFoundError(identifier=str(match_id))
 
         # ##: Get ELO history for this match.
-        elo_history = get_elo_history_by_match(match_id)
+        elo_history = get_player_elo_history_by_match(match_id)
 
         # ##: Convert to response model.
         response = MatchWithEloResponse(
@@ -344,9 +348,72 @@ def get_match_with_elo(match_id: int) -> MatchWithEloResponse:
             elo_changes=(
                 {
                     eh["player_id"]: {
-                        "old_elo": eh["previous_elo"],
+                        "old_elo": eh["old_elo"],
                         "new_elo": eh["new_elo"],
-                        "difference": eh["elo_change"],
+                        "difference": eh["difference"],
+                    }
+                    for eh in elo_history
+                }
+                if elo_history
+                else {}
+            ),
+        )
+
+        return response
+
+    except Exception as exc:
+        logger.error(f"Error retrieving match with ELO changes: {exc}")
+        if not isinstance(exc, MatchNotFoundError):
+            raise MatchNotFoundError(identifier=str(match_id)) from exc
+        raise
+
+
+def get_match_with_elo_team(match_id: int) -> MatchWithEloResponse:
+    """
+    Get a match with ELO changes for all teams.
+
+    Parameters
+    ----------
+    match_id : int
+        The ID of the match to retrieve.
+
+    Returns
+    -------
+    MatchWithEloResponse
+        The match details with ELO changes.
+
+    Raises
+    ------
+    MatchNotFoundError
+        If no match is found with the given ID.
+    """
+    logger.debug(f"Retrieving match with ELO changes for match ID: {match_id}")
+
+    try:
+        # ##: Get basic match data.
+        match_data = get_match(match_id)
+        if not match_data:
+            raise MatchNotFoundError(identifier=str(match_id))
+
+        # ##: Get ELO history for this match.
+        elo_history = get_team_elo_history_by_match(match_id)
+
+        # ##: Convert to response model.
+        response = MatchWithEloResponse(
+            match_id=match_data["match_id"],
+            winner_team=get_team_by_id(match_data["winner_team_id"]),
+            loser_team=get_team_by_id(match_data["loser_team_id"]),
+            winner_team_id=match_data["winner_team_id"],
+            loser_team_id=match_data["loser_team_id"],
+            is_fanny=match_data["is_fanny"],
+            played_at=match_data["played_at"],
+            notes=match_data.get("notes"),
+            elo_changes=(
+                {
+                    eh["team_id"]: {
+                        "old_elo": eh["old_elo"],
+                        "new_elo": eh["new_elo"],
+                        "difference": eh["difference"],
                     }
                     for eh in elo_history
                 }
