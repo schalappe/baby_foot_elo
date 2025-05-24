@@ -19,9 +19,12 @@ class PlayerBase(BaseModel):
     ----------
     name : str
         The name of the player.
+    global_elo : int
+        The global ELO rating of the player.
     """
 
     name: str = Field(..., min_length=1, max_length=100, description="Player's name")
+    global_elo: int = Field(default=1000, ge=0, description="Initial global ELO rating for the player")
 
 
 class PlayerCreate(PlayerBase):
@@ -36,8 +39,6 @@ class PlayerCreate(PlayerBase):
         The initial global ELO rating for the player (default is 1000).
     """
 
-    global_elo: int = Field(default=1000, ge=0, description="Initial global ELO rating for the player")
-
 
 class PlayerUpdate(BaseModel):
     """
@@ -47,9 +48,12 @@ class PlayerUpdate(BaseModel):
     ----------
     name : str, optional
         The updated name of the player.
+    global_elo : int, optional
+        The updated global ELO rating for the player.
     """
 
     name: Optional[str] = Field(default=None, min_length=1, max_length=100, description="Player's updated name")
+    global_elo: Optional[int] = Field(default=None, ge=0, description="Updated global ELO rating for the player")
 
 
 class PlayerResponse(PlayerBase):
@@ -77,7 +81,6 @@ class PlayerResponse(PlayerBase):
     """
 
     player_id: int = Field(..., gt=0, description="Unique identifier for the player")
-    global_elo: int = Field(..., ge=0, description="Current global ELO rating of the player")
     created_at: datetime = Field(..., description="Timestamp of player creation")
     last_match_at: Optional[datetime] = Field(default=None, description="Timestamp of the player's last match")
     matches_played: int = Field(default=0, ge=0, description="Total matches played by the player")

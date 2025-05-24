@@ -169,7 +169,7 @@ def update_existing_player(player_id: int, player_update: PlayerUpdate) -> Playe
                 raise PlayerAlreadyExistsError(player_update.name)
 
         # ##: Update the player.
-        success = update_player(player_id=player_id, name=player_update.name)
+        success = update_player(player_id=player_id, name=player_update.name, global_elo=player_update.global_elo)
         if not success:
             raise PlayerOperationError(f"Failed to update player with ID {player_id}")
 

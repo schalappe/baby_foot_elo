@@ -144,7 +144,7 @@ def create_new_team(team_data: TeamCreate) -> TeamResponse:
         # ##: Return the created team with full details.
         return get_team_by_id(team_id)
 
-    except TeamAlreadyExistsError:
+    except (TeamAlreadyExistsError, InvalidTeamDataError, TeamOperationError):
         raise
     except Exception as exc:
         logger.error(f"Error creating team: {exc}")
