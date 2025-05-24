@@ -162,7 +162,7 @@ def get_team_elo_history(
             if end_date:
                 query_builder.where("date <= ?", end_date)
 
-            query_builder.order_by("date", "DESC").limit(limit).offset(offset)
+            query_builder.order_by_clause("date DESC").limit(limit).offset(offset)
 
             query, params = query_builder.build()
             rows = db.fetchall(query, params)
@@ -205,7 +205,7 @@ def get_team_elo_history_by_match(match_id: int) -> List[Dict[str, Any]]:
                 SelectQueryBuilder("Teams_ELO_History")
                 .select("*")
                 .where("match_id = ?", match_id)
-                .order_by("history_id", "ASC")
+                .order_by_clause("history_id ASC")
                 .build()
             )
 

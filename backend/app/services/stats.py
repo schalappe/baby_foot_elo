@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from loguru import logger
@@ -52,21 +53,11 @@ def get_player_matches(player_id: int, limit: int = 10, offset: int = 0, **filte
             winner_team = get_team_by_id(match["winner_team_id"])
             loser_team = get_team_by_id(match["loser_team_id"])
 
-            # ##: Get ELO history.
-            elo_history = get_player_elo_history_by_player_match(player_id, match["match_id"])
-
             # ##: Create match response.
             match_response = MatchWithEloResponse(
                 **match,
                 winner_team=winner_team,
                 loser_team=loser_team,
-                elo_changes={
-                    player_id: {
-                        "old_elo": elo_history["old_elo"],
-                        "new_elo": elo_history["new_elo"],
-                        "difference": int(elo_history["difference"]),
-                    }
-                },
             )
             response.append(match_response)
 
@@ -95,10 +86,6 @@ def get_team_matches(team_id: int, limit: int = 100, offset: int = 0) -> List[Ma
         A list of matches the team participated in.
     """
     try:
-        # ##: Check if team exists
-        if not get_team(team_id):
-            raise TeamNotFoundError(f"ID: {team_id}")
-
         # ##: Get matches from repository
         matches = get_matches_by_team(team_id, limit=limit, offset=offset)
 
@@ -110,21 +97,11 @@ def get_team_matches(team_id: int, limit: int = 100, offset: int = 0) -> List[Ma
                 winner_team = get_team_by_id(match["winner_team_id"])
                 loser_team = get_team_by_id(match["loser_team_id"])
 
-                # ##: Get ELO history.
-                elo_history = get_team_elo_history_by_team_match(team_id, match["match_id"])
-
                 # ##: Create match response.
                 match_response = MatchWithEloResponse(
                     **match,
                     winner_team=winner_team,
                     loser_team=loser_team,
-                    elo_changes={
-                        team_id: {
-                            "old_elo": elo_history["old_elo"],
-                            "new_elo": elo_history["new_elo"],
-                            "difference": int(elo_history["difference"]),
-                        }
-                    },
                 )
                 result.append(match_response)
             except Exception as e:
@@ -133,8 +110,6 @@ def get_team_matches(team_id: int, limit: int = 100, offset: int = 0) -> List[Ma
 
         return result
 
-    except TeamNotFoundError:
-        raise
     except Exception as exc:
         logger.error(f"Error retrieving matches for team {team_id}: {exc}")
         raise TeamOperationError(f"Failed to retrieve matches for team {team_id}") from exc
@@ -245,32 +220,23 @@ def get_team_statistics(team_id: int) -> Dict[str, Any]:
         # ##: Get team details.
         team = get_team_by_id(team_id)
 
-        # ##: Get team matches.
-        matches = get_matches_by_team(team_id)
-
-        # ##: Calculate statistics.
-        total_matches = len(matches)
-        wins = sum(1 for match in matches if match["winner_team_id"] == team_id)
-        losses = total_matches - wins
-        win_rate = (wins / total_matches * 100) if total_matches > 0 else 0
+        elo_history = get_team_elo_history(team_id)
 
         # ##: Get ELO history.
-        elo_differences = []
+        elo_changes = []
         elo_values = []
 
-        for match in matches:
-            elo_changes = get_team_elo_history(team_id, match["match_id"])
-            if elo_changes:
-                elo_differences.append(elo_changes["difference"])
-                elo_values.append(elo_changes["new_elo"])
+        if elo_history:
+            elo_changes = [record["difference"] for record in elo_history if record["difference"] is not None]
+            elo_values = [record["new_elo"] for record in elo_history if record["new_elo"] is not None]
 
         # ##: Get recent matches
         recent_wins = 0
         recent_losses = 0
         recent_elo_changes = []
 
-        if elo_differences:
-            for record in elo_differences[:10]:
+        if elo_changes:
+            for record in elo_changes[:10]:
                 recent_elo_changes.append(record)
                 if record > 0:
                     recent_wins += 1
@@ -278,7 +244,7 @@ def get_team_statistics(team_id: int) -> Dict[str, Any]:
                     recent_losses += 1
 
         # ##: Calculate average ELO change.
-        avg_elo_change = sum(elo_differences) / len(elo_differences) if elo_differences else 0
+        avg_elo_change = sum(elo_changes) / len(elo_changes) if elo_changes else 0
         highest_elo = max(elo_values) if elo_values else team.global_elo
         lowest_elo = min(elo_values) if elo_values else team.global_elo
 
@@ -290,11 +256,11 @@ def get_team_statistics(team_id: int) -> Dict[str, Any]:
         return {
             "team_id": team_id,
             "global_elo": team.global_elo,
-            "total_matches": total_matches,
-            "wins": wins,
-            "losses": losses,
-            "win_rate": round(win_rate, 2),
-            "elo_difference": elo_differences,
+            "total_matches": team.matches_played,
+            "wins": team.wins,
+            "losses": team.losses,
+            "win_rate": round(team.win_rate, 2),
+            "elo_difference": elo_changes,
             "elo_values": elo_values,
             "average_elo_change": round(avg_elo_change, 2),
             "highest_elo": highest_elo,

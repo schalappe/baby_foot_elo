@@ -162,10 +162,21 @@ def get_matches_by_team(team_id: int, limit: int = 100, offset: int = 0) -> List
         List of match dictionaries
     """
     rows = (
-        SelectQueryBuilder("Matches")
-        .select("match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "notes")
-        .where("winner_team_id = ? OR loser_team_id = ?", team_id, team_id)
-        .order_by_clause("played_at DESC")
+        SelectQueryBuilder("Teams_ELO_History eh")
+        .select(
+            "m.match_id",
+            "m.winner_team_id",
+            "m.loser_team_id",
+            "m.is_fanny",
+            "m.played_at",
+            "m.notes",
+            "eh.old_elo",
+            "eh.new_elo",
+            "eh.difference as elo_change",
+        )
+        .join("Matches m", "eh.match_id = m.match_id")
+        .where("eh.team_id = ?", team_id)
+        .order_by_clause("m.played_at DESC")
         .limit(limit)
         .offset(offset)
         .execute()
@@ -180,6 +191,13 @@ def get_matches_by_team(team_id: int, limit: int = 100, offset: int = 0) -> List
                 "played_at": r[4],
                 "notes": r[5],
                 "won": r[1] == team_id,
+                "elo_changes": {
+                    team_id: {
+                        "old_elo": r[6],
+                        "new_elo": r[7],
+                        "difference": r[8],
+                    }
+                },
             }
             for r in rows
         ]
@@ -282,7 +300,7 @@ def get_matches_by_player(
 
         # ##: Build the query using SelectQueryBuilder.
         query_builder = (
-            SelectQueryBuilder("ELO_History eh")
+            SelectQueryBuilder("Players_ELO_History eh")
             .select(
                 "m.match_id",
                 "m.winner_team_id",
