@@ -184,22 +184,36 @@ def calculate_players_elo_change(winning_team: TeamResponse, losing_team: TeamRe
     win_prob = calculate_win_probability(competitor_a_elo=elo_winner, competitor_b_elo=elo_loser)
 
     results = {}
+    all_players_changes = []
 
     # ##: Calculate ELO changes for winning team.
     for player in [winning_team.player1, winning_team.player2]:
         change = calculate_elo_change(competitor_elo=player.global_elo, win_probability=win_prob, match_result=1)
-        new_elo = player.global_elo + change
-        logger.info(f"Player {player.id} (Winner): ELO {player.global_elo} -> {new_elo} (Change: {change})")
-        results[player.id] = {"old_elo": player.global_elo, "new_elo": new_elo, "change": change}
+        all_players_changes.append((player, change, determine_k_factor(player.global_elo)))
 
     # ##: Calculate ELO changes for losing team.
     for player in [losing_team.player1, losing_team.player2]:
         change = calculate_elo_change(competitor_elo=player.global_elo, win_probability=1 - win_prob, match_result=0)
+        all_players_changes.append((player, change, determine_k_factor(player.global_elo)))
+
+    # ##: Apply pool system correction.
+    sum_delta_elo = sum(change for _, change, _ in all_players_changes)
+    if sum_delta_elo != 0:
+        total_k_factor = sum(k for _, _, k in all_players_changes)
+        correction_factor_per_k = -sum_delta_elo / total_k_factor
+        logger.debug(f"Applying ELO pool correction: sum_delta_elo={sum_delta_elo}, total_k_factor={total_k_factor}, correction_factor_per_k={correction_factor_per_k:.4f}")
+
+        for i, (player, change, k_factor) in enumerate(all_players_changes):
+            corrected_change = change + (k_factor * correction_factor_per_k)
+            all_players_changes[i] = (player, int(corrected_change), k_factor)
+
+    for player, change, _ in all_players_changes:
         new_elo = player.global_elo + change
-        logger.info(f"Player {player.id} (Loser): ELO {player.global_elo} -> {new_elo} (Change: {change})")
+        logger.debug(f"Player {player.id}: ELO {player.global_elo} -> {new_elo} (Change: {change})")
         results[player.id] = {"old_elo": player.global_elo, "new_elo": new_elo, "change": change}
 
     return results
+
 
 def calculate_team_elo_change(winning_team: TeamResponse, losing_team: TeamResponse) -> Dict[str, Any]:
     """
