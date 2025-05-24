@@ -6,7 +6,8 @@
  *
  * Exports:
  *   - getMatches: Fetch all matches
- *   - getMatchById: Fetch a match by ID
+ *   - getMatchWithPlayerDetailsById: Fetch a match by ID with player details
+ *   - getMatchWithTeamDetailsById: Fetch a match by ID with team details
  *   - createMatch: Create a new match
  */
 // frontend/services/matchService.ts
@@ -25,9 +26,19 @@ export const getMatches = async (): Promise<Match[]> => {
   }
 };
 
-export const getMatchById = async (id: string): Promise<BackendMatchWithEloResponse | undefined> => {
+export const getMatchWithPlayerDetailsById = async (id: string): Promise<BackendMatchWithEloResponse | undefined> => {
   try {
-    const response = await axios.get(`${API_URL}/matches/${id}`);
+    const response = await axios.get(`${API_URL}/matches/${id}/player`);
+    return response.data as BackendMatchWithEloResponse;
+  } catch (error) {
+    console.error(`Error fetching match with ID ${id}:`, error);
+    return undefined;
+  }
+};
+
+export const getMatchWithTeamDetailsById = async (id: string): Promise<BackendMatchWithEloResponse | undefined> => {
+  try {
+    const response = await axios.get(`${API_URL}/matches/${id}/team`);
     return response.data as BackendMatchWithEloResponse;
   } catch (error) {
     console.error(`Error fetching match with ID ${id}:`, error);
