@@ -7,27 +7,23 @@ from typing import List
 
 from loguru import logger
 
-from app.db.repositories.matches import get_matches_by_player
 from app.db.repositories.players import (
     create_player,
     delete_player,
     get_all_players,
     get_player,
     get_player_by_name,
+    search_players,
     update_player,
 )
 from app.db.repositories.stats import get_player_stats
-from app.db.repositories.teams import get_team
 from app.exceptions.players import (
     InvalidPlayerDataError,
     PlayerAlreadyExistsError,
     PlayerNotFoundError,
     PlayerOperationError,
 )
-from app.models.elo_history import EloHistoryResponse
-from app.models.match import MatchWithEloResponse
 from app.models.player import PlayerCreate, PlayerResponse, PlayerUpdate
-from app.models.team import TeamResponse
 
 
 def get_player_by_id(player_id: int) -> PlayerResponse:
@@ -39,12 +35,10 @@ def get_player_by_id(player_id: int) -> PlayerResponse:
     player_id : int
         The unique identifier of the player.
 
-
     Returns
     -------
     PlayerResponse
         The player's details with statistics.
-
 
     Raises
     ------
@@ -54,26 +48,16 @@ def get_player_by_id(player_id: int) -> PlayerResponse:
         If there's an error retrieving the player's data.
     """
     try:
-        # ##: Get basic player data.
-        player = get_player(player_id)
-        if not player:
-            raise PlayerNotFoundError(f"ID: {player_id}")
-
         # ##: Get player statistics.
         stats = get_player_stats(player_id)
         if not stats:
-            logger.warning(f"No stats found for player ID {player_id}")
-            stats = {
-                "matches_played": 0,
-                "wins": 0,
-                "losses": 0,
-                "win_rate": 0.0,
-            }
+            raise PlayerNotFoundError(f"No player found with ID {player_id}")
+
         return PlayerResponse(
             player_id=player_id,
-            name=player["name"],
-            global_elo=player["global_elo"],
-            created_at=player["created_at"],
+            name=stats["name"],
+            global_elo=stats["global_elo"],
+            created_at=stats["created_at"],
             last_match_at=stats["last_match_at"],
             matches_played=stats.get("matches_played", 0),
             wins=stats.get("wins", 0),
@@ -96,12 +80,10 @@ def create_new_player(player_data: PlayerCreate) -> PlayerResponse:
     player_data : PlayerCreate
         The data for the new player.
 
-
     Returns
     -------
     PlayerResponse
         The created player's details with statistics.
-
 
     Raises
     ------
@@ -145,12 +127,10 @@ def update_existing_player(player_id: int, player_update: PlayerUpdate) -> Playe
     player_update : PlayerUpdate
         The updated player data.
 
-
     Returns
     -------
     PlayerResponse
         The updated player's details.
-
 
     Raises
     ------
@@ -195,11 +175,11 @@ def delete_player_by_id(player_id: int) -> bool:
     player_id : int
         The ID of the player to delete.
 
-
     Returns
     -------
     bool
         True if the player was deleted successfully, False otherwise.
+
     Raises
     ------
     PlayerOperationError
@@ -210,7 +190,6 @@ def delete_player_by_id(player_id: int) -> bool:
         existing_player = get_player(player_id)
         if not existing_player:
             raise PlayerNotFoundError(f"ID: {player_id}")
-
         success = delete_player(player_id)
         if not success:
             raise PlayerOperationError(f"Failed to delete player with ID {player_id}")
@@ -237,20 +216,79 @@ def get_all_players_with_stats() -> List[PlayerResponse]:
         If there's an error retrieving the players' data.
     """
     try:
-        players = []
-        for player in get_all_players():
+        players = get_all_players()
+        responses = []
+        for player in players:
             player_id = player["player_id"]
-            try:
-                player_response = get_player_by_id(player_id)
-                if player_response:
-                    players.append(player_response)
-            except PlayerNotFoundError:
-                logger.warning(f"Player with ID {player_id} not found but listed in players")
-                continue
-            except Exception as e:
-                logger.error(f"Error processing player {player_id}: {e}")
-                continue
-        return players
-    except Exception as e:
-        logger.error(f"Error retrieving all players: {e}")
-        raise PlayerOperationError("Failed to retrieve players") from e
+            stats = get_player_stats(player_id)
+            if not stats:
+                logger.warning(f"No stats found for player ID {player_id}")
+                stats = {
+                    "matches_played": 0,
+                    "wins": 0,
+                    "losses": 0,
+                    "win_rate": 0.0,
+                    "last_match_at": None,
+                }
+            responses.append(
+                PlayerResponse(
+                    player_id=player_id,
+                    name=player["name"],
+                    global_elo=player["global_elo"],
+                    created_at=player["created_at"],
+                    last_match_at=stats["last_match_at"],
+                    matches_played=stats.get("matches_played", 0),
+                    wins=stats.get("wins", 0),
+                    losses=stats.get("losses", 0),
+                    win_rate=stats.get("win_rate", 0.0),
+                )
+            )
+        return responses
+    except Exception as exc:
+        logger.error(f"Error retrieving all players with stats: {exc}")
+        raise PlayerOperationError("Failed to retrieve all players with statistics") from exc
+
+
+def search_players_service(name_pattern: str, limit: int = 10) -> List[PlayerResponse]:
+    """
+    Search for players by name pattern.
+
+    Parameters
+    ----------
+    name_pattern : str
+        Name pattern to search for.
+    limit : int, optional
+        Maximum number of results to return (default 10).
+
+    Returns
+    -------
+    List[PlayerResponse]
+        List of matching players as PlayerResponse objects.
+
+    Raises
+    ------
+    PlayerOperationError
+        If the search operation fails.
+    """
+    try:
+        players = search_players(name_pattern, limit)
+        responses = []
+        for player in players:
+            # ##: Since this is a search, stats may not be available; set to defaults
+            responses.append(
+                PlayerResponse(
+                    player_id=player["player_id"],
+                    name=player["name"],
+                    global_elo=player["global_elo"],
+                    created_at=player["created_at"],
+                    last_match_at=None,
+                    matches_played=0,
+                    wins=0,
+                    losses=0,
+                    win_rate=0.0,
+                )
+            )
+        return responses
+    except Exception as exc:
+        logger.error(f"Error searching players with pattern '{name_pattern}': {exc}")
+        raise PlayerOperationError(f"Failed to search players: {exc}") from exc

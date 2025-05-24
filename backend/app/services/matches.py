@@ -9,7 +9,7 @@ from typing import List, Optional, Union
 
 from loguru import logger
 
-from app.db.repositories.elo_history import (
+from app.db.repositories.players_elo_history import (
     batch_record_elo_updates,
     get_elo_history_by_match,
 )
