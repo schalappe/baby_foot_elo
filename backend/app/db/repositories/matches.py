@@ -46,11 +46,6 @@ def create_match(
         if isinstance(played_at, str):
             played_at = datetime.fromisoformat(played_at)
 
-        # ##: Extract date components.
-        year = played_at.year
-        month = played_at.month
-        day = played_at.day
-
         # ##: Validate teams are different.
         if winner_team_id == loser_team_id:
             logger.error("Winner and loser team IDs cannot be the same")
@@ -63,9 +58,6 @@ def create_match(
                 loser_team_id=loser_team_id,
                 is_fanny=is_fanny,
                 played_at=played_at,
-                year=year,
-                month=month,
-                day=day,
             )
 
             # ##: Add notes if provided
@@ -134,9 +126,7 @@ def get_match(match_id: int) -> Optional[Dict[str, Any]]:
     """
     result = (
         SelectQueryBuilder("Matches")
-        .select(
-            "match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "year", "month", "day", "notes"
-        )
+        .select("match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "notes")
         .where("match_id = ?", match_id)
         .execute(fetch_all=False)
     )
@@ -147,10 +137,7 @@ def get_match(match_id: int) -> Optional[Dict[str, Any]]:
             "loser_team_id": result[2],
             "is_fanny": result[3],
             "played_at": result[4],
-            "year": result[5],
-            "month": result[6],
-            "day": result[7],
-            "notes": result[8],
+            "notes": result[5],
         }
     return None
 
@@ -176,9 +163,7 @@ def get_matches_by_team(team_id: int, limit: int = 100, offset: int = 0) -> List
     """
     rows = (
         SelectQueryBuilder("Matches")
-        .select(
-            "match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "year", "month", "day", "notes"
-        )
+        .select("match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "notes")
         .where("winner_team_id = ? OR loser_team_id = ?", team_id, team_id)
         .order_by_clause("played_at DESC")
         .limit(limit)
@@ -193,10 +178,7 @@ def get_matches_by_team(team_id: int, limit: int = 100, offset: int = 0) -> List
                 "loser_team_id": r[2],
                 "is_fanny": r[3],
                 "played_at": r[4],
-                "year": r[5],
-                "month": r[6],
-                "day": r[7],
-                "notes": r[8],
+                "notes": r[5],
                 "won": r[1] == team_id,
             }
             for r in rows
@@ -234,9 +216,7 @@ def get_matches_by_date_range(
     try:
         rows = (
             SelectQueryBuilder("Matches")
-            .select(
-                "match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "year", "month", "day", "notes"
-            )
+            .select("match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "notes")
             .where("played_at >= ? AND played_at <= ?", start_date, end_date)
             .order_by_clause("played_at ASC")
             .execute()
@@ -250,10 +230,7 @@ def get_matches_by_date_range(
                     "loser_team_id": r[2],
                     "is_fanny": r[3],
                     "played_at": r[4],
-                    "year": r[5],
-                    "month": r[6],
-                    "day": r[7],
-                    "notes": r[8],
+                    "notes": r[5],
                 }
                 for r in rows
             ]
@@ -312,9 +289,6 @@ def get_matches_by_player(
                 "m.loser_team_id",
                 "m.is_fanny",
                 "m.played_at",
-                "m.year",
-                "m.month",
-                "m.day",
                 "m.notes",
                 "eh.old_elo",
                 "eh.new_elo",
@@ -346,15 +320,12 @@ def get_matches_by_player(
                         "loser_team_id": row[2],
                         "is_fanny": row[3],
                         "played_at": row[4],
-                        "year": row[5],
-                        "month": row[6],
-                        "day": row[7],
-                        "notes": row[8],
+                        "notes": row[5],
                         "elo_changes": {
                             player_id: {
-                                "old_elo": row[9],
-                                "new_elo": row[10],
-                                "difference": row[11],
+                                "old_elo": row[6],
+                                "new_elo": row[7],
+                                "difference": row[8],
                             }
                         },
                     }
@@ -380,7 +351,7 @@ def get_fanny_matches() -> List[Dict[str, Any]]:
     try:
         rows = (
             SelectQueryBuilder("Matches")
-            .select("match_id", "winner_team_id", "loser_team_id", "played_at", "year", "month", "day", "notes")
+            .select("match_id", "winner_team_id", "loser_team_id", "played_at", "notes")
             .where("is_fanny = ?", True)
             .order_by_clause("played_at DESC")
             .execute()
@@ -393,10 +364,7 @@ def get_fanny_matches() -> List[Dict[str, Any]]:
                     "winner_team_id": r[1],
                     "loser_team_id": r[2],
                     "played_at": r[3],
-                    "year": r[4],
-                    "month": r[5],
-                    "day": r[6],
-                    "notes": r[7],
+                    "notes": r[4],
                 }
                 for r in rows
             ]
@@ -428,9 +396,7 @@ def get_all_matches(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
     try:
         rows = (
             SelectQueryBuilder("Matches")
-            .select(
-                "match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "year", "month", "day", "notes"
-            )
+            .select("match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "notes")
             .order_by_clause("played_at DESC")
             .limit(limit)
             .offset(offset)
@@ -445,10 +411,7 @@ def get_all_matches(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
                     "loser_team_id": r[2],
                     "is_fanny": r[3],
                     "played_at": r[4],
-                    "year": r[5],
-                    "month": r[6],
-                    "day": r[7],
-                    "notes": r[8],
+                    "notes": r[5],
                 }
                 for r in rows
             ]

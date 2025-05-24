@@ -45,19 +45,17 @@ def record_elo_update(
         if date is None:
             date = datetime.now()
 
+        difference = new_elo - old_elo
         with transaction() as db:
             query, params = (
-                InsertQueryBuilder("ELO_History")
+                InsertQueryBuilder("Players_ELO_History")
                 .set(
                     player_id=player_id,
                     match_id=match_id,
                     old_elo=old_elo,
                     new_elo=new_elo,
-                    difference=new_elo - old_elo,
-                    date=date,
-                    year=date.year,
-                    month=date.month,
-                    day=date.day,
+                    difference=difference,
+                    date=date
                 )
                 .build()
             )
@@ -102,22 +100,17 @@ def batch_record_elo_updates(elo_updates: List[Dict[str, Any]]) -> List[Optional
             for update in elo_updates:
                 # ##: Get date from update or use current time.
                 date = update.get("date", datetime.now())
-                year = date.year
-                month = date.month
-                day = date.day
+                difference = update["new_elo"] - update["old_elo"]
 
                 query, params = (
-                    InsertQueryBuilder("ELO_History")
+                    InsertQueryBuilder("Players_ELO_History")
                     .set(
                         player_id=update["player_id"],
                         match_id=update["match_id"],
                         old_elo=update["old_elo"],
                         new_elo=update["new_elo"],
-                        difference=update["new_elo"] - update["old_elo"],
+                        difference=difference,
                         date=date,
-                        year=year,
-                        month=month,
-                        day=day,
                     )
                     .build()
                 )
@@ -162,7 +155,7 @@ def get_player_elo_history(
         List of ELO history records
     """
     try:
-        builder = SelectQueryBuilder("ELO_History").select("*").where("player_id = ?", player_id)
+        builder = SelectQueryBuilder("Players_ELO_History").select("*").where("player_id = ?", player_id)
 
         if start_date:
             builder = builder.where("date >= ?", start_date)
@@ -186,104 +179,12 @@ def get_player_elo_history(
                     "new_elo": record[4],
                     "difference": record[5],
                     "date": record[6],
-                    "year": record[7],
-                    "month": record[8],
-                    "day": record[9],
                 }
             )
 
         return history_records
     except Exception as exc:
         logger.error(f"Failed to get ELO history for player ID {player_id}: {exc}")
-        return []
-
-
-@with_retry(max_retries=3, retry_delay=0.5)
-def get_elo_by_date(player_id: int, target_date: datetime) -> Optional[int]:
-    """
-    Get the ELO score for a player at a specific date.
-
-    Parameters
-    ----------
-    player_id : int
-        ID of the player
-    target_date : datetime
-        The date to get the ELO score for
-
-    Returns
-    -------
-    Optional[int]
-        ELO score at the specified date, or None if no record exists
-    """
-    try:
-        result = (
-            SelectQueryBuilder("ELO_History")
-            .select("new_elo")
-            .where("player_id = ?", player_id)
-            .where("date <= ?", target_date)
-            .order_by_clause("date DESC")
-            .limit(1)
-            .execute(fetch_all=False)
-        )
-        return result[0] if result else None
-    except Exception as exc:
-        logger.error(f"Failed to get ELO by date for player ID {player_id}: {exc}")
-        return None
-
-
-@with_retry(max_retries=3, retry_delay=0.5)
-def get_monthly_elo_history(player_id: int, year: int, month: int) -> List[Dict[str, Any]]:
-    """
-    Get the monthly ELO history for a player for a specific year and month.
-
-    Parameters
-    ----------
-    player_id : int
-        ID of the player
-    year : int
-        Year to filter by
-    month : int
-        Month to filter by
-
-    Returns
-    -------
-    List[Dict[str, Any]]
-        List of ELO history records for the specified month
-    """
-    try:
-        results = (
-            SelectQueryBuilder("ELO_History")
-            .select("*")
-            .where("player_id = ?", player_id)
-            .where("year = ?", year)
-            .where("month = ?", month)
-            .order_by_clause("date ASC")
-            .execute(fetch_all=True)
-        )
-
-        if not results:
-            return []
-
-        history_records = []
-        for record in results:
-            history_records.append(
-                {
-                    "history_id": record[0],
-                    "player_id": record[1],
-                    "match_id": record[2],
-                    "old_elo": record[3],
-                    "new_elo": record[4],
-                    "difference": record[5],
-                    "date": record[6],
-                    "year": record[7],
-                    "month": record[8],
-                    "day": record[9],
-                }
-            )
-
-        return history_records
-    except Exception as exc:
-        logger.error(f"Failed to get monthly ELO history for player ID {player_id}: {exc}")
         return []
 
 
@@ -303,7 +204,7 @@ def get_elo_history_by_match(match_id: int) -> List[Dict[str, Any]]:
         List of ELO history records for the match
     """
     try:
-        results = SelectQueryBuilder("ELO_History").select("*").where("match_id = ?", match_id).execute(fetch_all=True)
+        results = SelectQueryBuilder("Players_ELO_History").select("*").where("match_id = ?", match_id).execute(fetch_all=True)
 
         if not results:
             return []
@@ -319,9 +220,6 @@ def get_elo_history_by_match(match_id: int) -> List[Dict[str, Any]]:
                     "new_elo": record[4],
                     "difference": record[5],
                     "date": record[6],
-                    "year": record[7],
-                    "month": record[8],
-                    "day": record[9],
                 }
             )
         return history_records
@@ -335,7 +233,7 @@ def get_elo_history_by_player_match(player_id: int, match_id: int) -> Optional[D
 
     try:
         builder = (
-            SelectQueryBuilder("ELO_History")
+            SelectQueryBuilder("Players_ELO_History")
             .select("*")
             .where("player_id = ?", player_id)
             .where("match_id = ?", match_id)
@@ -353,9 +251,6 @@ def get_elo_history_by_player_match(player_id: int, match_id: int) -> Optional[D
             "new_elo": results[0][4],
             "difference": results[0][5],
             "date": results[0][6],
-            "year": results[0][7],
-            "month": results[0][8],
-            "day": results[0][9],
         }
         return history_record
     except Exception as exc:

@@ -19,34 +19,6 @@ from app.db.session.transaction import transaction
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_player_by_name(name: str) -> Optional[Dict[str, Any]]:
-    """
-    Get a player by name.
-
-    Parameters
-    ----------
-    name : str
-        Name of the player to find.
-
-    Returns
-    -------
-    Optional[Dict[str, Any]]
-        Player data if found, None otherwise.
-    """
-    try:
-        query, params = SelectQueryBuilder("Players").where("name = ?", name).build()
-        with transaction() as db_manager:
-            player = db_manager.fetchone(query, params)
-
-        if player:
-            return dict(zip(["player_id", "name", "global_elo", "created_at"], player))
-        return None
-    except Exception as e:
-        logger.error(f"Error getting player by name '{name}': {e}")
-        return None
-
-
-@with_retry(max_retries=3, retry_delay=0.5)
 def create_player(name: str, global_elo: int = 1000) -> Optional[int]:
     """
     Create a new player in the database.
@@ -138,6 +110,35 @@ def get_player(player_id: int) -> Optional[Dict[str, Any]]:
     except Exception as exc:
         logger.error(f"Failed to get player by ID {player_id}: {exc}")
         return None
+
+
+@with_retry(max_retries=3, retry_delay=0.5)
+def get_player_by_name(name: str) -> Optional[Dict[str, Any]]:
+    """
+    Get a player by name.
+
+    Parameters
+    ----------
+    name : str
+        Name of the player to find.
+
+    Returns
+    -------
+    Optional[Dict[str, Any]]
+        Player data if found, None otherwise.
+    """
+    try:
+        query, params = SelectQueryBuilder("Players").where("name = ?", name).build()
+        with transaction() as db_manager:
+            player = db_manager.fetchone(query, params)
+
+        if player:
+            return dict(zip(["player_id", "name", "global_elo", "created_at"], player))
+        return None
+    except Exception as e:
+        logger.error(f"Error getting player by name '{name}': {e}")
+        return None
+
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
