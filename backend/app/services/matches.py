@@ -18,12 +18,12 @@ from app.db.repositories.matches import (
     get_matches_by_date_range,
     get_matches_by_team,
 )
-from app.db.repositories.players import update_player
+from app.db.repositories.players import batch_update_players, update_player
 from app.db.repositories.players_elo_history import (
     batch_record_elo_updates,
     get_elo_history_by_match,
 )
-from app.db.repositories.teams import update_team
+from app.db.repositories.teams import batch_update_teams, update_team
 from app.exceptions.matches import (
     InvalidMatchTeamsError,
     MatchCreationError,
@@ -88,60 +88,60 @@ def create_new_match(match_data: MatchCreate) -> MatchWithEloResponse:
             raise MatchCreationError(detail="Failed to create match record")
 
         # ##: Process ELO updates.
-        elo_changes = process_match_result(
-            winning_team=[
-                {"id": winner_team.player1_id, "elo": winner_team.player1.global_elo},
-                {"id": winner_team.player2_id, "elo": winner_team.player2.global_elo},
-            ],
-            losing_team=[
-                {"id": loser_team.player1_id, "elo": loser_team.player1.global_elo},
-                {"id": loser_team.player2_id, "elo": loser_team.player2.global_elo},
-            ],
+        players_change, teams_change = process_match_result(winning_team=winner_team, losing_team=loser_team)
+
+        # ##: Update players.
+        batch_update_players(
+            [{"player_id": player_id, "global_elo": change["new_elo"]} for player_id, change in players_change.items()]
         )
 
-        # ##: Update players' ELO ratings.
-        elo_history_records = []
-        for player_id, changes in elo_changes.items():
-            update_player(player_id, global_elo=changes["new_elo"])
-            elo_history_records.append(
+        # ##: Update players' ELO history.
+        batch_record_elo_updates(
+            [
                 {
                     "player_id": player_id,
                     "match_id": match_id,
-                    "old_elo": changes["old_elo"],
-                    "new_elo": changes["new_elo"],
+                    "old_elo": change["old_elo"],
+                    "new_elo": change["new_elo"],
                     "date": match_data.played_at,
                 }
-            )
-
-        # ##: Record ELO history.
-        batch_record_elo_updates(elo_history_records)
-
-        # ##: Update teams' ELO ratings.
-        winner_team_elo = calculate_team_elo(
-            elo_changes[winner_team.player1_id]["new_elo"], elo_changes[winner_team.player2_id]["new_elo"]
-        )
-        loser_team_elo = calculate_team_elo(
-            elo_changes[loser_team.player1_id]["new_elo"], elo_changes[loser_team.player2_id]["new_elo"]
+                for player_id, change in players_change.items()
+            ]
         )
 
-        update_team(
-            match_data.winner_team_id, global_elo=winner_team_elo, last_match_at=match_data.played_at.isoformat()
+        # ##: Update teams.
+        batch_update_teams(
+            [
+                {"team_id": team_id, "global_elo": change["new_elo"], "last_match_at": match_data.played_at}
+                for team_id, change in teams_change.items()
+            ]
         )
-        update_team(
-            match_data.loser_team_id, global_elo=loser_team_elo, last_match_at=match_data.played_at.isoformat()
+
+        # ##: Update teams' ELO history.
+        batch_record_elo_updates(
+            [
+                {
+                    "team_id": team_id,
+                    "match_id": match_id,
+                    "old_elo": change["old_elo"],
+                    "new_elo": change["new_elo"],
+                    "date": match_data.played_at,
+                }
+                for team_id, change in teams_change.items()
+            ]
         )
 
         # ##: Prepare response.
         response = MatchWithEloResponse(
             match_id=match_id,
-            winner_team=get_team_by_id(match_data.winner_team_id),
-            loser_team=get_team_by_id(match_data.loser_team_id),
+            winner_team=winner_team,
+            loser_team=loser_team,
             winner_team_id=match_data.winner_team_id,
             loser_team_id=match_data.loser_team_id,
             is_fanny=match_data.is_fanny,
             played_at=match_data.played_at,
             notes=match_data.notes,
-            elo_changes=elo_changes,
+            elo_changes=players_change,
         )
 
         return response
