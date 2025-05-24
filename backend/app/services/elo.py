@@ -10,10 +10,10 @@ from math import pow
 from statistics import mean
 from typing import Any, Dict, List
 
-from app.models.team import TeamResponse
-from app.models.player import PlayerResponse
-
 from loguru import logger
+
+from app.models.player import PlayerResponse
+from app.models.team import TeamResponse
 
 # ##: K-factors for established players.
 K_TIER1 = 200  # ELO < 1200
@@ -201,7 +201,9 @@ def calculate_players_elo_change(winning_team: TeamResponse, losing_team: TeamRe
     if sum_delta_elo != 0:
         total_k_factor = sum(k for _, _, k in all_players_changes)
         correction_factor_per_k = -sum_delta_elo / total_k_factor
-        logger.debug(f"Applying ELO pool correction: sum_delta_elo={sum_delta_elo}, total_k_factor={total_k_factor}, correction_factor_per_k={correction_factor_per_k:.4f}")
+        logger.debug(
+            f"Applying ELO pool correction: sum_delta_elo={sum_delta_elo}, total_k_factor={total_k_factor}, correction_factor_per_k={correction_factor_per_k:.4f}"
+        )
 
         for i, (player, change, k_factor) in enumerate(all_players_changes):
             corrected_change = change + (k_factor * correction_factor_per_k)
@@ -209,8 +211,8 @@ def calculate_players_elo_change(winning_team: TeamResponse, losing_team: TeamRe
 
     for player, change, _ in all_players_changes:
         new_elo = player.global_elo + change
-        logger.debug(f"Player {player.id}: ELO {player.global_elo} -> {new_elo} (Change: {change})")
-        results[player.id] = {"old_elo": player.global_elo, "new_elo": new_elo, "change": change}
+        logger.debug(f"Player {player.player_id}: ELO {player.global_elo} -> {new_elo} (Change: {change})")
+        results[player.player_id] = {"old_elo": player.global_elo, "new_elo": new_elo, "change": change}
 
     return results
 
@@ -233,28 +235,47 @@ def calculate_team_elo_change(winning_team: TeamResponse, losing_team: TeamRespo
     """
 
     results = {}
+    all_teams_changes = []
 
-    win_prob = calculate_win_probability(winning_team.global_elo, losing_team.global_elo)
+    # ##: Calculate initial ELO changes for winning and losing teams.
     win_change = calculate_elo_change(
         competitor_elo=winning_team.global_elo,
-        win_probability=win_prob,
-        match_result=1
+        win_probability=calculate_win_probability(winning_team.global_elo, losing_team.global_elo),
+        match_result=1,
     )
+    all_teams_changes.append((winning_team, win_change, determine_k_factor(winning_team.global_elo)))
+
     lose_change = calculate_elo_change(
         competitor_elo=losing_team.global_elo,
-        win_probability=1 - win_prob,
-        match_result=0
+        win_probability=calculate_win_probability(losing_team.global_elo, winning_team.global_elo),
+        match_result=0,
     )
+    all_teams_changes.append((losing_team, lose_change, determine_k_factor(losing_team.global_elo)))
 
-    results = {
-        winning_team.team_id: {"old_elo": winning_team.global_elo, "new_elo": winning_team.global_elo + win_change, "change": win_change},
-        losing_team.team_id: {"old_elo": losing_team.global_elo, "new_elo": losing_team.global_elo + lose_change, "change": lose_change}
-    }
-    
+    # ##: Apply pool system correction.
+    sum_delta_elo = sum(change for _, change, _ in all_teams_changes)
+    if sum_delta_elo != 0:
+        total_k_factor = sum(k for _, _, k in all_teams_changes)
+        correction_factor_per_k = -sum_delta_elo / total_k_factor
+        logger.debug(
+            f"Applying ELO pool correction for teams: sum_delta_elo={sum_delta_elo}, total_k_factor={total_k_factor}, correction_factor_per_k={correction_factor_per_k:.4f}"
+        )
+
+        for i, (team, change, k_factor) in enumerate(all_teams_changes):
+            corrected_change = change + (k_factor * correction_factor_per_k)
+            all_teams_changes[i] = (team, int(corrected_change), k_factor)
+
+    for team, change, _ in all_teams_changes:
+        new_elo = team.global_elo + change
+        logger.debug(f"Team {team.team_id}: ELO {team.global_elo} -> {new_elo} (Change: {change})")
+        results[team.team_id] = {"old_elo": team.global_elo, "new_elo": new_elo, "change": change}
+
     return results
 
 
-def process_match_result(winning_team: TeamResponse, losing_team: TeamResponse) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+def process_match_result(
+    winning_team: TeamResponse, losing_team: TeamResponse
+) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     """
     Process match results and calculate updated ELO values for each player.
 
@@ -267,10 +288,17 @@ def process_match_result(winning_team: TeamResponse, losing_team: TeamResponse) 
 
     Returns
     -------
-    Dict[str, Any]
-        Mapping player IDs to a dict with 'old_elo', 'new_elo', and 'change'.
+    Tuple[Dict[str, Any], Dict[str, Any]]
+        Tuple of two dictionaries:
+        - First dictionary: Mapping player IDs to a dict with 'old_elo', 'new_elo', and 'change'.
+        - Second dictionary: Mapping team IDs to a dict with 'old_elo', 'new_elo', and 'change'.
     """
-    if winning_team.player1 is None or winning_team.player2 is None or losing_team.player1 is None or losing_team.player2 is None:
+    if (
+        winning_team.player1 is None
+        or winning_team.player2 is None
+        or losing_team.player1 is None
+        or losing_team.player2 is None
+    ):
         raise ValueError("Player must be provided")
 
     players_elo_change = calculate_players_elo_change(winning_team, losing_team)
