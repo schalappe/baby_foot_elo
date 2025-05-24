@@ -177,12 +177,7 @@ async def get_teams_endpoint(
             return teams[skip : skip + limit]
 
         # ##: Get all teams with pagination and ELO filtering.
-        return teams_service.get_all_teams_with_details(
-            skip=skip,
-            limit=limit,
-            min_elo=min_elo,
-            max_elo=max_elo,
-        )
+        return teams_service.get_all_teams_with_stats(skip=skip, limit=limit)
 
     except Exception as exc:
         logger.error(f"Error retrieving teams: {exc}")

@@ -199,6 +199,8 @@ def update_existing_team(team_id: int, team_update: TeamUpdate) -> TeamResponse:
         raise TeamOperationError(f"Failed to update team with ID {team_id}") from exc
 
 
+# ##: TODO: Delete team should also delete all matches associated with it.
+# and recalculate ELO ratings for all players.
 def delete_team_by_id(team_id: int) -> bool:
     """
     Delete a team by its ID.
@@ -239,7 +241,7 @@ def delete_team_by_id(team_id: int) -> bool:
         raise TeamOperationError(f"Failed to delete team with ID {team_id}") from exc
 
 
-def get_all_teams_with_details(skip: int = 0, limit: int = 100) -> List[TeamResponse]:
+def get_all_teams_with_stats(skip: int = 0, limit: int = 100) -> List[TeamResponse]:
     """
     Retrieve all teams with their details.
 
@@ -261,20 +263,9 @@ def get_all_teams_with_details(skip: int = 0, limit: int = 100) -> List[TeamResp
         If there's an error retrieving the teams.
     """
     try:
-        # ##: Get all teams from the repository.
         teams = get_all_teams(limit=limit, offset=skip)
-
-        # ##: Convert to TeamResponse models with player details.
-        result = []
-        for team in teams:
-            try:
-                result.append(get_team_by_id(team["team_id"]))
-            except Exception as exc:
-                logger.warning(f"Skipping team {team['team_id']} due to error: {exc}")
-                continue
-
-        return result
-
+        responses = [get_team_by_id(team["team_id"]) for team in teams]
+        return responses
     except Exception as exc:
         logger.error(f"Error retrieving teams: {exc}")
         raise TeamOperationError("Failed to retrieve teams") from exc

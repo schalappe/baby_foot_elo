@@ -235,32 +235,7 @@ def get_all_players_with_stats() -> List[PlayerResponse]:
     """
     try:
         players = get_all_players()
-        responses = []
-        for player in players:
-            player_id = player["player_id"]
-            stats = get_player_stats(player_id)
-            if not stats:
-                logger.warning(f"No stats found for player ID {player_id}")
-                stats = {
-                    "matches_played": 0,
-                    "wins": 0,
-                    "losses": 0,
-                    "win_rate": 0.0,
-                    "last_match_at": None,
-                }
-            responses.append(
-                PlayerResponse(
-                    player_id=player_id,
-                    name=player["name"],
-                    global_elo=player["global_elo"],
-                    created_at=player["created_at"],
-                    last_match_at=stats["last_match_at"],
-                    matches_played=stats.get("matches_played", 0),
-                    wins=stats.get("wins", 0),
-                    losses=stats.get("losses", 0),
-                    win_rate=stats.get("win_rate", 0.0),
-                )
-            )
+        responses = [get_player_by_id(player["player_id"]) for player in players]
         return responses
     except Exception as exc:
         logger.error(f"Error retrieving all players with stats: {exc}")
