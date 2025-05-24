@@ -181,19 +181,15 @@ def update_existing_team(team_id: int, team_update: TeamUpdate) -> TeamResponse:
         If the update operation fails.
     """
     try:
-        # ##: Check if team exists
+        # ##: Check if team exists.
         if not get_team(team_id):
             raise TeamNotFoundError(f"ID: {team_id}")
 
-        # ##: Prepare update data
-        update_data = team_update.model_dump(exclude_unset=True)
-
-        # ##: Update the team in the database
-        success = update_team(team_id, **update_data)
+        # ##: Update the team in the database.
+        success = update_team(team_id, global_elo=team_update.global_elo, last_match_at=team_update.last_match_at)
         if not success:
             raise TeamOperationError(f"Failed to update team with ID {team_id}")
 
-        # ##: Return the updated team with full details
         return get_team_by_id(team_id)
 
     except TeamNotFoundError:

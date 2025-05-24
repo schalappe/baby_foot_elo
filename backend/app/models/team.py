@@ -21,10 +21,13 @@ class TeamBase(BaseModel):
         The ID of the first player in the team.
     player2_id : int
         The ID of the second player in the team.
+    global_elo : int, optional
+        The global ELO rating of the team (default is 1000).
     """
 
     player1_id: int = Field(..., gt=0, description="ID of the first player")
     player2_id: int = Field(..., gt=0, description="ID of the second player")
+    global_elo: int = Field(default=1000, ge=0, description="Initial global ELO rating for the team")
 
 
 class TeamCreate(TeamBase):
@@ -37,11 +40,9 @@ class TeamCreate(TeamBase):
         The ID of the first player.
     player2_id : int
         The ID of the second player.
-    global_elo : float, optional
-        The initial global ELO rating for the team (default is 1000.0).
+    global_elo : int, optional
+        The initial global ELO rating for the team (default is 1000).
     """
-
-    global_elo: float = Field(default=1000.0, ge=0, description="Initial global ELO rating for the team")
 
     @model_validator(mode="after")
     def validate_players(cls, values: Any) -> Any:
@@ -66,10 +67,17 @@ class TeamCreate(TeamBase):
 class TeamUpdate(BaseModel):
     """
     Data model for updating an existing team's information.
-    Currently, teams are immutable in terms of players; ELO and last_match_at
-    are updated via match results.
-    This model is a placeholder for potential future updatable fields.
+
+    Attributes
+    ----------
+    global_elo : Optional[int]
+        The updated global ELO rating for the team.
+    last_match_at : Optional[datetime]
+        The updated last match timestamp for the team.
     """
+
+    global_elo: Optional[int] = Field(default=None, ge=0, description="Updated global ELO rating for the team")
+    last_match_at: Optional[datetime] = Field(default=None, description="Updated last match timestamp for the team")
 
 
 class TeamResponse(TeamBase):
@@ -84,7 +92,7 @@ class TeamResponse(TeamBase):
         ID of the first player.
     player2_id : int
         ID of the second player.
-    global_elo : float
+    global_elo : int
         The current global ELO rating of the team.
     created_at : datetime
         The date and time when the team was created.
@@ -107,7 +115,6 @@ class TeamResponse(TeamBase):
     """
 
     team_id: int = Field(..., gt=0, description="Unique identifier for the team")
-    global_elo: float = Field(..., ge=0, description="Current global ELO rating of the team")
     created_at: datetime = Field(..., description="Timestamp of team creation")
     last_match_at: Optional[datetime] = Field(default=None, description="Timestamp of the team's last match")
     matches_played: int = Field(..., ge=0, description="Number of matches played by the team")
