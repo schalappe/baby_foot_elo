@@ -38,11 +38,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import {
-  calculateTeamElo,
-  calculateWinProbability,
-  calculateEloChange,
-} from '@/lib/eloCalculator';
 
 const matchFormSchema = z.object({
   teamAPlayer1: z.string().min(1, { message: "Joueur 1 de l'équipe A est requis." }),
@@ -60,20 +55,11 @@ const matchFormSchema = z.object({
 
 type MatchFormValues = z.infer<typeof matchFormSchema>;
 
-interface EloPreviewPlayer {
-  playerId: string;
-  name: string;
-  oldElo: number;
-  newElo: number;
-  change: number;
-}
-
 const NewMatchPage = () => {
   const router = useRouter();
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [loadingPlayers, setLoadingPlayers] = useState<boolean>(true); // Renamed for clarity
   const [pageError, setPageError] = useState<string | null>(null); // Renamed for clarity
-  const [eloPreview, setEloPreview] = useState<EloPreviewPlayer[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submissionStatus, setSubmissionStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -94,7 +80,7 @@ const NewMatchPage = () => {
 
   const watchedValues = watch(); // Watch all fields for ELO calculation & available players
 
-  const selectedPlayerIds = useCallback(() : string[] => {
+  const selectedPlayerIds = useCallback(() => {
     return [
       watchedValues.teamAPlayer1,
       watchedValues.teamAPlayer2,
@@ -102,7 +88,6 @@ const NewMatchPage = () => {
       watchedValues.teamBPlayer2,
     ].filter(Boolean) as string[];
   }, [watchedValues.teamAPlayer1, watchedValues.teamAPlayer2, watchedValues.teamBPlayer1, watchedValues.teamBPlayer2]);
-
 
   useEffect(() => {
     const fetchPlayersList = async () => {
@@ -120,64 +105,6 @@ const NewMatchPage = () => {
     };
     fetchPlayersList();
   }, []);
-
-  useEffect(() => {
-    const { teamAPlayer1, teamAPlayer2, teamBPlayer1, teamBPlayer2, winningTeam } = watchedValues;
-
-    if (!allPlayers.length || !winningTeam || !teamAPlayer1 || !teamAPlayer2 || !teamBPlayer1 || !teamBPlayer2) {
-      setEloPreview([]);
-      return;
-    }
-
-    const getPlayerById = (id: string): Player | undefined => allPlayers.find(p => p.player_id.toString() === id);
-
-    const pA1 = getPlayerById(teamAPlayer1);
-    const pA2 = getPlayerById(teamAPlayer2);
-    const pB1 = getPlayerById(teamBPlayer1);
-    const pB2 = getPlayerById(teamBPlayer2);
-
-    if (!pA1 || !pA2 || !pB1 || !pB2) {
-        setEloPreview([]);
-        return;
-    }
-    
-    const teamAPlayers = [pA1, pA2];
-    const teamBPlayers = [pB1, pB2];
-    
-    const teamAElo = calculateTeamElo(teamAPlayers[0].global_elo, teamAPlayers[1]?.global_elo);
-    const teamBElo = calculateTeamElo(teamBPlayers[0].global_elo, teamBPlayers[1]?.global_elo);
-
-    const probA = calculateWinProbability(teamAElo, teamBElo);
-    const probB = 1 - probA;
-
-    const previewData: EloPreviewPlayer[] = [];
-
-    teamAPlayers.forEach(player => {
-      const result = winningTeam === 'A' ? 1 : 0;
-      const change = calculateEloChange(player.global_elo, probA, result as 0 | 1);
-      previewData.push({
-        playerId: player.player_id.toString(),
-        name: player.name,
-        oldElo: player.global_elo,
-        newElo: Math.round(player.global_elo + change),
-        change: Math.round(change),
-      });
-    });
-
-    teamBPlayers.forEach(player => {
-      const result = winningTeam === 'B' ? 1 : 0;
-      const change = calculateEloChange(player.global_elo, probB, result as 0 | 1);
-      previewData.push({
-        playerId: player.player_id.toString(),
-        name: player.name,
-        oldElo: player.global_elo,
-        newElo: Math.round(player.global_elo + change),
-        change: Math.round(change),
-      });
-    });
-    setEloPreview(previewData);
-
-  }, [watchedValues.teamAPlayer1, watchedValues.teamAPlayer2, watchedValues.teamBPlayer1, watchedValues.teamBPlayer2, watchedValues.winningTeam, allPlayers]);
 
   const onSubmit = async (data: MatchFormValues) => {
     setIsSubmitting(true);
@@ -224,7 +151,6 @@ const NewMatchPage = () => {
       await createMatch(matchPayload);
       setSubmissionStatus({ type: 'success', message: 'Match créé avec succès! Redirection...' });
       reset();
-      setEloPreview([]);
       setTimeout(() => router.push('/'), 1500);
 
     } catch (err) {
@@ -277,133 +203,126 @@ const NewMatchPage = () => {
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Nouveau match</h1>
-        <p className="text-muted-foreground">Entrez les détails du match ci-dessous.</p>
-      </header>
-
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Ajouter un résultat</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Row 1: Date and Fanny */}
-            <div className="flex flex-col sm:flex-row sm:items-start sm:space-x-4 space-y-4 sm:space-y-0">
-              <div className="flex-grow space-y-1">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id="matchDate"
-                      variant={"outline"}
-                      className={cn(
-                        "w-full sm:w-[240px] justify-start text-left font-normal",
-                        !watchedValues.matchDate && "text-muted-foreground"
-                      )}
-                      disabled={loadingPlayers || isSubmitting}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {watchedValues.matchDate ? format(watchedValues.matchDate, "dd/MM/yyyy", { locale: fr }) : <span>Date du match</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={watchedValues.matchDate}
-                      onSelect={(date) => setValue('matchDate', date || new Date())}
-                      initialFocus
-                      locale={fr}
-                      disabled={isSubmitting}
-                    />
-                  </PopoverContent>
-                </Popover>
-                {errors.matchDate && <p className="text-xs text-red-500 pt-1">{errors.matchDate.message}</p>}
-              </div>
-              <div className="flex items-center space-x-2 pt-2 sm:pt-2.5">
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold">Créer un nouveau match</CardTitle>
+          <CardDescription>
+            Remplissez les détails du match ci-dessous.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Team A Players */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="teamAPlayer1">Équipe A - Joueur 1</Label>
                 <Controller
                   control={control}
-                  name="isFanny"
+                  name="teamAPlayer1"
                   render={({ field }) => (
-                    <Checkbox
-                      id="isFanny"
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      aria-label="C'était une Fanny?"
-                      disabled={loadingPlayers || isSubmitting}
-                    />
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner le joueur 1" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Joueurs</SelectLabel>
+                          {getAvailablePlayers(allPlayers, selectedPlayerIds(), field.value).map(player => (
+                            <SelectItem key={player.player_id} value={player.player_id.toString()}>
+                              {player.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                   )}
                 />
-                <Label htmlFor="isFanny" className="text-sm font-normal">Fanny</Label>
-                {errors.isFanny && <p className="text-xs text-red-500 ">{errors.isFanny.message}</p>}
+                {errors.teamAPlayer1 && <p className="text-red-500 text-sm">{errors.teamAPlayer1.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="teamAPlayer2">Équipe A - Joueur 2</Label>
+                <Controller
+                  control={control}
+                  name="teamAPlayer2"
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner le joueur 2" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Joueurs</SelectLabel>
+                          {getAvailablePlayers(allPlayers, selectedPlayerIds(), field.value).map(player => (
+                            <SelectItem key={player.player_id} value={player.player_id.toString()}>
+                              {player.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.teamAPlayer2 && <p className="text-red-500 text-sm">{errors.teamAPlayer2.message}</p>}
               </div>
             </div>
 
-            {/* Team A Selection */}
-            <div className="flex items-start space-x-3">
-              <Trophy className="h-6 w-6 text-blue-500 mt-1.5" />
-              <div className="flex-grow space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
-                  {(['teamAPlayer1', 'teamAPlayer2'] as const).map((fieldName, idx) => (
-                    <div className="space-y-1" key={fieldName}>
-                      <Select onValueChange={(value) => setValue(fieldName, value)} value={watchedValues[fieldName]} disabled={loadingPlayers || isSubmitting}>
-                        <SelectTrigger id={fieldName}>
-                          <SelectValue placeholder={`Joueur ${idx + 1} (Équipe A)`} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectGroup>
-                            <SelectLabel>Joueurs disponibles</SelectLabel>
-                            {getAvailablePlayers(allPlayers, selectedPlayerIds(), watchedValues[fieldName]).map(player => (
-                              <SelectItem key={player.player_id} value={player.player_id.toString()}>
-                                {player.name} (Elo: {player.global_elo})
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                      {errors[fieldName] && <p className="text-xs text-red-500 pt-1">{errors[fieldName]?.message}</p>}
-                    </div>
-                  ))}
-                </div>
+            {/* Team B Players */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="teamBPlayer1">Équipe B - Joueur 1</Label>
+                <Controller
+                  control={control}
+                  name="teamBPlayer1"
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner le joueur 1" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Joueurs</SelectLabel>
+                          {getAvailablePlayers(allPlayers, selectedPlayerIds(), field.value).map(player => (
+                            <SelectItem key={player.player_id} value={player.player_id.toString()}>
+                              {player.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.teamBPlayer1 && <p className="text-red-500 text-sm">{errors.teamBPlayer1.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="teamBPlayer2">Équipe B - Joueur 2</Label>
+                <Controller
+                  control={control}
+                  name="teamBPlayer2"
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner le joueur 2" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Joueurs</SelectLabel>
+                          {getAvailablePlayers(allPlayers, selectedPlayerIds(), field.value).map(player => (
+                            <SelectItem key={player.player_id} value={player.player_id.toString()}>
+                              {player.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.teamBPlayer2 && <p className="text-red-500 text-sm">{errors.teamBPlayer2.message}</p>}
               </div>
             </div>
 
-            {/* VS Separator */}
-            <div className="flex justify-center items-center py-1">
-              <span className="text-base font-semibold text-muted-foreground">VS</span>
-            </div>
-
-            {/* Team B Selection */}
-            <div className="flex items-start space-x-3">
-              <Trophy className="h-6 w-6 text-red-500 mt-1.5" />
-              <div className="flex-grow space-y-3">
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
-                    {(['teamBPlayer1', 'teamBPlayer2'] as const).map((fieldName, idx) => (
-                        <div className="space-y-1" key={fieldName}>
-                        <Select onValueChange={(value) => setValue(fieldName, value)} value={watchedValues[fieldName]} disabled={loadingPlayers || isSubmitting}>
-                            <SelectTrigger id={fieldName}>
-                            <SelectValue placeholder={`Joueur ${idx + 1} (Équipe B)`} />
-                            </SelectTrigger>
-                            <SelectContent>
-                            <SelectGroup>
-                                <SelectLabel>Joueurs disponibles</SelectLabel>
-                                {getAvailablePlayers(allPlayers, selectedPlayerIds(), watchedValues[fieldName]).map(player => (
-                                <SelectItem key={player.player_id} value={player.player_id.toString()}>
-                                    {player.name} (Elo: {player.global_elo})
-                                </SelectItem>
-                                ))}
-                            </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                        {errors[fieldName] && <p className="text-xs text-red-500 pt-1">{errors[fieldName]?.message}</p>}
-                        </div>
-                    ))}
-                </div>
-              </div>
-            </div>
-            
             {/* Winning Team */}
-            <div className="space-y-2 pt-3">
-              <Label className="text-sm font-medium">Équipe gagnante*</Label>
+            <div className="space-y-2">
+              <Label htmlFor="winningTeam">Équipe gagnante</Label>
               <Controller
                 control={control}
                 name="winningTeam"
@@ -411,105 +330,106 @@ const NewMatchPage = () => {
                   <RadioGroup
                     onValueChange={field.onChange}
                     value={field.value}
-                    className="flex items-center space-x-4 pt-1"
-                    disabled={loadingPlayers || isSubmitting}
+                    className="flex space-x-4"
                   >
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="A" id="teamAwin" disabled={loadingPlayers || isSubmitting} />
-                      <Label htmlFor="teamAwin" className="font-normal">Équipe A</Label>
+                      <RadioGroupItem value="A" id="winningTeamA" />
+                      <Label htmlFor="winningTeamA">Équipe A</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="B" id="teamBwin" disabled={loadingPlayers || isSubmitting} />
-                      <Label htmlFor="teamBwin" className="font-normal">Équipe B</Label>
+                      <RadioGroupItem value="B" id="winningTeamB" />
+                      <Label htmlFor="winningTeamB">Équipe B</Label>
                     </div>
                   </RadioGroup>
                 )}
               />
-              {errors.winningTeam && <p className="text-xs text-red-500 pt-1">{errors.winningTeam.message}</p>}
+              {errors.winningTeam && <p className="text-red-500 text-sm">{errors.winningTeam.message}</p>}
+            </div>
+
+            {/* Is Fanny */}
+            <div className="flex items-center space-x-2">
+              <Controller
+                control={control}
+                name="isFanny"
+                render={({ field }) => (
+                  <Checkbox
+                    id="isFanny"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                )}
+              />
+              <Label htmlFor="isFanny">Match "Fanny" (10-0)</Label>
+            </div>
+
+            {/* Match Date */}
+            <div className="space-y-2">
+              <Label htmlFor="matchDate">Date du match</Label>
+              <Controller
+                control={control}
+                name="matchDate"
+                render={({ field }) => (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {field.value ? format(field.value, "PPP", { locale: fr }) : <span>Choisir une date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                )}
+              />
+              {errors.matchDate && <p className="text-red-500 text-sm">{errors.matchDate.message}</p>}
             </div>
 
             {/* Notes */}
             <div className="space-y-2">
               <Label htmlFor="notes">Notes (optionnel)</Label>
-              <Textarea
-                id="notes"
-                placeholder="Événements notables, chambrage, etc."
-                {...form.register('notes')}
-                disabled={loadingPlayers || isSubmitting}
+              <Controller
+                control={control}
+                name="notes"
+                render={({ field }) => (
+                  <Textarea
+                    id="notes"
+                    placeholder="Ajouter des notes sur le match..."
+                    {...field}
+                    value={field.value || ''}
+                  />
+                )}
               />
-              {errors.notes && <p className="text-xs text-red-500 pt-1">{errors.notes.message}</p>}
+              {errors.notes && <p className="text-red-500 text-sm">{errors.notes.message}</p>}
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Form-level error (e.g. duplicate player) */}
-        {errors.root?.message && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Erreur de validation</AlertTitle>
-            <AlertDescription>{errors.root.message}</AlertDescription>
-          </Alert>
-        )}
-         {errors.teamAPlayer1?.type === 'custom' && !errors.root?.message && (
-            <Alert variant="destructive">
+            {/* Submission Status Alert */}
+            {submissionStatus && (
+              <Alert variant={submissionStatus.type === 'success' ? 'default' : 'destructive'} className={submissionStatus.type === 'success' ? 'bg-green-100 border-green-400 text-green-700' : ''}>
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Erreur de validation</AlertTitle>
-                <AlertDescription>{errors.teamAPlayer1.message}</AlertDescription>
-            </Alert>
-        )}
-
-
-        {/* ELO Preview */}
-        {eloPreview.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Prévisualisation des ELOs</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {eloPreview.map(player => (
-                <div key={player.playerId} className="flex justify-between items-center p-2 border rounded-md">
-                  <div>
-                    <p className="font-semibold">{player.name}</p>
-                    <p className="text-sm text-muted-foreground">Ancien: {player.oldElo}</p>
-                  </div>
-                  <div className="text-right">
-                    <Badge variant={player.change >= 0 ? 'default' : 'destructive'} className={cn("mb-1 text-sm", player.change >=0 ? "bg-green-500 hover:bg-green-600" : "bg-red-500 hover:bg-red-600")}>
-                      {player.change >= 0 ? '+' : ''}{player.change}
-                    </Badge>
-                    <p className="text-sm font-semibold">Nouveau: {player.newElo}</p>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Submission Status Alert */}
-        {submissionStatus && (
-          <Alert variant={submissionStatus.type === 'success' ? 'default' : 'destructive'} className={submissionStatus.type === 'success' ? 'bg-green-100 border-green-400 text-green-700' : ''}>
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>{submissionStatus.type === 'success' ? 'Succès' : 'Erreur'}</AlertTitle>
-            <AlertDescription>{submissionStatus.message}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex justify-end space-x-2">
-          <Button variant="outline" onClick={() => router.push('/')} disabled={isSubmitting}>
-            Annuler
-          </Button>
-          <Button type="submit" disabled={loadingPlayers || isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Soumission...
-              </>
-            ) : (
-              'Créer le match'
+                <AlertTitle>{submissionStatus.type === 'success' ? 'Succès' : 'Erreur'}</AlertTitle>
+                <AlertDescription>{submissionStatus.message}</AlertDescription>
+              </Alert>
             )}
-          </Button>
-        </div>
-      </form>
+
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Créer le match
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };
