@@ -384,3 +384,85 @@ def get_team_rankings(limit: int = 100) -> List[Dict[str, Any]]:
     except Exception as exc:
         logger.error(f"Failed to get team rankings: {exc}")
         return []
+
+
+@with_retry(max_retries=3, retry_delay=0.5)
+def batch_update_teams(teams: List[Dict[str, Any]]) -> List[bool]:
+    """
+    Batch update teams in the database.
+
+    Parameters
+    ----------
+    teams : List[Dict[str, Any]]
+        A list of dictionaries, where each dictionary represents a team
+        and contains 'team_id' and other fields to update (e.g., 'global_elo', 'last_match_at').
+
+    Returns
+    -------
+    List[bool]
+        A list of booleans indicating the success of each individual team update.
+    """
+    results: List[bool] = []
+    queries_and_params: List[tuple[str, tuple]] = []
+
+    for team_data in teams:
+        team_id = team_data.get("team_id")
+        if team_id is None:
+            logger.warning("Skipping team data without 'team_id' in batch update.")
+            results.append(False)
+            continue
+
+        update_builder = UpdateQueryBuilder("Teams")
+        updated_fields = False
+        if "global_elo" in team_data:
+            update_builder.set(global_elo=team_data["global_elo"])
+            updated_fields = True
+        if "last_match_at" in team_data:
+            last_match_at = team_data["last_match_at"]
+            if isinstance(last_match_at, str):
+                last_match_at = datetime.fromisoformat(last_match_at)
+            update_builder.set(last_match_at=last_match_at)
+            updated_fields = True
+
+        if not updated_fields:
+            logger.warning(f"No fields to update for team ID {team_id}.")
+            results.append(False)
+            continue
+
+        update_builder.where("team_id = ?", team_id)
+        query, params = update_builder.build()
+        queries_and_params.append((query, params))
+
+    if not queries_and_params:
+        return []
+
+    with transaction() as db_manager:
+        for query, params in queries_and_params:
+            try:
+                result = db_manager.fetchone(query, params)
+                results.append(bool(result[0]) if result else False)
+            except Exception as exc:
+                logger.error(f"Error updating team in batch: {exc}")
+                results.append(False)
+    return results
+
+
+@with_retry(max_retries=3, retry_delay=0.5)
+def delete_team(team_id: int) -> bool:
+    """
+    Delete a team from the database.
+
+    Parameters
+    ----------
+    team_id : int
+        ID of the team to delete.
+
+    Returns
+    -------
+    bool
+        True if the deletion was successful, False otherwise.
+    """
+    query, params = DeleteQueryBuilder("Teams").where("team_id = ?", team_id).build()
+    with transaction() as db_manager:
+        result = db_manager.fetchone(query, params)
+        return bool(result[0])
