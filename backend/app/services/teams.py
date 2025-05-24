@@ -88,6 +88,35 @@ def get_team_by_id(team_id: int) -> TeamResponse:
         raise TeamOperationError(f"Failed to retrieve team with ID {team_id}") from exc
 
 
+def get_teams_by_player_id(player_id: int) -> List[TeamResponse]:
+    """
+    Retrieve all teams that include a specific player.
+
+    Parameters
+    ----------
+    player_id : int
+        The ID of the player to find teams for.
+
+
+    Returns
+    -------
+    List[TeamResponse]
+        A list of teams that include the specified player.
+
+
+    Raises
+    ------
+    TeamOperationError
+        If there's an error retrieving the teams.
+    """
+    try:
+        teams = get_teams_by_player(player_id)
+        return [get_team_by_id(team["team_id"]) for team in teams]
+    except Exception as exc:
+        logger.error(f"Error retrieving teams for player {player_id}: {exc}")
+        raise TeamOperationError(f"Failed to retrieve teams for player {player_id}") from exc
+
+
 def create_new_team(team_data: TeamCreate) -> TeamResponse:
     """
     Create a new team with the provided data.
@@ -263,32 +292,3 @@ def get_all_teams_with_stats(skip: int = 0, limit: int = 100) -> List[TeamRespon
     except Exception as exc:
         logger.error(f"Error retrieving teams: {exc}")
         raise TeamOperationError("Failed to retrieve teams") from exc
-
-
-def get_teams_by_player_id(player_id: int) -> List[TeamResponse]:
-    """
-    Retrieve all teams that include a specific player.
-
-    Parameters
-    ----------
-    player_id : int
-        The ID of the player to find teams for.
-
-
-    Returns
-    -------
-    List[TeamResponse]
-        A list of teams that include the specified player.
-
-
-    Raises
-    ------
-    TeamOperationError
-        If there's an error retrieving the teams.
-    """
-    try:
-        teams = get_teams_by_player(player_id)
-        return [get_team_by_id(team["team_id"]) for team in teams]
-    except Exception as exc:
-        logger.error(f"Error retrieving teams for player {player_id}: {exc}")
-        raise TeamOperationError(f"Failed to retrieve teams for player {player_id}") from exc
