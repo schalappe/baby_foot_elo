@@ -16,7 +16,7 @@ from app.models.match import MatchWithEloResponse
 from app.models.player import PlayerResponse
 from app.models.team import TeamResponse
 from app.services.players import get_all_players_with_stats, get_player
-from app.services.teams import get_team
+from app.services.teams import get_all_teams_with_stats, get_team
 
 
 def get_player_matches(player_id: int, limit: int = 10, offset: int = 0, **filters) -> List[MatchWithEloResponse]:
@@ -309,36 +309,29 @@ def get_active_team_rankings(limit: int = 100, days_since_last_match: Optional[i
     """
     try:
         # ##: Get team rankings from repository.
-        teams = get_all_teams(limit=limit)
+        teams = get_all_teams_with_stats(limit=limit)
 
         # ##: Apply additional filters.
         if days_since_last_match is not None:
             filtered_teams = []
             for team in teams:
-                if team["last_match_at"] is None:
+                if team.last_match_at is None:
                     continue
 
-                days = (datetime.now() - team["last_match_at"]).days
+                days = (datetime.now() - team.last_match_at).days
                 if days >= days_since_last_match:
                     continue
 
                 filtered_teams.append(team)
 
             # ##: Re-sort after filtering.
-            teams = sorted(filtered_teams, key=lambda x: x["global_elo"], reverse=True)
+            teams = sorted(filtered_teams, key=lambda x: x.global_elo, reverse=True)
 
-        # ##: Convert to TeamResponse models with rank information.
-        result = []
+        # ##: Add rank information.
         for rank, team in enumerate(teams, 1):
-            try:
-                team_response = get_team(team["team_id"])
-                team_response.rank = rank
-                result.append(team_response)
-            except Exception as e:
-                logger.warning(f"Skipping team {team.get('team_id')} in rankings due to error: {e}")
-                continue
+            team.rank = rank
 
-        return result
+        return teams
 
     except Exception as exc:
         logger.error(f"Error retrieving team rankings: {exc}")
