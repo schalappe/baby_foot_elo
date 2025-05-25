@@ -112,7 +112,14 @@ def get_match_by_id(match_id: int) -> Optional[Dict[str, Any]]:
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_matches_by_team_id(team_id: int, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+def get_matches_by_team_id(
+    team_id: int,
+    limit: int = 100,
+    offset: int = 0,
+    is_fanny: bool = False,
+    start_date: Optional[Union[datetime, str]] = None,
+    end_date: Optional[Union[datetime, str]] = None,
+) -> List[Dict[str, Any]]:
     """
     Get all matches involving a specific team.
 
@@ -124,108 +131,84 @@ def get_matches_by_team_id(team_id: int, limit: int = 100, offset: int = 0) -> L
         Maximum number of matches to return (default: 100).
     offset : int, optional
         Number of matches to skip for pagination (default: 0).
+    is_fanny : bool, optional
+        Whether to filter matches by fanny (10-0), by default False
+    start_date : Optional[Union[datetime, str]], optional
+        Start date to filter matches (inclusive), by default None
+    end_date : Optional[Union[datetime, str]], optional
+        End date to filter matches (inclusive), by default None
 
     Returns
     -------
     List[Dict[str, Any]]
         List of match dictionaries
     """
-    rows = (
-        SelectQueryBuilder("Teams_ELO_History eh")
-        .select(
-            "m.match_id",
-            "m.winner_team_id",
-            "m.loser_team_id",
-            "m.is_fanny",
-            "m.played_at",
-            "m.notes",
-            "eh.old_elo",
-            "eh.new_elo",
-            "eh.difference as elo_change",
-        )
-        .join("Matches m", "eh.match_id = m.match_id")
-        .where("eh.team_id = ?", team_id)
-        .order_by_clause("m.played_at DESC")
-        .limit(limit)
-        .offset(offset)
-        .execute()
-    )
-    return (
-        [
-            {
-                "match_id": r[0],
-                "winner_team_id": r[1],
-                "loser_team_id": r[2],
-                "is_fanny": r[3],
-                "played_at": r[4],
-                "notes": r[5],
-                "won": r[1] == team_id,
-                "elo_changes": {
-                    team_id: {
-                        "old_elo": r[6],
-                        "new_elo": r[7],
-                        "difference": r[8],
-                    }
-                },
-            }
-            for r in rows
-        ]
-        if rows
-        else []
-    )
-
-
-@with_retry(max_retries=3, retry_delay=0.5)
-def get_matches_by_date_range(
-    start_date: Union[datetime, str], end_date: Union[datetime, str]
-) -> List[Dict[str, Any]]:
-    """
-    Get all matches within a specific date range.
-
-    Parameters
-    ----------
-    start_date : Union[datetime, str]
-        Start date of the range (inclusive)
-    end_date : Union[datetime, str]
-        End date of the range (inclusive)
-
-    Returns
-    -------
-    List[Dict[str, Any]]
-        List of match dictionaries
-    """
-    # ##: Convert string dates to datetime if necessary.
-    if isinstance(start_date, str):
-        start_date = datetime.fromisoformat(start_date)
-    if isinstance(end_date, str):
-        end_date = datetime.fromisoformat(end_date)
-
     try:
-        rows = (
-            SelectQueryBuilder("Matches")
-            .select("match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "notes")
-            .where("played_at >= ? AND played_at <= ?", start_date, end_date)
-            .order_by_clause("played_at ASC")
-            .execute()
+        # ##: Convert string dates to datetime objects.
+        if isinstance(start_date, str):
+            start_date = datetime.fromisoformat(start_date)
+        if isinstance(end_date, str):
+            end_date = datetime.fromisoformat(end_date)
+        if end_date is not None:
+            end_date = datetime.combine(end_date, datetime.max.time())
+
+        # ##: Build the query using SelectQueryBuilder.
+        query_builder = (
+            SelectQueryBuilder("Teams_ELO_History eh")
+            .select(
+                "m.match_id",
+                "m.winner_team_id",
+                "m.loser_team_id",
+                "m.is_fanny",
+                "m.played_at",
+                "m.notes",
+                "eh.old_elo",
+                "eh.new_elo",
+                "eh.difference as elo_change",
+            )
+            .join("Matches m", "eh.match_id = m.match_id")
+            .where("eh.team_id = ?", team_id)
+            .order_by_clause("m.played_at DESC")
+            .limit(limit)
+            .offset(offset)
         )
 
-        return (
-            [
+        # ##: Add date range filtering if provided.
+        if start_date is not None:
+            query_builder.where("m.played_at >= ?", start_date)
+        if end_date is not None:
+            query_builder.where("m.played_at <= ?", end_date)
+        if is_fanny:
+            query_builder.where("m.is_fanny = ?", True)
+
+        # ##: Execute the query and fetch results.
+        matches = []
+        with transaction() as db_manager:
+            query, params = query_builder.build()
+            results = db_manager.fetchall(query, params)
+
+        for row in results:
+            matches.append(
                 {
-                    "match_id": r[0],
-                    "winner_team_id": r[1],
-                    "loser_team_id": r[2],
-                    "is_fanny": r[3],
-                    "played_at": r[4],
-                    "notes": r[5],
+                    "match_id": row[0],
+                    "winner_team_id": row[1],
+                    "loser_team_id": row[2],
+                    "is_fanny": row[3],
+                    "played_at": row[4],
+                    "notes": row[5],
+                    "won": row[1] == team_id,
+                    "elo_changes": {
+                        team_id: {
+                            "old_elo": row[6],
+                            "new_elo": row[7],
+                            "difference": row[8],
+                        }
+                    },
                 }
-                for r in rows
-            ]
-            if rows
-            else []
-        )
+            )
+        return matches
     except Exception as exc:
-        logger.error(f"Failed to get matches by date range: {exc}")
+        logger.error(f"Failed to get matches for team ID {team_id}: {exc}")
         return []
 
 
@@ -234,6 +217,7 @@ def get_matches_by_player_id(
     player_id: int,
     limit: int = 100,
     offset: int = 0,
+    is_fanny: bool = False,
     start_date: Optional[Union[datetime, str]] = None,
     end_date: Optional[Union[datetime, str]] = None,
 ) -> List[Dict[str, Any]]:
@@ -248,6 +232,8 @@ def get_matches_by_player_id(
         Maximum number of matches to return, by default 100
     offset : int, optional
         Number of matches to skip, by default 0
+    is_fanny : bool, optional
+        Whether to filter matches by fanny (10-0), by default False
     start_date : Optional[Union[datetime, str]], optional
         Start date to filter matches (inclusive), by default None
     end_date : Optional[Union[datetime, str]], optional
@@ -293,6 +279,8 @@ def get_matches_by_player_id(
             query_builder.where("m.played_at >= ?", start_date)
         if end_date is not None:
             query_builder.where("m.played_at <= ?", end_date)
+        if is_fanny:
+            query_builder.where("m.is_fanny = ?", True)
 
         matches = []
         with transaction() as db_manager:
@@ -322,44 +310,6 @@ def get_matches_by_player_id(
 
     except Exception as exc:
         logger.error(f"Failed to get matches for player {player_id}: {exc}")
-        return []
-
-
-def get_fanny_matches() -> List[Dict[str, Any]]:
-    """
-    Get all matches that were fannies (10-0).
-
-    Returns
-    -------
-    List[Dict[str, Any]]
-        List of fanny match dictionaries
-    """
-
-    try:
-        rows = (
-            SelectQueryBuilder("Matches")
-            .select("match_id", "winner_team_id", "loser_team_id", "played_at", "notes")
-            .where("is_fanny = ?", True)
-            .order_by_clause("played_at DESC")
-            .execute()
-        )
-
-        return (
-            [
-                {
-                    "match_id": r[0],
-                    "winner_team_id": r[1],
-                    "loser_team_id": r[2],
-                    "played_at": r[3],
-                    "notes": r[4],
-                }
-                for r in rows
-            ]
-            if rows
-            else []
-        )
-    except Exception as exc:
-        logger.error(f"Failed to get fanny matches: {exc}")
         return []
 
 

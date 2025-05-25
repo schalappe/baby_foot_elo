@@ -7,9 +7,7 @@ from app.db.repositories.matches import (
     create_match_by_team_ids,
     delete_match_by_id,
     get_all_matches,
-    get_fanny_matches,
     get_match_by_id,
-    get_matches_by_date_range,
     get_matches_by_player_id,
     get_matches_by_team_id,
 )
@@ -69,8 +67,6 @@ __all__ = [
     "get_all_matches",
     "get_matches_by_team_id",
     "get_matches_by_player_id",
-    "get_matches_by_date_range",
-    "get_fanny_matches",
     # ##: Players ELO History.
     "record_player_elo_update",
     "batch_record_player_elo_updates",

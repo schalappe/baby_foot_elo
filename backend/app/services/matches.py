@@ -13,9 +13,7 @@ from app.db.repositories.matches import (
     create_match,
     delete_match,
     get_all_matches,
-    get_fanny_matches,
     get_match,
-    get_matches_by_date_range,
     get_matches_by_team,
 )
 from app.db.repositories.players import batch_update_players
@@ -230,15 +228,14 @@ def get_matches(
 
     try:
         if team_id:
-            matches_data = get_matches_by_team(team_id, limit=limit, offset=skip)
-        elif start_date or end_date:
-            start_date = start_date or datetime.min
-            end_date = end_date or datetime.now(timezone.utc)
-            matches_data = get_matches_by_date_range(start_date, end_date)
-            matches_data = matches_data[skip : skip + limit]
-        elif is_fanny is not None:
-            matches_data = get_fanny_matches()
-            matches_data = matches_data[skip : skip + limit]
+            matches_data = get_matches_by_team(
+                team_id,
+                limit=limit,
+                offset=skip,
+                is_fanny=is_fanny,
+                start_date=start_date,
+                end_date=end_date,
+            )
         else:
             matches_data = get_all_matches(limit=limit, offset=skip)
 
