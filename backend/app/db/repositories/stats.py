@@ -7,10 +7,10 @@ from typing import Any, Dict, Optional
 
 from loguru import logger
 
-from app.db.builders import SelectQueryBuilder
+from app.db.builders.select import SelectQueryBuilder
 from app.db.repositories.players import get_player_by_id_or_name
 from app.db.repositories.teams import get_team_by_id
-from app.db.session import with_retry
+from app.db.session.retry import with_retry
 
 
 @with_retry(max_retries=3, retry_delay=0.5)

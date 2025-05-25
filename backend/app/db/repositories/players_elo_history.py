@@ -8,7 +8,8 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
-from app.db.builders import InsertQueryBuilder, SelectQueryBuilder
+from app.db.builders.insert import InsertQueryBuilder
+from app.db.builders.select import SelectQueryBuilder
 from app.db.session import transaction, with_retry
 
 

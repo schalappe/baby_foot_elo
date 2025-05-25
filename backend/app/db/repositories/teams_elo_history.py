@@ -8,8 +8,10 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
-from app.db.builders import InsertQueryBuilder, SelectQueryBuilder
-from app.db.session import transaction, with_retry
+from app.db.builders.insert import InsertQueryBuilder
+from app.db.builders.select import SelectQueryBuilder
+from app.db.session.retry import with_retry
+from app.db.session.transaction import transaction
 
 
 @with_retry(max_retries=3, retry_delay=0.5)

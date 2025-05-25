@@ -7,12 +7,10 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
-from app.db.builders import (
-    DeleteQueryBuilder,
-    InsertQueryBuilder,
-    SelectQueryBuilder,
-    UpdateQueryBuilder,
-)
+from app.db.builders.delete import DeleteQueryBuilder
+from app.db.builders.insert import InsertQueryBuilder
+from app.db.builders.select import SelectQueryBuilder
+from app.db.builders.update import UpdateQueryBuilder
 from app.db.session.retry import with_retry
 from app.db.session.transaction import transaction
 

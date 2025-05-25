@@ -8,41 +8,41 @@ from sys import stderr
 
 from loguru import logger
 
-from app import schemas
+from app.schemas import matches, players, players_elo_history, teams, teams_elo_history
 from app.core import config
 from app.db.database import DatabaseManager
 
 # ##: Constants for database initialization.
 SEQUENCES = [
-    schemas.CREATE_SEQ_PLAYERS,
-    schemas.CREATE_SEQ_TEAMS,
-    schemas.CREATE_SEQ_MATCHES,
-    schemas.CREATE_SEQ_PLAYERS_ELO_HISTORY,
-    schemas.CREATE_SEQ_TEAMS_ELO_HISTORY,
+    players.CREATE_SEQ_PLAYERS,
+    teams.CREATE_SEQ_TEAMS,
+    matches.CREATE_SEQ_MATCHES,
+    players_elo_history.CREATE_SEQ_PLAYERS_ELO_HISTORY,
+    teams_elo_history.CREATE_SEQ_TEAMS_ELO_HISTORY,
 ]
 
 TABLES = [
-    schemas.CREATE_PLAYERS_TABLE,
-    schemas.CREATE_TEAMS_TABLE,
-    schemas.CREATE_MATCHES_TABLE,
-    schemas.CREATE_PLAYERS_ELO_HISTORY_TABLE,
-    schemas.CREATE_TEAMS_ELO_HISTORY_TABLE,
+    players.CREATE_PLAYERS_TABLE,
+    teams.CREATE_TEAMS_TABLE,
+    matches.CREATE_MATCHES_TABLE,
+    players_elo_history.CREATE_PLAYERS_ELO_HISTORY_TABLE,
+    teams_elo_history.CREATE_TEAMS_ELO_HISTORY_TABLE,
 ]
 
 INDEXES = [
-    schemas.CREATE_INDEX_PLAYERS_NAME,
-    schemas.CREATE_INDEX_TEAMS_PLAYER1_ID,
-    schemas.CREATE_INDEX_TEAMS_PLAYER2_ID,
-    schemas.CREATE_INDEX_TEAMS_PLAYER_PAIR_ORDER_INSENSITIVE,
-    schemas.CREATE_INDEX_MATCHES_WINNER_TEAM_ID,
-    schemas.CREATE_INDEX_MATCHES_LOSER_TEAM_ID,
-    schemas.CREATE_INDEX_MATCHES_PLAYED_AT,
-    schemas.CREATE_INDEX_PLAYERS_ELOHIST_PLAYER_ID,
-    schemas.CREATE_INDEX_PLAYERS_ELOHIST_MATCH_ID,
-    schemas.CREATE_INDEX_PLAYERS_ELOHIST_DATE,
-    schemas.CREATE_INDEX_TEAMS_ELOHIST_TEAM_ID,
-    schemas.CREATE_INDEX_TEAMS_ELOHIST_MATCH_ID,
-    schemas.CREATE_INDEX_TEAMS_ELOHIST_DATE,
+    players.CREATE_INDEX_PLAYERS_NAME,
+    teams.CREATE_INDEX_TEAMS_PLAYER1_ID,
+    teams.CREATE_INDEX_TEAMS_PLAYER2_ID,
+    teams.CREATE_INDEX_TEAMS_PLAYER_PAIR_ORDER_INSENSITIVE,
+    matches.CREATE_INDEX_MATCHES_WINNER_TEAM_ID,
+    matches.CREATE_INDEX_MATCHES_LOSER_TEAM_ID,
+    matches.CREATE_INDEX_MATCHES_PLAYED_AT,
+    players_elo_history.CREATE_INDEX_PLAYERS_ELOHIST_PLAYER_ID,
+    players_elo_history.CREATE_INDEX_PLAYERS_ELOHIST_MATCH_ID,
+    players_elo_history.CREATE_INDEX_PLAYERS_ELOHIST_DATE,
+    teams_elo_history.CREATE_INDEX_TEAMS_ELOHIST_TEAM_ID,
+    teams_elo_history.CREATE_INDEX_TEAMS_ELOHIST_MATCH_ID,
+    teams_elo_history.CREATE_INDEX_TEAMS_ELOHIST_DATE,
 ]
 
 
