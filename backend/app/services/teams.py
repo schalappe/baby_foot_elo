@@ -11,8 +11,8 @@ from loguru import logger
 from app.db.repositories.players import get_player_by_id_or_name
 from app.db.repositories.stats import get_team_stats
 from app.db.repositories.teams import (
-    create_team,
-    delete_team,
+    create_team_by_player_ids,
+    delete_team_by_id,
     get_all_teams,
     get_team_by_id,
     get_teams_by_player_id,
@@ -88,33 +88,46 @@ def get_team(team_id: int) -> TeamResponse:
         raise TeamOperationError(f"Failed to retrieve team with ID {team_id}") from exc
 
 
-def get_teams_by_player_id(player_id: int) -> List[TeamResponse]:
+# ##: TODO: Delete team should also delete all matches associated with it.
+# and recalculate ELO ratings for all players.
+def delete_team(team_id: int) -> bool:
     """
-    Retrieve all teams that include a specific player.
+    Delete a team by its ID.
 
     Parameters
     ----------
-    player_id : int
-        The ID of the player to find teams for.
+    team_id : int
+        The ID of the team to delete.
 
 
     Returns
     -------
-    List[TeamResponse]
-        A list of teams that include the specified player.
-
+    bool
+        True if the team was deleted successfully, False otherwise.
 
     Raises
     ------
     TeamOperationError
-        If there's an error retrieving the teams.
+        If the deletion operation fails.
     """
     try:
-        teams = get_teams_by_player_id(player_id)
-        return [get_team(team["team_id"]) for team in teams]
+        # ##: Check if team exists
+        if not get_team(team_id):
+            raise TeamNotFoundError(f"ID: {team_id}")
+
+        # ##: Delete the team from the database
+        success = delete_team_by_id(team_id)
+        if not success:
+            raise TeamOperationError(f"Failed to delete team with ID {team_id}")
+
+        logger.info(f"Successfully deleted team with ID {team_id}")
+        return True
+
+    except TeamNotFoundError:
+        raise
     except Exception as exc:
-        logger.error(f"Error retrieving teams for player {player_id}: {exc}")
-        raise TeamOperationError(f"Failed to retrieve teams for player {player_id}") from exc
+        logger.error(f"Error deleting team with ID {team_id}: {exc}")
+        raise TeamOperationError(f"Failed to delete team with ID {team_id}") from exc
 
 
 def create_new_team(team_data: TeamCreate) -> TeamResponse:
@@ -156,7 +169,7 @@ def create_new_team(team_data: TeamCreate) -> TeamResponse:
             raise InvalidTeamDataError(f"Players not found: {', '.join(missing_players)}")
 
         # ##: Create the team in the database.
-        team_id = create_team(
+        team_id = create_team_by_player_ids(
             player1_id=team_data.player1_id,
             player2_id=team_data.player2_id,
             global_elo=team_data.global_elo,
@@ -222,46 +235,33 @@ def update_existing_team(team_id: int, team_update: TeamUpdate) -> TeamResponse:
         raise TeamOperationError(f"Failed to update team with ID {team_id}") from exc
 
 
-# ##: TODO: Delete team should also delete all matches associated with it.
-# and recalculate ELO ratings for all players.
-def delete_team_by_id(team_id: int) -> bool:
+def get_teams_by_player(player_id: int) -> List[TeamResponse]:
     """
-    Delete a team by its ID.
+    Retrieve all teams that include a specific player.
 
     Parameters
     ----------
-    team_id : int
-        The ID of the team to delete.
+    player_id : int
+        The ID of the player to find teams for.
 
 
     Returns
     -------
-    bool
-        True if the team was deleted successfully, False otherwise.
+    List[TeamResponse]
+        A list of teams that include the specified player.
+
 
     Raises
     ------
     TeamOperationError
-        If the deletion operation fails.
+        If there's an error retrieving the teams.
     """
     try:
-        # ##: Check if team exists
-        if not get_team(team_id):
-            raise TeamNotFoundError(f"ID: {team_id}")
-
-        # ##: Delete the team from the database
-        success = delete_team(team_id)
-        if not success:
-            raise TeamOperationError(f"Failed to delete team with ID {team_id}")
-
-        logger.info(f"Successfully deleted team with ID {team_id}")
-        return True
-
-    except TeamNotFoundError:
-        raise
+        teams = get_teams_by_player_id(player_id)
+        return [get_team(team["team_id"]) for team in teams]
     except Exception as exc:
-        logger.error(f"Error deleting team with ID {team_id}: {exc}")
-        raise TeamOperationError(f"Failed to delete team with ID {team_id}") from exc
+        logger.error(f"Error retrieving teams for player {player_id}: {exc}")
+        raise TeamOperationError(f"Failed to retrieve teams for player {player_id}") from exc
 
 
 def get_all_teams_with_stats(skip: int = 0, limit: int = 100) -> List[TeamResponse]:
