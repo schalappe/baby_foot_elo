@@ -61,11 +61,7 @@ const MatchHistoryPage = () => {
       }
     };
 
-    fetchData(); // Initial fetch
-
-    const intervalId = setInterval(fetchData, 5000); // Refresh every 5 seconds
-
-    return () => clearInterval(intervalId); // Cleanup on unmount
+    fetchData();
   }, []);
 
   const handleDateRangeChange = (range: DateRange | undefined) => {
