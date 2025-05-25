@@ -123,7 +123,7 @@ def get_all_players() -> List[Dict[str, Any]]:
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_player_by_filters(player_id: Optional[int] = None, name: Optional[str] = None) -> Optional[Dict[str, Any]]:
+def get_player_by_id_or_name(player_id: Optional[int] = None, name: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """
     Get a player by ID or name.
 
@@ -143,9 +143,12 @@ def get_player_by_filters(player_id: Optional[int] = None, name: Optional[str] =
     ------
     ValueError
         If neither player_id nor name is provided.
+        If both player_id and name are provided.
     """
     if player_id is None and name is None:
         raise ValueError("Either player_id or name must be provided.")
+    if player_id is not None and name is not None:
+        raise ValueError("Cannot provide both player_id and name.")
 
     try:
         query_builder = SelectQueryBuilder("Players").select("player_id", "name", "global_elo", "created_at")
