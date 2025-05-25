@@ -8,15 +8,15 @@ from typing import List
 from loguru import logger
 
 from app.db.repositories.players import (
-    create_player,
-    delete_player,
+    create_player_by_name,
+    delete_player_by_id,
     get_all_players,
     get_player_by_id_or_name,
     update_player_name_or_elo,
 )
 from app.db.repositories.players_elo_history import get_player_elo_history
 from app.db.repositories.stats import get_player_stats
-from app.db.repositories.teams import create_team
+from app.db.repositories.teams import create_team_by_player_ids
 from app.exceptions.players import (
     InvalidPlayerDataError,
     PlayerAlreadyExistsError,
@@ -106,7 +106,7 @@ def create_new_player(player_data: PlayerCreate) -> PlayerResponse:
 
     try:
         # ##: Create the player.
-        player_id = create_player(player_data.name, global_elo=player_data.global_elo)
+        player_id = create_player_by_name(player_data.name, global_elo=player_data.global_elo)
         if not player_id:
             raise PlayerOperationError("Failed to create player in the database")
 
@@ -118,7 +118,7 @@ def create_new_player(player_data: PlayerCreate) -> PlayerResponse:
                 p1_id = min(player_id, existing_player_id)
                 p2_id = max(player_id, existing_player_id)
                 logger.info(f"Attempting to create team for players {p1_id} and {p2_id}.")
-                created_team_id = create_team(player1_id=p1_id, player2_id=p2_id)
+                created_team_id = create_team_by_player_ids(player1_id=p1_id, player2_id=p2_id)
                 if created_team_id:
                     logger.info(
                         f"Successfully created/ensured team for {p1_id} and {p2_id} with team ID: {created_team_id}"
@@ -187,7 +187,7 @@ def update_existing_player(player_id: int, player_update: PlayerUpdate) -> Playe
 
 # ##: TODO: Delete a player should also delete all teams and matches associated with it.
 # and recalculate ELO ratings for all players.
-def delete_player_by_id(player_id: int) -> bool:
+def delete_player(player_id: int) -> bool:
     """
     Delete a player by their ID.
 
@@ -212,7 +212,7 @@ def delete_player_by_id(player_id: int) -> bool:
         if not existing_player:
             raise PlayerNotFoundError(f"ID: {player_id}")
 
-        success = delete_player(player_id)
+        success = delete_player_by_id(player_id)
         if not success:
             raise PlayerOperationError(f"Failed to delete player with ID {player_id}")
         return True
