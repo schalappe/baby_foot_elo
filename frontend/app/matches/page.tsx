@@ -24,7 +24,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button'; 
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertCircle, CalendarDays, UserSearch, Users, Trophy, Eye, Download, Skull, MessageSquareText } from 'lucide-react'; 
+import { AlertCircle, CalendarDays, UserSearch, Trophy, Skull, MessageSquareText } from 'lucide-react'; 
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { NewMatchDialog } from '@/components/matches/NewMatchDialog';
 
