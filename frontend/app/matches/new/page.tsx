@@ -24,11 +24,11 @@ import * as z from 'zod';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { CalendarIcon, AlertCircle, Trophy, Loader2 } from 'lucide-react'; // Added Loader2
+import { CalendarIcon, AlertCircle, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -37,7 +37,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
 
 interface NewMatchPageProps {
   onMatchCreated?: () => void;
@@ -63,8 +62,8 @@ type MatchFormValues = z.infer<typeof matchFormSchema>;
 const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
   const router = useRouter();
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
-  const [loadingPlayers, setLoadingPlayers] = useState<boolean>(true); // Renamed for clarity
-  const [pageError, setPageError] = useState<string | null>(null); // Renamed for clarity
+  const [loadingPlayers, setLoadingPlayers] = useState<boolean>(true);
+  const [pageError, setPageError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submissionStatus, setSubmissionStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -83,7 +82,7 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
 
   const { watch, control, getValues, setValue, reset, formState: { errors } } = form;
 
-  const watchedValues = watch(); // Watch all fields for ELO calculation & available players
+  const watchedValues = watch();
 
   const selectedPlayerIds = useCallback(() => {
     return [

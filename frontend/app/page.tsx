@@ -17,7 +17,6 @@ import { Player } from '@/types/player.types';
 import { getPlayerRankings } from '@/services/playerService'; 
 import { PlayerRankingsDisplay } from '@/components/rankings/PlayerRankingsDisplay';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link'; 
 import {
   Dialog,
   DialogContent,

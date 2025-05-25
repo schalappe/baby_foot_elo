@@ -10,8 +10,8 @@
  */
 'use client';
 
-import { useState, useEffect } from 'react';
-import useSWR, { mutate } from 'swr';
+import { useEffect } from 'react';
+import useSWR from 'swr';
 import { Team } from '@/types/team.types';
 import { getTeamRankings } from '@/services/teamService'; 
 import { TeamRankingsDisplay } from '@/components/rankings/TeamRankingsDisplay';
