@@ -57,6 +57,36 @@ def create_player(name: str, global_elo: int = 1000) -> Optional[int]:
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
+def batch_insert_players(players: List[Dict[str, Any]]) -> List[Optional[int]]:
+    """
+    Insert multiple players in a single transaction.
+
+    Parameters
+    ----------
+    players : List[Dict[str, Any]]
+        List of player dictionaries, each with at least a 'name' key. Optional: 'global_elo'.
+
+    Returns
+    -------
+    List[Optional[int]]
+        List of IDs for the newly created players, or None for failures.
+    """
+    player_ids = []
+    try:
+        with transaction() as db_manager:
+            for player in players:
+                name = player["name"]
+                global_elo = player.get("global_elo", 1000)
+                query, params = InsertQueryBuilder("Players").set(name=name, global_elo=global_elo).build()
+                result = db_manager.fetchone(f"{query} RETURNING player_id", params)
+                player_ids.append(result[0] if result else None)
+        return player_ids
+    except Exception as exc:
+        logger.error(f"Failed during batch insert: {exc}")
+        return player_ids
+
+
+@with_retry(max_retries=3, retry_delay=0.5)
 def get_player(player_id: int) -> Optional[Dict[str, Any]]:
     """
     Get a player by ID.
@@ -122,6 +152,41 @@ def get_player_by_name(name: str) -> Optional[Dict[str, Any]]:
     except Exception as e:
         logger.error(f"Error getting player by name '{name}': {e}")
         return None
+
+
+@with_retry(max_retries=3, retry_delay=0.5)
+def get_all_players() -> List[Dict[str, Any]]:
+    """
+    Get all players from the database.
+
+    Returns
+    -------
+    List[Dict[str, Any]]
+        List of player dictionaries, each including 'player_id', 'name', 'global_elo', 'created_at'.
+    """
+    try:
+        rows = (
+            SelectQueryBuilder("Players")
+            .select("player_id", "name", "global_elo", "created_at")
+            .order_by_clause("name")
+            .execute()
+        )
+        return (
+            [
+                {
+                    "player_id": row[0],
+                    "name": row[1],
+                    "global_elo": row[2],
+                    "created_at": row[3],
+                }
+                for row in rows
+            ]
+            if rows
+            else []
+        )
+    except Exception as exc:
+        logger.error(f"Failed to get all players: {exc}")
+        return []
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -252,68 +317,3 @@ def delete_player(player_id: int) -> bool:
     except Exception as exc:
         logger.error(f"Failed to delete player ID {player_id}: {exc}")
         return False
-
-
-@with_retry(max_retries=3, retry_delay=0.5)
-def batch_insert_players(players: List[Dict[str, Any]]) -> List[Optional[int]]:
-    """
-    Insert multiple players in a single transaction.
-
-    Parameters
-    ----------
-    players : List[Dict[str, Any]]
-        List of player dictionaries, each with at least a 'name' key. Optional: 'global_elo'.
-
-    Returns
-    -------
-    List[Optional[int]]
-        List of IDs for the newly created players, or None for failures.
-    """
-    player_ids = []
-    try:
-        with transaction() as db_manager:
-            for player in players:
-                name = player["name"]
-                global_elo = player.get("global_elo", 1000)
-                query, params = InsertQueryBuilder("Players").set(name=name, global_elo=global_elo).build()
-                result = db_manager.fetchone(f"{query} RETURNING player_id", params)
-                player_ids.append(result[0] if result else None)
-        return player_ids
-    except Exception as exc:
-        logger.error(f"Failed during batch insert: {exc}")
-        return player_ids
-
-
-@with_retry(max_retries=3, retry_delay=0.5)
-def get_all_players() -> List[Dict[str, Any]]:
-    """
-    Get all players from the database.
-
-    Returns
-    -------
-    List[Dict[str, Any]]
-        List of player dictionaries, each including 'player_id', 'name', 'global_elo', 'created_at'.
-    """
-    try:
-        rows = (
-            SelectQueryBuilder("Players")
-            .select("player_id", "name", "global_elo", "created_at")
-            .order_by_clause("name")
-            .execute()
-        )
-        return (
-            [
-                {
-                    "player_id": row[0],
-                    "name": row[1],
-                    "global_elo": row[2],
-                    "created_at": row[3],
-                }
-                for row in rows
-            ]
-            if rows
-            else []
-        )
-    except Exception as exc:
-        logger.error(f"Failed to get all players: {exc}")
-        return []

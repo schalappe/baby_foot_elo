@@ -79,37 +79,6 @@ def create_match(
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def delete_match(match_id: int) -> bool:
-    """
-    Delete a match from the database.
-
-    Parameters
-    ----------
-    match_id : int
-        ID of the match to delete
-
-    Returns
-    -------
-    bool
-        True if the deletion was successful, False otherwise
-    """
-    try:
-        with transaction() as db_manager:
-            query_builder = DeleteQueryBuilder("Matches")
-            query_builder.where("match_id = ?", match_id)
-            query, params = query_builder.build()
-
-            result = bool(db_manager.fetchone(query, params)[0])
-            if result:
-                logger.info(f"Match ID {match_id} deleted successfully.")
-            logger.warning(f"Attempted to delete non-existent Match ID {match_id}.")
-            return result
-    except Exception as exc:
-        logger.error(f"Failed to delete match ID {match_id}: {exc}")
-        return False
-
-
-@with_retry(max_retries=3, retry_delay=0.5)
 def get_match(match_id: int) -> Optional[Dict[str, Any]]:
     """
     Get a match by ID.
@@ -439,3 +408,34 @@ def get_all_matches(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
     except Exception as exc:
         logger.error(f"Failed to get all matches: {exc}")
         return []
+
+
+@with_retry(max_retries=3, retry_delay=0.5)
+def delete_match(match_id: int) -> bool:
+    """
+    Delete a match from the database.
+
+    Parameters
+    ----------
+    match_id : int
+        ID of the match to delete
+
+    Returns
+    -------
+    bool
+        True if the deletion was successful, False otherwise
+    """
+    try:
+        with transaction() as db_manager:
+            query_builder = DeleteQueryBuilder("Matches")
+            query_builder.where("match_id = ?", match_id)
+            query, params = query_builder.build()
+
+            result = bool(db_manager.fetchone(query, params)[0])
+            if result:
+                logger.info(f"Match ID {match_id} deleted successfully.")
+            logger.warning(f"Attempted to delete non-existent Match ID {match_id}.")
+            return result
+    except Exception as exc:
+        logger.error(f"Failed to delete match ID {match_id}: {exc}")
+        return False

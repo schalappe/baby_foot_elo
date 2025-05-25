@@ -88,66 +88,36 @@ def create_team(
         return None
 
 
-def update_team(
-    team_id: int,
-    global_elo: Optional[int] = None,
-    last_match_at: Optional[Union[str, datetime]] = None,
-) -> bool:
-    """
-    Update a team's ELO ratings or last match timestamp.
-
-    Parameters
-    ----------
-    team_id : int
-        ID of the team to update.
-    global_elo : Optional[float], optional
-        New global ELO value.
-    last_match_at : Optional[Union[str, datetime]], optional
-        New last match timestamp.
-
-    Returns
-    -------
-    bool
-        True if update was successful, False otherwise.
-    """
-    if global_elo is None and last_match_at is None:
-        logger.warning(f"No fields provided to update for team {team_id}")
-        return False
-
-    builder = UpdateQueryBuilder("Teams")
-    if global_elo is not None:
-        builder.set(global_elo=global_elo)
-    if last_match_at is not None:
-        last_match_at = datetime.fromisoformat(last_match_at) if isinstance(last_match_at, str) else last_match_at
-        builder.set(last_match_at=last_match_at)
-
-    builder.where("team_id = ?", team_id)
-    query, params = builder.build()
-
-    with transaction() as db_manager:
-        result = db_manager.fetchone(query, params)
-        return bool(result[0])
-
-
 @with_retry(max_retries=3, retry_delay=0.5)
-def delete_team(team_id: int) -> bool:
+def batch_insert_teams(teams: List[Dict[str, Any]]) -> List[Optional[int]]:
     """
-    Delete a team from the database.
+    Insert multiple teams in a single transaction.
 
     Parameters
     ----------
-    team_id : int
-        ID of the team to delete.
+    teams : List[Dict[str, Any]]
+        List of team dictionaries, each with 'player1_id', 'player2_id' keys.
 
     Returns
     -------
-    bool
-        True if the deletion was successful, False otherwise.
+    List[Optional[int]]
+        List of IDs for the newly created teams, or None for failures.
     """
-    query, params = DeleteQueryBuilder("Teams").where("team_id = ?", team_id).build()
+    team_ids = []
     with transaction() as db_manager:
-        result = db_manager.fetchone(query, params)
-        return bool(result[0])
+        for team in teams:
+            # ##: Ensure players are ordered consistently.
+            p1_id = team["player1_id"]
+            p2_id = team["player2_id"]
+            if p1_id > p2_id:
+                p1_id, p2_id = p2_id, p1_id
+
+            query, params = InsertQueryBuilder("Teams").set(player1_id=p1_id, player2_id=p2_id).build()
+            query += " RETURNING team_id"
+            result = db_manager.fetchone(query, params)
+            team_ids.append(result[0] if result else None)
+
+    return team_ids
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -245,38 +215,6 @@ def get_all_teams(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
     except Exception as exc:
         logger.error(f"Failed to get all teams: {exc}")
         return []
-
-
-@with_retry(max_retries=3, retry_delay=0.5)
-def batch_insert_teams(teams: List[Dict[str, Any]]) -> List[Optional[int]]:
-    """
-    Insert multiple teams in a single transaction.
-
-    Parameters
-    ----------
-    teams : List[Dict[str, Any]]
-        List of team dictionaries, each with 'player1_id', 'player2_id' keys.
-
-    Returns
-    -------
-    List[Optional[int]]
-        List of IDs for the newly created teams, or None for failures.
-    """
-    team_ids = []
-    with transaction() as db_manager:
-        for team in teams:
-            # ##: Ensure players are ordered consistently.
-            p1_id = team["player1_id"]
-            p2_id = team["player2_id"]
-            if p1_id > p2_id:
-                p1_id, p2_id = p2_id, p1_id
-
-            query, params = InsertQueryBuilder("Teams").set(player1_id=p1_id, player2_id=p2_id).build()
-            query += " RETURNING team_id"
-            result = db_manager.fetchone(query, params)
-            team_ids.append(result[0] if result else None)
-
-    return team_ids
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -384,6 +322,47 @@ def get_team_rankings(limit: int = 100) -> List[Dict[str, Any]]:
     except Exception as exc:
         logger.error(f"Failed to get team rankings: {exc}")
         return []
+
+
+def update_team(
+    team_id: int,
+    global_elo: Optional[int] = None,
+    last_match_at: Optional[Union[str, datetime]] = None,
+) -> bool:
+    """
+    Update a team's ELO ratings or last match timestamp.
+
+    Parameters
+    ----------
+    team_id : int
+        ID of the team to update.
+    global_elo : Optional[float], optional
+        New global ELO value.
+    last_match_at : Optional[Union[str, datetime]], optional
+        New last match timestamp.
+
+    Returns
+    -------
+    bool
+        True if update was successful, False otherwise.
+    """
+    if global_elo is None and last_match_at is None:
+        logger.warning(f"No fields provided to update for team {team_id}")
+        return False
+
+    builder = UpdateQueryBuilder("Teams")
+    if global_elo is not None:
+        builder.set(global_elo=global_elo)
+    if last_match_at is not None:
+        last_match_at = datetime.fromisoformat(last_match_at) if isinstance(last_match_at, str) else last_match_at
+        builder.set(last_match_at=last_match_at)
+
+    builder.where("team_id = ?", team_id)
+    query, params = builder.build()
+
+    with transaction() as db_manager:
+        result = db_manager.fetchone(query, params)
+        return bool(result[0])
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
