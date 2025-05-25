@@ -377,12 +377,12 @@ async def delete_match(match_id: int) -> None:
     """
     try:
         # ##: Verify the match exists.
-        match_data = service_matches.get_match_by_id(match_id)
+        match_data = service_matches.get_match(match_id)
         if not match_data:
             raise MatchNotFoundError(f"Match with ID {match_id} not found")
 
         # ##: Delete the match using the service layer.
-        success = service_matches.delete_match_by_id(match_id)
+        success = service_matches.delete_match(match_id)
 
         if not success:
             raise MatchDeletionError(f"Failed to delete match with ID {match_id}")

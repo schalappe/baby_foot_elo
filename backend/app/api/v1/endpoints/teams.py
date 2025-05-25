@@ -31,7 +31,7 @@ from app.exceptions.teams import (
     TeamNotFoundError,
     TeamOperationError,
 )
-from app.models.match import MatchResponse, MatchWithEloResponse
+from app.models.match import MatchWithEloResponse
 from app.models.team import TeamCreate, TeamResponse, TeamUpdate
 from app.services import stats as stats_service
 from app.services import teams as teams_service
@@ -160,7 +160,7 @@ async def get_teams_endpoint(
     try:
         if player_id is not None:
             # ##: Get teams by player ID.
-            teams = teams_service.get_teams_by_player_id(player_id)
+            teams = teams_service.get_teams_by_player(player_id)
 
             # ##: Apply additional ELO filters if needed.
             if min_elo is not None or max_elo is not None:
@@ -272,7 +272,7 @@ async def get_team_endpoint(
         If the team is not found (404 status code).
     """
     try:
-        return teams_service.get_team_by_id(team_id)
+        return teams_service.get_team(team_id)
 
     except TeamNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))

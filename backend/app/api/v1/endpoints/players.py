@@ -246,7 +246,7 @@ async def get_player_endpoint(player_id: int = Path(..., gt=0, description="The 
         If the player is not found.
     """
     try:
-        player_response = player_service.get_player_by_id(player_id=player_id)
+        player_response = player_service.get_player(player_id=player_id)
         return player_response
     except PlayerNotFoundError as e:
         logger.info(f"Player not found for ID {player_id}: {e.detail}")
@@ -298,7 +298,7 @@ async def update_player_endpoint(
     """
     if not player or player.name is None:
         try:
-            current_player = player_service.get_player_by_id(player_id=player_id)
+            current_player = player_service.get_player(player_id=player_id)
             return current_player
         except PlayerNotFoundError as e:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=e.detail)
@@ -361,7 +361,7 @@ async def delete_player_endpoint(
         If the player is not found.
     """
     try:
-        player_service.delete_player_by_id(player_id=player_id)
+        player_service.delete_player(player_id=player_id)
         return None
     except PlayerNotFoundError as e:
         logger.info(f"Player not found for deletion, ID {player_id}: {e.detail}")
@@ -490,7 +490,7 @@ async def get_player_elo_history_endpoint(
         if elo_type:
             filters["elo_type"] = elo_type
 
-        elo_history_response = player_service.get_player_elo_history_by_id(
+        elo_history_response = player_service.get_player_elo_history(
             player_id=player_id, limit=limit, offset=offset, **filters
         )
         return elo_history_response
