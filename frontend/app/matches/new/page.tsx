@@ -80,7 +80,7 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
     },
   });
 
-  const { watch, control, getValues, setValue, reset, formState: { errors } } = form;
+  const { watch, control, formState: { errors }, reset } = form;
 
   const watchedValues = watch();
 
@@ -367,7 +367,7 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
                   />
                 )}
               />
-              <Label htmlFor="isFanny">Match &quot;Fanny&quot;</Label>
+              <Label htmlFor="isFanny">Fanny</Label>
             </div>
 
             {/* Match Date */}
