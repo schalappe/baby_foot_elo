@@ -18,7 +18,7 @@ from app.db.repositories.players import (
     create_player_by_name,
     delete_player_by_id,
     get_all_players,
-    get_player_by_id_or_name,
+    get_player_by_filters,
     update_player_name_or_elo,
 )
 from app.db.repositories.players_elo_history import (
@@ -49,7 +49,7 @@ from app.db.repositories.teams_elo_history import (
 __all__ = [
     # ##: Players.
     "create_player_by_name",
-    "get_player_by_id_or_name",
+    "get_player_by_filters",
     "get_all_players",
     "update_player_name_or_elo",
     "delete_player_by_id",

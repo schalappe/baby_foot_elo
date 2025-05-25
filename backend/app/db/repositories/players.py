@@ -87,7 +87,43 @@ def batch_insert_players_by_name(players: List[Dict[str, Any]]) -> List[Optional
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_player_by_id_or_name(player_id: Optional[int] = None, name: Optional[str] = None) -> Optional[Dict[str, Any]]:
+def get_all_players() -> List[Dict[str, Any]]:
+    """
+    Get all players from the database.
+
+    Returns
+    -------
+    List[Dict[str, Any]]
+        List of player dictionaries, each including 'player_id', 'name', 'global_elo', 'created_at'.
+    """
+    try:
+        rows = (
+            SelectQueryBuilder("Players")
+            .select("player_id", "name", "global_elo", "created_at")
+            .order_by_clause("global_elo DESC")
+            .execute()
+        )
+        return (
+            [
+                {
+                    "player_id": row[0],
+                    "name": row[1],
+                    "global_elo": row[2],
+                    "created_at": row[3],
+                    "rank": idx + 1,
+                }
+                for idx, row in enumerate(rows)
+            ]
+            if rows
+            else []
+        )
+    except Exception as exc:
+        logger.error(f"Failed to get all players: {exc}")
+        return []
+
+
+@with_retry(max_retries=3, retry_delay=0.5)
+def get_player_by_filters(player_id: Optional[int] = None, name: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """
     Get a player by ID or name.
 
@@ -130,42 +166,6 @@ def get_player_by_id_or_name(player_id: Optional[int] = None, name: Optional[str
     except Exception as exc:
         logger.error(f"Failed to get player by ID {player_id} or name {name}: {exc}")
         return None
-
-
-@with_retry(max_retries=3, retry_delay=0.5)
-def get_all_players() -> List[Dict[str, Any]]:
-    """
-    Get all players from the database.
-
-    Returns
-    -------
-    List[Dict[str, Any]]
-        List of player dictionaries, each including 'player_id', 'name', 'global_elo', 'created_at'.
-    """
-    try:
-        rows = (
-            SelectQueryBuilder("Players")
-            .select("player_id", "name", "global_elo", "created_at")
-            .order_by_clause("global_elo DESC")
-            .execute()
-        )
-        return (
-            [
-                {
-                    "player_id": row[0],
-                    "name": row[1],
-                    "global_elo": row[2],
-                    "created_at": row[3],
-                    "rank": idx + 1,
-                }
-                for idx, row in enumerate(rows)
-            ]
-            if rows
-            else []
-        )
-    except Exception as exc:
-        logger.error(f"Failed to get all players: {exc}")
-        return []
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
