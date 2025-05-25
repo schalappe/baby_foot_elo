@@ -164,7 +164,10 @@ async def list_players_endpoint(
     description="Retrieves a list of players sorted by global ELO rating.",
 )
 async def get_player_rankings_endpoint(
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of players to return")
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of players to return"),
+    days_since_last_match: Optional[int] = Query(
+        30, ge=1, description="Only include players whose last match was at least this many days ago"
+    ),
 ):
     """
     Get players sorted by ELO rating for rankings display.
@@ -173,6 +176,8 @@ async def get_player_rankings_endpoint(
     ----------
     limit : int, optional
         Maximum number of players to return (default: 100, max: 1000).
+    days_since_last_match : Optional[int], optional
+        Only include players whose last match was at least this many days ago, by default 30.
 
     Returns
     -------
@@ -184,32 +189,11 @@ async def get_player_rankings_endpoint(
     -----
     - Players are sorted in descending order by global ELO.
     - Only includes players who have played at least one match.
-    - Only includes players whose last match was within the last month.
+    - Only includes players whose last match was within the last `days_since_last_match` days.
     - This is useful for leaderboard displays and ranking tables.
     """
     try:
-        all_player_stats = player_service.get_all_players_with_stats()
-        if not all_player_stats:
-            return []
-
-        current_date = datetime.now()
-        one_month_ago_marker = current_date.replace(
-            month=current_date.month - 1 if current_date.month > 1 else 12,
-            year=current_date.year if current_date.month > 1 else current_date.year - 1,
-        )
-
-        ranked_players = []
-        for player_stat_obj in all_player_stats:
-            if player_stat_obj.matches_played == 0 or player_stat_obj.last_match_at <= one_month_ago_marker:
-                continue
-            ranked_players.append(player_stat_obj)
-
-        # ##: Sort by global ELO in descending order.
-        ranked_players.sort(key=lambda p: p.global_elo, reverse=True)
-
-        # ##: Apply limit.
-        return ranked_players[:limit]
-
+        return stats_service.get_active_players_rankings(limit=limit, days_since_last_match=days_since_last_match)
     except PlayerOperationError as exc:
         logger.error(f"Player operation error while getting player rankings: {exc.detail}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=exc.detail)

@@ -10,10 +10,12 @@ from app.db.repositories.matches import get_matches_by_player_id, get_matches_by
 from app.db.repositories.players_elo_history import get_player_elo_history_by_id
 from app.db.repositories.teams import get_all_teams
 from app.db.repositories.teams_elo_history import get_team_elo_history_by_id
+from app.exceptions.players import PlayerOperationError
 from app.exceptions.teams import TeamNotFoundError, TeamOperationError
 from app.models.match import MatchWithEloResponse
+from app.models.player import PlayerResponse
 from app.models.team import TeamResponse
-from app.services.players import get_player
+from app.services.players import get_all_players_with_stats, get_player
 from app.services.teams import get_team
 
 
@@ -341,3 +343,48 @@ def get_active_team_rankings(limit: int = 100, days_since_last_match: Optional[i
     except Exception as exc:
         logger.error(f"Error retrieving team rankings: {exc}")
         raise TeamOperationError("Failed to retrieve team rankings") from exc
+
+
+def get_active_players_rankings(limit: int = 100, days_since_last_match: Optional[int] = None) -> List[PlayerResponse]:
+    """
+    Retrieve active player rankings based on ELO ratings.
+
+    Parameters
+    ----------
+    limit : int, optional
+        Maximum number of players to return, by default 100.
+    days_since_last_match : Optional[int], optional
+        Only include players whose last match was at least this many days ago, by default None.
+
+    Returns
+    -------
+    List[PlayerResponse]
+        A list of players sorted by ELO in descending order, with rank information.
+
+    Raises
+    ------
+    PlayerOperationError
+        If there's an error retrieving the rankings.
+    """
+    try:
+        # ##: Get all players with stats.
+        players = get_all_players_with_stats()
+
+        # ##: Apply additional filters.
+        if days_since_last_match is not None:
+            filtered_players = []
+
+            last_match_at_threshold = datetime.now() - timedelta(days=days_since_last_match)
+            for player in players:
+                if player.matches_played == 0 or player.last_match_at <= last_match_at_threshold:
+                    continue
+                filtered_players.append(player)
+
+            players = sorted(filtered_players, key=lambda x: x.global_elo, reverse=True)
+
+        # ##: Apply limit.
+        return players[:limit]
+
+    except Exception as exc:
+        logger.error(f"Error retrieving player rankings: {exc}")
+        raise PlayerOperationError("Failed to retrieve player rankings") from exc
