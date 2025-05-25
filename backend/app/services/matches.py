@@ -18,12 +18,12 @@ from app.db.repositories.matches import (
     get_matches_by_date_range,
     get_matches_by_team,
 )
-from app.db.repositories.players import batch_update_players, update_player
+from app.db.repositories.players import batch_update_players
 from app.db.repositories.players_elo_history import (
     batch_record_player_elo_updates,
     get_player_elo_history_by_match,
 )
-from app.db.repositories.teams import batch_update_teams, update_team
+from app.db.repositories.teams import batch_update_teams
 from app.db.repositories.teams_elo_history import (
     batch_record_team_elo_updates,
     get_team_elo_history_by_match,
