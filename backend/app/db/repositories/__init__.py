@@ -14,9 +14,9 @@ from app.db.repositories.matches import (
     get_matches_by_team,
 )
 from app.db.repositories.players import (
-    batch_insert_players,
-    create_player,
-    delete_player,
+    batch_insert_players_by_name,
+    create_player_by_name,
+    delete_player_by_id,
     get_all_players,
     get_player_by_id_or_name,
     update_player_name_or_elo,
@@ -48,12 +48,12 @@ from app.db.repositories.teams_elo_history import (
 
 __all__ = [
     # ##: Players.
-    "create_player",
+    "create_player_by_name",
     "get_player_by_id_or_name",
     "get_all_players",
     "update_player_name_or_elo",
-    "delete_player",
-    "batch_insert_players",
+    "delete_player_by_id",
+    "batch_insert_players_by_name",
     # ##: Teams.
     "create_team",
     "get_team_by_id",

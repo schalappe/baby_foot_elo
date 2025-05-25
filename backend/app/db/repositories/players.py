@@ -18,7 +18,7 @@ from app.db.session.transaction import transaction
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def create_player(name: str, global_elo: int = 1000) -> Optional[int]:
+def create_player_by_name(name: str, global_elo: int = 1000) -> Optional[int]:
     """
     Create a new player in the database.
 
@@ -57,7 +57,7 @@ def create_player(name: str, global_elo: int = 1000) -> Optional[int]:
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def batch_insert_players(players: List[Dict[str, Any]]) -> List[Optional[int]]:
+def batch_insert_players_by_name(players: List[Dict[str, Any]]) -> List[Optional[int]]:
     """
     Insert multiple players in a single transaction.
 
@@ -215,7 +215,7 @@ def update_player_name_or_elo(
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def batch_update_players(players: List[Dict[str, Any]]) -> bool:
+def batch_update_players_elo(players: List[Dict[str, Any]]) -> bool:
     """
     Batch update player information.
 
@@ -255,7 +255,7 @@ def batch_update_players(players: List[Dict[str, Any]]) -> bool:
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def delete_player(player_id: int) -> bool:
+def delete_player_by_id(player_id: int) -> bool:
     """
     Delete a player by ID.
 
