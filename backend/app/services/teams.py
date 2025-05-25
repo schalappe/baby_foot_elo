@@ -16,7 +16,7 @@ from app.db.repositories.teams import (
     get_all_teams,
     get_team_by_id,
     get_teams_by_player_id,
-    update_team,
+    update_team_elo,
 )
 from app.exceptions.teams import (
     InvalidTeamDataError,
@@ -209,7 +209,7 @@ def update_existing_team(team_id: int, team_update: TeamUpdate) -> TeamResponse:
             raise TeamNotFoundError(f"ID: {team_id}")
 
         # ##: Update the team in the database.
-        success = update_team(team_id, global_elo=team_update.global_elo, last_match_at=team_update.last_match_at)
+        success = update_team_elo(team_id, global_elo=team_update.global_elo, last_match_at=team_update.last_match_at)
         if not success:
             raise TeamOperationError(f"Failed to update team with ID {team_id}")
 

@@ -36,7 +36,7 @@ from app.db.repositories.teams import (
     get_all_teams,
     get_team_by_id,
     get_teams_by_player_id,
-    update_team,
+    update_team_elo,
 )
 from app.db.repositories.teams_elo_history import (
     batch_record_team_elo_updates,
@@ -58,7 +58,7 @@ __all__ = [
     "create_team",
     "get_team_by_id",
     "get_all_teams",
-    "update_team",
+    "update_team_elo",
     "delete_team",
     "batch_insert_teams",
     "get_teams_by_player_id",

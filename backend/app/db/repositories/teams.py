@@ -273,7 +273,7 @@ def get_all_teams(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
         return []
 
 
-def update_team(
+def update_team_elo(
     team_id: int,
     global_elo: Optional[int] = None,
     last_match_at: Optional[Union[str, datetime]] = None,
