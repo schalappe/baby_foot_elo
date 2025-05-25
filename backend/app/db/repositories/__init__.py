@@ -30,9 +30,9 @@ from app.db.repositories.players_elo_history import (
 )
 from app.db.repositories.stats import get_player_stats, get_team_stats
 from app.db.repositories.teams import (
-    batch_insert_teams,
-    create_team,
-    delete_team,
+    batch_insert_teams_by_player_ids,
+    create_team_by_player_ids,
+    delete_team_by_id,
     get_all_teams,
     get_team_by_id,
     get_teams_by_player_id,
@@ -55,12 +55,12 @@ __all__ = [
     "delete_player_by_id",
     "batch_insert_players_by_name",
     # ##: Teams.
-    "create_team",
+    "create_team_by_player_ids",
     "get_team_by_id",
     "get_all_teams",
     "update_team_elo",
-    "delete_team",
-    "batch_insert_teams",
+    "delete_team_by_id",
+    "batch_insert_teams_by_player_ids",
     "get_teams_by_player_id",
     # ##: Matches.
     "create_match",

@@ -19,7 +19,7 @@ from app.db.session import transaction, with_retry
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def create_team(
+def create_team_by_player_ids(
     player1_id: int,
     player2_id: int,
     global_elo: int = 1000,
@@ -89,7 +89,7 @@ def create_team(
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def batch_insert_teams(teams: List[Dict[str, Any]]) -> List[Optional[int]]:
+def batch_insert_teams_by_player_ids(teams: List[Dict[str, Any]]) -> List[Optional[int]]:
     """
     Insert multiple teams in a single transaction.
 
@@ -315,7 +315,7 @@ def update_team_elo(
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def batch_update_teams(teams: List[Dict[str, Any]]) -> List[bool]:
+def batch_update_teams_elo(teams: List[Dict[str, Any]]) -> List[bool]:
     """
     Batch update teams in the database.
 
@@ -376,7 +376,7 @@ def batch_update_teams(teams: List[Dict[str, Any]]) -> List[bool]:
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def delete_team(team_id: int) -> bool:
+def delete_team_by_id(team_id: int) -> bool:
     """
     Delete a team from the database.
 
