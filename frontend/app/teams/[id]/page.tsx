@@ -10,9 +10,9 @@
  */
 "use client";
 
-import React from 'react';
-import TeamDetail from '@/components/teams/TeamDetail';
-import { useParams } from 'next/navigation';
+import React from "react";
+import TeamDetail from "@/components/teams/TeamDetail";
+import { useParams } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const TeamDetailPage: React.FC = () => {
@@ -21,7 +21,7 @@ const TeamDetailPage: React.FC = () => {
 
   let teamId: number | undefined = undefined;
 
-  if (typeof teamIdString === 'string') {
+  if (typeof teamIdString === "string") {
     const parsedId = parseInt(teamIdString, 10);
     if (!isNaN(parsedId)) {
       teamId = parsedId;

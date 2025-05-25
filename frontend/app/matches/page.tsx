@@ -11,34 +11,46 @@
  */
 "use client";
 
-import React, { useState } from 'react';
-import { Match } from '@/types/match.types';
-import { Player } from '@/types/player.types';
-import { getMatches } from '@/services/matchService';
-import { getPlayers as getPlayerList } from '@/services/playerService';
-import { DateRange } from 'react-day-picker';
-import useSWR from 'swr';
-import MatchHistoryUI from '@/components/matches/MatchHistoryUI';
+import React, { useState } from "react";
+import { Match } from "@/types/match.types";
+import { Player } from "@/types/player.types";
+import { getMatches } from "@/services/matchService";
+import { getPlayers as getPlayerList } from "@/services/playerService";
+import { DateRange } from "react-day-picker";
+import useSWR from "swr";
+import MatchHistoryUI from "@/components/matches/MatchHistoryUI";
 
 const MatchHistoryPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [dateRangeFilter, setDateRangeFilter] = useState<DateRange | undefined>(undefined);
-  const [selectedPlayerIdFilter, setSelectedPlayerIdFilter] = useState<string | undefined>(undefined);
-  const [matchOutcomeFilter, setMatchOutcomeFilter] = useState<"win" | "loss" | undefined>(undefined);
+  const [dateRangeFilter, setDateRangeFilter] = useState<DateRange | undefined>(
+    undefined,
+  );
+  const [selectedPlayerIdFilter, setSelectedPlayerIdFilter] = useState<
+    string | undefined
+  >(undefined);
+  const [matchOutcomeFilter, setMatchOutcomeFilter] = useState<
+    "win" | "loss" | undefined
+  >(undefined);
 
-  const { data: matches, error: matchesError, isLoading: matchesLoading } =
-    useSWR<Match[]>('/api/v1/matches', getMatches, {
-      revalidateOnFocus: true,
-      revalidateOnMount: true,
-      refreshInterval: 5000, // Refresh every 5 seconds
-    });
+  const {
+    data: matches,
+    error: matchesError,
+    isLoading: matchesLoading,
+  } = useSWR<Match[]>("/api/v1/matches", getMatches, {
+    revalidateOnFocus: true,
+    revalidateOnMount: true,
+    refreshInterval: 5000, // Refresh every 5 seconds
+  });
 
-  const { data: allPlayers, error: playersError, isLoading: playersLoading } =
-    useSWR<Player[]>('/api/v1/players', getPlayerList, {
-      revalidateOnFocus: true,
-      revalidateOnMount: true,
-      refreshInterval: 5000, // Refresh every 5 seconds
-    });
+  const {
+    data: allPlayers,
+    error: playersError,
+    isLoading: playersLoading,
+  } = useSWR<Player[]>("/api/v1/players", getPlayerList, {
+    revalidateOnFocus: true,
+    revalidateOnMount: true,
+    refreshInterval: 5000, // Refresh every 5 seconds
+  });
 
   return (
     <MatchHistoryUI
@@ -58,5 +70,5 @@ const MatchHistoryPage = () => {
       setMatchOutcomeFilter={setMatchOutcomeFilter}
     />
   );
-}
+};
 export default MatchHistoryPage;

@@ -11,51 +11,92 @@
  */
 "use client";
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { Player } from '@/types/player.types';
-import { BackendMatchCreatePayload } from '@/types/match.types';
-import { getPlayers } from '@/services/playerService';
-import { findOrCreateTeam } from '@/services/teamService';
-import { createMatch } from '@/services/matchService';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { CalendarIcon, AlertCircle, Loader2 } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { Player } from "@/types/player.types";
+import { BackendMatchCreatePayload } from "@/types/match.types";
+import { getPlayers } from "@/services/playerService";
+import { findOrCreateTeam } from "@/services/teamService";
+import { createMatch } from "@/services/matchService";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { CalendarIcon, AlertCircle, Loader2 } from "lucide-react";
 
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface NewMatchPageProps {
   onMatchCreated?: () => void;
   isDialog?: boolean;
 }
 
-const matchFormSchema = z.object({
-  teamAPlayer1: z.string().min(1, { message: "Joueur 1 de l'équipe A est requis." }),
-  teamAPlayer2: z.string().min(1, { message: "Joueur 2 de l'équipe A est requis." }),
-  teamBPlayer1: z.string().min(1, { message: "Joueur 1 de l'équipe B est requis." }),
-  teamBPlayer2: z.string().min(1, { message: "Joueur 2 de l'équipe B est requis." }),
-  winningTeam: z.enum(['A', 'B'], { required_error: "Veuillez sélectionner l'équipe gagnante." }),
-  isFanny: z.boolean(),
-  matchDate: z.date({ required_error: "La date du match est requise." }),
-  notes: z.string().optional(),
-}).refine(data => {
-  const players = [data.teamAPlayer1, data.teamAPlayer2, data.teamBPlayer1, data.teamBPlayer2].filter(Boolean);
-  return new Set(players).size === players.length;
-}, { message: "Chaque joueur ne peut être sélectionné qu'une seule fois.", path: ["teamAPlayer1"] });
+const matchFormSchema = z
+  .object({
+    teamAPlayer1: z
+      .string()
+      .min(1, { message: "Joueur 1 de l'équipe A est requis." }),
+    teamAPlayer2: z
+      .string()
+      .min(1, { message: "Joueur 2 de l'équipe A est requis." }),
+    teamBPlayer1: z
+      .string()
+      .min(1, { message: "Joueur 1 de l'équipe B est requis." }),
+    teamBPlayer2: z
+      .string()
+      .min(1, { message: "Joueur 2 de l'équipe B est requis." }),
+    winningTeam: z.enum(["A", "B"], {
+      required_error: "Veuillez sélectionner l'équipe gagnante.",
+    }),
+    isFanny: z.boolean(),
+    matchDate: z.date({ required_error: "La date du match est requise." }),
+    notes: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      const players = [
+        data.teamAPlayer1,
+        data.teamAPlayer2,
+        data.teamBPlayer1,
+        data.teamBPlayer2,
+      ].filter(Boolean);
+      return new Set(players).size === players.length;
+    },
+    {
+      message: "Chaque joueur ne peut être sélectionné qu'une seule fois.",
+      path: ["teamAPlayer1"],
+    },
+  );
 
 type MatchFormValues = z.infer<typeof matchFormSchema>;
 
@@ -65,22 +106,30 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
   const [loadingPlayers, setLoadingPlayers] = useState<boolean>(true);
   const [pageError, setPageError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [submissionStatus, setSubmissionStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [submissionStatus, setSubmissionStatus] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   const form = useForm<MatchFormValues>({
     resolver: zodResolver(matchFormSchema),
     defaultValues: {
       matchDate: new Date(),
       isFanny: false,
-      notes: '',
-      teamAPlayer1: '',
-      teamAPlayer2: '',
-      teamBPlayer1: '',
-      teamBPlayer2: '',
+      notes: "",
+      teamAPlayer1: "",
+      teamAPlayer2: "",
+      teamBPlayer1: "",
+      teamBPlayer2: "",
     },
   });
 
-  const { watch, control, formState: { errors }, reset } = form;
+  const {
+    watch,
+    control,
+    formState: { errors },
+    reset,
+  } = form;
 
   const watchedValues = watch();
 
@@ -91,7 +140,12 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
       watchedValues.teamBPlayer1,
       watchedValues.teamBPlayer2,
     ].filter(Boolean) as string[];
-  }, [watchedValues.teamAPlayer1, watchedValues.teamAPlayer2, watchedValues.teamBPlayer1, watchedValues.teamBPlayer2]);
+  }, [
+    watchedValues.teamAPlayer1,
+    watchedValues.teamAPlayer2,
+    watchedValues.teamBPlayer1,
+    watchedValues.teamBPlayer2,
+  ]);
 
   useEffect(() => {
     const fetchPlayersList = async () => {
@@ -101,8 +155,8 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
         setAllPlayers(fetchedPlayers);
         setPageError(null);
       } catch (err) {
-        setPageError('Échec de la récupération des joueurs.');
-        console.error('Échec de la récupération des joueurs:', err);
+        setPageError("Échec de la récupération des joueurs.");
+        console.error("Échec de la récupération des joueurs:", err);
       } finally {
         setLoadingPlayers(false);
       }
@@ -114,10 +168,18 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
     setIsSubmitting(true);
     setSubmissionStatus(null);
 
-    if (!data.teamAPlayer1 || !data.teamAPlayer2 || !data.teamBPlayer1 || !data.teamBPlayer2) {
-        setSubmissionStatus({ type: 'error', message: 'Tous les joueurs doivent être sélectionnés.' });
-        setIsSubmitting(false);
-        return;
+    if (
+      !data.teamAPlayer1 ||
+      !data.teamAPlayer2 ||
+      !data.teamBPlayer1 ||
+      !data.teamBPlayer2
+    ) {
+      setSubmissionStatus({
+        type: "error",
+        message: "Tous les joueurs doivent être sélectionnés.",
+      });
+      setIsSubmitting(false);
+      return;
     }
 
     const p1A = parseInt(data.teamAPlayer1, 10);
@@ -130,13 +192,15 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
       const teamB = await findOrCreateTeam(p1B, p2B);
 
       if (!teamA || !teamB || !teamA.team_id || !teamB.team_id) {
-        throw new Error('Échec de la récupération ou de la création d\'une ou des deux équipes.');
+        throw new Error(
+          "Échec de la récupération ou de la création d'une ou des deux équipes.",
+        );
       }
 
       let winner_team_id: number;
       let loser_team_id: number;
 
-      if (data.winningTeam === 'A') {
+      if (data.winningTeam === "A") {
         winner_team_id = teamA.team_id;
         loser_team_id = teamB.team_id;
       } else {
@@ -153,27 +217,39 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
       };
 
       await createMatch(matchPayload);
-      setSubmissionStatus({ type: 'success', message: 'Match créé avec succès!' });
+      setSubmissionStatus({
+        type: "success",
+        message: "Match créé avec succès!",
+      });
       reset();
       if (isDialog && onMatchCreated) {
         onMatchCreated(); // Close dialog
       } else {
-        setTimeout(() => router.push('/'), 1500); // Redirect if not in dialog
+        setTimeout(() => router.push("/"), 1500); // Redirect if not in dialog
       }
-
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Une erreur inconnue est survenue.';
-      setSubmissionStatus({ type: 'error', message: `Échec de la création du match: ${errorMessage}` });
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Une erreur inconnue est survenue.";
+      setSubmissionStatus({
+        type: "error",
+        message: `Échec de la création du match: ${errorMessage}`,
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const getAvailablePlayers = (allPlayersList: Player[], currentSelectedIds: string[], currentPlayerSlotValue?: string): Player[] => {
+  const getAvailablePlayers = (
+    allPlayersList: Player[],
+    currentSelectedIds: string[],
+    currentPlayerSlotValue?: string,
+  ): Player[] => {
     return allPlayersList.filter(
-      player =>
-        (player.player_id.toString() === currentPlayerSlotValue) ||
-        !currentSelectedIds.includes(player.player_id.toString())
+      (player) =>
+        player.player_id.toString() === currentPlayerSlotValue ||
+        !currentSelectedIds.includes(player.player_id.toString()),
     );
   };
 
@@ -183,15 +259,20 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
         <Skeleton className="h-10 w-1/2" />
         <Skeleton className="h-8 w-3/4 mb-6" />
         <Card>
-            <CardHeader><Skeleton className="h-8 w-1/3" /></CardHeader>
-            <CardContent className="space-y-6">
-                <div className="flex space-x-4">
-                    <Skeleton className="h-10 w-1/2" /> <Skeleton className="h-10 w-1/4" />
-                </div>
-                {[1,2,3,4].map(i => <Skeleton key={i} className="h-10 w-full" />)}
-                 <Skeleton className="h-20 w-full" />
-                 <Skeleton className="h-10 w-full mt-4" />
-            </CardContent>
+          <CardHeader>
+            <Skeleton className="h-8 w-1/3" />
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex space-x-4">
+              <Skeleton className="h-10 w-1/2" />{" "}
+              <Skeleton className="h-10 w-1/4" />
+            </div>
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-10 w-full mt-4" />
+          </CardContent>
         </Card>
       </div>
     );
@@ -213,7 +294,9 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
     <div className="container mx-auto p-4 max-w-2xl">
       <Card className="w-full">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold">Créer un nouveau match</CardTitle>
+          <CardTitle className="text-2xl font-bold">
+            Créer un nouveau match
+          </CardTitle>
           <CardDescription>
             Remplissez les détails du match ci-dessous.
           </CardDescription>
@@ -235,8 +318,15 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
                       <SelectContent>
                         <SelectGroup>
                           <SelectLabel>Joueurs</SelectLabel>
-                          {getAvailablePlayers(allPlayers, selectedPlayerIds(), field.value).map(player => (
-                            <SelectItem key={player.player_id} value={player.player_id.toString()}>
+                          {getAvailablePlayers(
+                            allPlayers,
+                            selectedPlayerIds(),
+                            field.value,
+                          ).map((player) => (
+                            <SelectItem
+                              key={player.player_id}
+                              value={player.player_id.toString()}
+                            >
                               {player.name}
                             </SelectItem>
                           ))}
@@ -245,7 +335,11 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
                     </Select>
                   )}
                 />
-                {errors.teamAPlayer1 && <p className="text-red-500 text-sm">{errors.teamAPlayer1.message}</p>}
+                {errors.teamAPlayer1 && (
+                  <p className="text-red-500 text-sm">
+                    {errors.teamAPlayer1.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="teamAPlayer2">Équipe A - Joueur 2</Label>
@@ -260,8 +354,15 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
                       <SelectContent>
                         <SelectGroup>
                           <SelectLabel>Joueurs</SelectLabel>
-                          {getAvailablePlayers(allPlayers, selectedPlayerIds(), field.value).map(player => (
-                            <SelectItem key={player.player_id} value={player.player_id.toString()}>
+                          {getAvailablePlayers(
+                            allPlayers,
+                            selectedPlayerIds(),
+                            field.value,
+                          ).map((player) => (
+                            <SelectItem
+                              key={player.player_id}
+                              value={player.player_id.toString()}
+                            >
                               {player.name}
                             </SelectItem>
                           ))}
@@ -270,7 +371,11 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
                     </Select>
                   )}
                 />
-                {errors.teamAPlayer2 && <p className="text-red-500 text-sm">{errors.teamAPlayer2.message}</p>}
+                {errors.teamAPlayer2 && (
+                  <p className="text-red-500 text-sm">
+                    {errors.teamAPlayer2.message}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -289,8 +394,15 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
                       <SelectContent>
                         <SelectGroup>
                           <SelectLabel>Joueurs</SelectLabel>
-                          {getAvailablePlayers(allPlayers, selectedPlayerIds(), field.value).map(player => (
-                            <SelectItem key={player.player_id} value={player.player_id.toString()}>
+                          {getAvailablePlayers(
+                            allPlayers,
+                            selectedPlayerIds(),
+                            field.value,
+                          ).map((player) => (
+                            <SelectItem
+                              key={player.player_id}
+                              value={player.player_id.toString()}
+                            >
                               {player.name}
                             </SelectItem>
                           ))}
@@ -299,7 +411,11 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
                     </Select>
                   )}
                 />
-                {errors.teamBPlayer1 && <p className="text-red-500 text-sm">{errors.teamBPlayer1.message}</p>}
+                {errors.teamBPlayer1 && (
+                  <p className="text-red-500 text-sm">
+                    {errors.teamBPlayer1.message}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="teamBPlayer2">Équipe B - Joueur 2</Label>
@@ -314,8 +430,15 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
                       <SelectContent>
                         <SelectGroup>
                           <SelectLabel>Joueurs</SelectLabel>
-                          {getAvailablePlayers(allPlayers, selectedPlayerIds(), field.value).map(player => (
-                            <SelectItem key={player.player_id} value={player.player_id.toString()}>
+                          {getAvailablePlayers(
+                            allPlayers,
+                            selectedPlayerIds(),
+                            field.value,
+                          ).map((player) => (
+                            <SelectItem
+                              key={player.player_id}
+                              value={player.player_id.toString()}
+                            >
                               {player.name}
                             </SelectItem>
                           ))}
@@ -324,7 +447,11 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
                     </Select>
                   )}
                 />
-                {errors.teamBPlayer2 && <p className="text-red-500 text-sm">{errors.teamBPlayer2.message}</p>}
+                {errors.teamBPlayer2 && (
+                  <p className="text-red-500 text-sm">
+                    {errors.teamBPlayer2.message}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -351,7 +478,11 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
                   </RadioGroup>
                 )}
               />
-              {errors.winningTeam && <p className="text-red-500 text-sm">{errors.winningTeam.message}</p>}
+              {errors.winningTeam && (
+                <p className="text-red-500 text-sm">
+                  {errors.winningTeam.message}
+                </p>
+              )}
             </div>
 
             {/* Is Fanny */}
@@ -383,11 +514,15 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
                         variant={"outline"}
                         className={cn(
                           "w-full justify-start text-left font-normal",
-                          !field.value && "text-muted-foreground"
+                          !field.value && "text-muted-foreground",
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {field.value ? format(field.value, "PPP", { locale: fr }) : <span>Choisir une date</span>}
+                        {field.value ? (
+                          format(field.value, "PPP", { locale: fr })
+                        ) : (
+                          <span>Choisir une date</span>
+                        )}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
@@ -401,7 +536,11 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
                   </Popover>
                 )}
               />
-              {errors.matchDate && <p className="text-red-500 text-sm">{errors.matchDate.message}</p>}
+              {errors.matchDate && (
+                <p className="text-red-500 text-sm">
+                  {errors.matchDate.message}
+                </p>
+              )}
             </div>
 
             {/* Notes */}
@@ -415,24 +554,41 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
                     id="notes"
                     placeholder="Ajouter des notes sur le match..."
                     {...field}
-                    value={field.value || ''}
+                    value={field.value || ""}
                   />
                 )}
               />
-              {errors.notes && <p className="text-red-500 text-sm">{errors.notes.message}</p>}
+              {errors.notes && (
+                <p className="text-red-500 text-sm">{errors.notes.message}</p>
+              )}
             </div>
 
             {/* Submission Status Alert */}
             {submissionStatus && (
-              <Alert variant={submissionStatus.type === 'success' ? 'default' : 'destructive'} className={submissionStatus.type === 'success' ? 'bg-green-100 border-green-400 text-green-700' : ''}>
+              <Alert
+                variant={
+                  submissionStatus.type === "success"
+                    ? "default"
+                    : "destructive"
+                }
+                className={
+                  submissionStatus.type === "success"
+                    ? "bg-green-100 border-green-400 text-green-700"
+                    : ""
+                }
+              >
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>{submissionStatus.type === 'success' ? 'Succès' : 'Erreur'}</AlertTitle>
+                <AlertTitle>
+                  {submissionStatus.type === "success" ? "Succès" : "Erreur"}
+                </AlertTitle>
                 <AlertDescription>{submissionStatus.message}</AlertDescription>
               </Alert>
             )}
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSubmitting && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Créer le match
             </Button>
           </form>

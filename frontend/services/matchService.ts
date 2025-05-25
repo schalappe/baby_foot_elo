@@ -11,22 +11,28 @@
  *   - createMatch: Create a new match
  */
 // frontend/services/matchService.ts
-import axios from 'axios';
-import { Match, BackendMatchCreatePayload, BackendMatchWithEloResponse } from '../types/index';
+import axios from "axios";
+import {
+  Match,
+  BackendMatchCreatePayload,
+  BackendMatchWithEloResponse,
+} from "../types/index";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const getMatches = async (): Promise<Match[]> => {
   try {
-    const response = await axios.get(`${API_URL}/matches`); 
+    const response = await axios.get(`${API_URL}/matches`);
     return response.data as Match[];
   } catch (error) {
-    console.error('Error fetching matches:', error);
+    console.error("Error fetching matches:", error);
     return [];
   }
 };
 
-export const getMatchWithPlayerDetailsById = async (id: string): Promise<BackendMatchWithEloResponse | undefined> => {
+export const getMatchWithPlayerDetailsById = async (
+  id: string,
+): Promise<BackendMatchWithEloResponse | undefined> => {
   try {
     const response = await axios.get(`${API_URL}/matches/${id}/player`);
     return response.data as BackendMatchWithEloResponse;
@@ -36,7 +42,9 @@ export const getMatchWithPlayerDetailsById = async (id: string): Promise<Backend
   }
 };
 
-export const getMatchWithTeamDetailsById = async (id: string): Promise<BackendMatchWithEloResponse | undefined> => {
+export const getMatchWithTeamDetailsById = async (
+  id: string,
+): Promise<BackendMatchWithEloResponse | undefined> => {
   try {
     const response = await axios.get(`${API_URL}/matches/${id}/team`);
     return response.data as BackendMatchWithEloResponse;
@@ -46,12 +54,17 @@ export const getMatchWithTeamDetailsById = async (id: string): Promise<BackendMa
   }
 };
 
-export const createMatch = async (matchData: BackendMatchCreatePayload): Promise<BackendMatchWithEloResponse> => {
+export const createMatch = async (
+  matchData: BackendMatchCreatePayload,
+): Promise<BackendMatchWithEloResponse> => {
   try {
-    const response = await axios.post<BackendMatchWithEloResponse>(`${API_URL}/matches/`, matchData);
+    const response = await axios.post<BackendMatchWithEloResponse>(
+      `${API_URL}/matches/`,
+      matchData,
+    );
     return response.data;
   } catch (error) {
-    console.error('Error creating match:', error);
+    console.error("Error creating match:", error);
     throw error;
   }
 };

@@ -1,23 +1,57 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from 'react';
-import Link from 'next/link';
-import { Match, MatchPlayerInfo, MatchTeamInfo } from '@/types/match.types';
-import { Player } from '@/types/player.types';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertCircle, UserSearch, Trophy, Skull, MessageSquareText } from 'lucide-react';
-import { format, startOfDay, endOfDay } from 'date-fns';
-import { NewMatchDialog } from '@/components/matches/NewMatchDialog';
+import React, { useMemo, useState, useEffect } from "react";
+import Link from "next/link";
+import { Match, MatchPlayerInfo, MatchTeamInfo } from "@/types/match.types";
+import { Player } from "@/types/player.types";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertCircle,
+  UserSearch,
+  Trophy,
+  Skull,
+  MessageSquareText,
+} from "lucide-react";
+import { format, startOfDay, endOfDay } from "date-fns";
+import { NewMatchDialog } from "@/components/matches/NewMatchDialog";
 
-import { DateRange } from 'react-day-picker';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext } from '@/components/ui/pagination';
+import { DateRange } from "react-day-picker";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationPrevious,
+  PaginationNext,
+} from "@/components/ui/pagination";
 
 interface MatchHistoryUIProps {
   matches: Match[];
@@ -52,7 +86,6 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
   matchOutcomeFilter,
   setMatchOutcomeFilter,
 }) => {
-
   const handleDateRangeChange = (range: DateRange | undefined) => {
     setDateRangeFilter(range);
   };
@@ -68,7 +101,7 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
   };
 
   const getPlayerName = (playerId: number) => {
-    const player = (allPlayers || []).find(p => p.player_id === playerId);
+    const player = (allPlayers || []).find((p) => p.player_id === playerId);
     return player ? player.name : `Unknown Player (${playerId})`;
   };
 
@@ -80,8 +113,10 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
 
     if (dateRangeFilter && dateRangeFilter.from) {
       const fromDate = startOfDay(dateRangeFilter.from);
-      const toDate = dateRangeFilter.to ? endOfDay(dateRangeFilter.to) : endOfDay(dateRangeFilter.from);
-      tempMatches = tempMatches.filter(match => {
+      const toDate = dateRangeFilter.to
+        ? endOfDay(dateRangeFilter.to)
+        : endOfDay(dateRangeFilter.from);
+      tempMatches = tempMatches.filter((match) => {
         const matchDate = new Date(match.played_at);
         return matchDate >= fromDate && matchDate <= toDate;
       });
@@ -89,27 +124,42 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
 
     if (selectedPlayerIdFilter) {
       const playerIdNum = parseInt(selectedPlayerIdFilter, 20);
-      tempMatches = tempMatches.filter(match => {
-        const teamAPlayerIds = [match.winner_team.player1.player_id, match.winner_team.player2?.player_id].filter(Boolean);
-        const teamBPlayerIds = [match.loser_team.player1.player_id, match.loser_team.player2?.player_id].filter(Boolean);
-        return teamAPlayerIds.includes(playerIdNum) || teamBPlayerIds.includes(playerIdNum);
+      tempMatches = tempMatches.filter((match) => {
+        const teamAPlayerIds = [
+          match.winner_team.player1.player_id,
+          match.winner_team.player2?.player_id,
+        ].filter(Boolean);
+        const teamBPlayerIds = [
+          match.loser_team.player1.player_id,
+          match.loser_team.player2?.player_id,
+        ].filter(Boolean);
+        return (
+          teamAPlayerIds.includes(playerIdNum) ||
+          teamBPlayerIds.includes(playerIdNum)
+        );
       });
     }
 
     // Apply match outcome filter (enabled when allPlayers is fulfilled)
     if (allPlayers && allPlayers.length > 0 && matchOutcomeFilter) {
-      const playerIdNum = selectedPlayerIdFilter ? parseInt(selectedPlayerIdFilter, 20) : null;
-      tempMatches = tempMatches.filter(match => {
+      const playerIdNum = selectedPlayerIdFilter
+        ? parseInt(selectedPlayerIdFilter, 20)
+        : null;
+      tempMatches = tempMatches.filter((match) => {
         // Ensure player ID is valid before checking outcome
         if (playerIdNum === null) return true;
 
-        const isWinner = match.winner_team.player1.player_id === playerIdNum || match.winner_team.player2?.player_id === playerIdNum;
-        const isLoser = match.loser_team.player1.player_id === playerIdNum || match.loser_team.player2?.player_id === playerIdNum;
+        const isWinner =
+          match.winner_team.player1.player_id === playerIdNum ||
+          match.winner_team.player2?.player_id === playerIdNum;
+        const isLoser =
+          match.loser_team.player1.player_id === playerIdNum ||
+          match.loser_team.player2?.player_id === playerIdNum;
 
-        if (matchOutcomeFilter === 'win') {
+        if (matchOutcomeFilter === "win") {
           return isWinner;
         }
-        if (matchOutcomeFilter === 'loss') {
+        if (matchOutcomeFilter === "loss") {
           return isLoser;
         }
         return true; // Should not reach here if outcome is win/loss
@@ -117,7 +167,13 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
     }
 
     return tempMatches;
-  }, [matches, dateRangeFilter, selectedPlayerIdFilter, matchOutcomeFilter, allPlayers]);
+  }, [
+    matches,
+    dateRangeFilter,
+    selectedPlayerIdFilter,
+    matchOutcomeFilter,
+    allPlayers,
+  ]);
 
   // Pagination logic
   const totalPages = Math.ceil((filteredMatches || []).length / PAGE_SIZE);
@@ -131,7 +187,7 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
   }, [dateRangeFilter, selectedPlayerIdFilter, matchOutcomeFilter]);
 
   const renderPlayerName = (player?: MatchPlayerInfo) => {
-    if (!player || typeof player.name !== 'string') {
+    if (!player || typeof player.name !== "string") {
       return <span className="text-red-500">Joueur Inconnu</span>;
     }
     return <span>{player.name}</span>;
@@ -142,7 +198,9 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
       <div className="container mx-auto py-8 px-4 md:px-6 lg:px-8">
         <CardHeader className="px-0">
           <CardTitle>Historique des matches</CardTitle>
-          <CardDescription>Loading match history and player data...</CardDescription>
+          <CardDescription>
+            Loading match history and player data...
+          </CardDescription>
         </CardHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(5)].map((_, i) => (
@@ -159,18 +217,26 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{matchesError?.message || playersError?.message}</AlertDescription>
+          <AlertDescription>
+            {matchesError?.message || playersError?.message}
+          </AlertDescription>
         </Alert>
       </div>
     );
   }
 
-  if ((filteredMatches || []).length === 0 && !matchesLoading && !playersLoading) {
+  if (
+    (filteredMatches || []).length === 0 &&
+    !matchesLoading &&
+    !playersLoading
+  ) {
     return (
       <div className="container mx-auto py-8 px-4 md:px-6 lg:px-8">
         <CardHeader className="px-0">
           <CardTitle>Historique des matches</CardTitle>
-          <CardDescription>No matches found with the current filters.</CardDescription>
+          <CardDescription>
+            No matches found with the current filters.
+          </CardDescription>
         </CardHeader>
       </div>
     );
@@ -180,14 +246,19 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
     <div className="container mx-auto py-8 px-4 md:px-6 lg:px-8">
       <CardHeader className="px-0 space-y-2 text-center">
         <CardTitle className="text-center">Historique des matches</CardTitle>
-        <CardDescription className="text-center">Consultez les résultats des matches passés.</CardDescription>
+        <CardDescription className="text-center">
+          Consultez les résultats des matches passés.
+        </CardDescription>
       </CardHeader>
       <div className="mb-6 flex flex-col md:flex-row gap-4 justify-center items-center">
         <DateRangePicker
           onUpdateFilter={handleDateRangeChange}
           className="w-full md:w-auto"
         />
-        <Select onValueChange={handlePlayerFilterChange} value={selectedPlayerIdFilter || "all"}>
+        <Select
+          onValueChange={handlePlayerFilterChange}
+          value={selectedPlayerIdFilter || "all"}
+        >
           <SelectTrigger className="w-full md:w-[280px]">
             <UserSearch className="mr-2 h-4 w-4 text-muted-foreground" />
             <SelectValue placeholder="Filtrer par joueur..." />
@@ -196,11 +267,21 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
             <SelectGroup>
               <SelectLabel>Joueurs</SelectLabel>
               <SelectItem value="all">Tous les joueurs</SelectItem>
-              {(allPlayers || []).filter(player => player && typeof player.player_id !== 'undefined' && player.name).map((player) => (
-                <SelectItem key={player.player_id} value={player.player_id.toString()}>
-                  {player.name}
-                </SelectItem>
-              ))}
+              {(allPlayers || [])
+                .filter(
+                  (player) =>
+                    player &&
+                    typeof player.player_id !== "undefined" &&
+                    player.name,
+                )
+                .map((player) => (
+                  <SelectItem
+                    key={player.player_id}
+                    value={player.player_id.toString()}
+                  >
+                    {player.name}
+                  </SelectItem>
+                ))}
             </SelectGroup>
           </SelectContent>
         </Select>
@@ -225,7 +306,9 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
           </SelectContent>
         </Select>
         <NewMatchDialog>
-          <Button variant="default" className="w-full md:w-auto">Ajouter une Partie</Button>
+          <Button variant="default" className="w-full md:w-auto">
+            Ajouter une Partie
+          </Button>
         </NewMatchDialog>
       </div>
       <Card>
@@ -241,161 +324,211 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-            {(paginatedMatches || []).map((match) => {
-              if (
-                !match ||
-                typeof match.match_id === 'undefined' ||
-                match.match_id === null ||
-                !match.winner_team ||
-                !match.winner_team.player1 ||
-                !match.loser_team ||
-                !match.loser_team.player1
-              ) {
-                console.error('Match object or essential winner/loser team data is invalid:', match);
-                return (
-                  <TableRow key={Math.random().toString()}>
-                    <TableCell colSpan={5}>
-                      <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Erreur de données</AlertTitle>
-                        <AlertDescription>
-                          Erreur de données: match invalide.
-                        </AlertDescription>
-                      </Alert>
-                    </TableCell>
-                  </TableRow>
-                );
-              }
-              const renderFormattedDate = (dateString: string | null | undefined): string => {
-                if (!dateString) {
-                  return 'Date N/A';
+              {(paginatedMatches || []).map((match) => {
+                if (
+                  !match ||
+                  typeof match.match_id === "undefined" ||
+                  match.match_id === null ||
+                  !match.winner_team ||
+                  !match.winner_team.player1 ||
+                  !match.loser_team ||
+                  !match.loser_team.player1
+                ) {
+                  console.error(
+                    "Match object or essential winner/loser team data is invalid:",
+                    match,
+                  );
+                  return (
+                    <TableRow key={Math.random().toString()}>
+                      <TableCell colSpan={5}>
+                        <Alert variant="destructive">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertTitle>Erreur de données</AlertTitle>
+                          <AlertDescription>
+                            Erreur de données: match invalide.
+                          </AlertDescription>
+                        </Alert>
+                      </TableCell>
+                    </TableRow>
+                  );
                 }
-                const dateObj = new Date(dateString);
-                if (isNaN(dateObj.getTime())) {
-                  return 'Invalid Date';
-                }
-                return format(dateObj, 'dd/MM/yy');
-              };
+                const renderFormattedDate = (
+                  dateString: string | null | undefined,
+                ): string => {
+                  if (!dateString) {
+                    return "Date N/A";
+                  }
+                  const dateObj = new Date(dateString);
+                  if (isNaN(dateObj.getTime())) {
+                    return "Invalid Date";
+                  }
+                  return format(dateObj, "dd/MM/yy");
+                };
 
-              // Render a team cell with clickable team name
-              const renderTeamCell = (team: MatchTeamInfo, isWinner: boolean, isFannyLoser: boolean) => {
-                let cellClasses = "flex items-center p-2 rounded-md";
-                let icon = null;
+                // Render a team cell with clickable team name
+                const renderTeamCell = (
+                  team: MatchTeamInfo,
+                  isWinner: boolean,
+                  isFannyLoser: boolean,
+                ) => {
+                  let cellClasses = "flex items-center p-2 rounded-md";
+                  let icon = null;
 
-                if (isWinner) {
-                  cellClasses += " bg-green-100 text-green-800";
-                  icon = <Trophy className="h-4 w-4 mr-2 text-green-700" />;
-                } else if (isFannyLoser) {
-                  cellClasses += " bg-red-100 text-red-800";
-                  icon = <Skull className="h-4 w-4 mr-2 text-red-700" />;
-                }
+                  if (isWinner) {
+                    cellClasses += " bg-green-100 text-green-800";
+                    icon = <Trophy className="h-4 w-4 mr-2 text-green-700" />;
+                  } else if (isFannyLoser) {
+                    cellClasses += " bg-red-100 text-red-800";
+                    icon = <Skull className="h-4 w-4 mr-2 text-red-700" />;
+                  }
 
-                const teamLink = team.team_id ? `/teams/${team.team_id}` : undefined;
+                  const teamLink = team.team_id
+                    ? `/teams/${team.team_id}`
+                    : undefined;
 
-                return (
-                  <div className={cellClasses + " w-full"}>
-                    {icon}
-                    {teamLink ? (
-                      <Link
-                        href={teamLink}
-                        className="truncate overflow-hidden whitespace-nowrap w-full block hover:underline focus:outline-none focus:ring-2 focus:ring-primary rounded"
-                        aria-label={`Voir la page de l'équipe ${team.player1?.name}${team.player2 ? ' et ' + team.player2.name : ''}`}
-                      >
-                        {renderPlayerName(team.player1)}
-                        {team.player2 && <span className="mx-1">&</span>}
-                        {team.player2 && renderPlayerName(team.player2)}
-                      </Link>
-                    ) : (
-                      <div className="truncate overflow-hidden whitespace-nowrap w-full block">
-                        {renderPlayerName(team.player1)}
-                        {team.player2 && <span className="mx-1">&</span>}
-                        {team.player2 && renderPlayerName(team.player2)}
-                      </div>
-                    )}
-                    {isFannyLoser && <Badge variant="destructive" className="ml-2">Fanny!</Badge>}
-                  </div>
-                );
-              };
-
-              let team_A_data: MatchTeamInfo;
-              let team_B_data: MatchTeamInfo;
-              if (match.winner_team.team_id < match.loser_team.team_id) {
-                team_A_data = match.winner_team;
-                team_B_data = match.loser_team;
-              } else {
-                team_A_data = match.loser_team;
-                team_B_data = match.winner_team;
-              }
-
-              const isTeamAWinner = team_A_data.team_id === match.winner_team.team_id;
-              const isTeamAFannyLoser = !isTeamAWinner && match.is_fanny && team_A_data.team_id === match.loser_team.team_id;
-              const isTeamBWinner = team_B_data.team_id === match.winner_team.team_id;
-              const isTeamBFannyLoser = !isTeamBWinner && match.is_fanny && team_B_data.team_id === match.loser_team.team_id;
-
-              return (
-                <React.Fragment key={match.match_id}>
-                  <TableRow>
-                    <TableCell className="w-1/10 text-center">{renderFormattedDate(match.played_at)}</TableCell>
-                    <TableCell className="w-1/4">
-                      {renderTeamCell(team_A_data, isTeamAWinner, isTeamAFannyLoser)}
-                    </TableCell>
-                    <TableCell className="text-center font-semibold">VS</TableCell>
-                    <TableCell className="w-1/4">
-                      {renderTeamCell(team_B_data, isTeamBWinner, isTeamBFannyLoser)}
-                    </TableCell>
-                    <TableCell className="max-w-xs w-full overflow-hidden text-ellipsis text-center">
-                      {match.notes?.trim() && (
-                        <div className="flex items-center justify-center text-sm text-slate-600 dark:text-slate-300">
-                          <MessageSquareText className="h-4 w-2 mr-2 flex-shrink-0" />
-                          <span className="truncate italic" title={match.notes}>
-                            {match.notes}
-                          </span>
+                  return (
+                    <div className={cellClasses + " w-full"}>
+                      {icon}
+                      {teamLink ? (
+                        <Link
+                          href={teamLink}
+                          className="truncate overflow-hidden whitespace-nowrap w-full block hover:underline focus:outline-none focus:ring-2 focus:ring-primary rounded"
+                          aria-label={`Voir la page de l'équipe ${team.player1?.name}${team.player2 ? " et " + team.player2.name : ""}`}
+                        >
+                          {renderPlayerName(team.player1)}
+                          {team.player2 && <span className="mx-1">&</span>}
+                          {team.player2 && renderPlayerName(team.player2)}
+                        </Link>
+                      ) : (
+                        <div className="truncate overflow-hidden whitespace-nowrap w-full block">
+                          {renderPlayerName(team.player1)}
+                          {team.player2 && <span className="mx-1">&</span>}
+                          {team.player2 && renderPlayerName(team.player2)}
                         </div>
                       )}
-                    </TableCell>
-                  </TableRow>
-                </React.Fragment>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-    {/* Pagination Controls */}
-    {totalPages > 1 && (
-      <div className="flex justify-center mt-4">
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => setCurrentPage((prev: any) => Math.max(1, prev - 1))}
-                aria-disabled={currentPage === 1}
-                className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
-              />
-            </PaginationItem>
-            {Array.from({ length: totalPages }, (_, idx) => (
-              <PaginationItem key={idx + 1}>
-                <PaginationLink
-                  onClick={() => setCurrentPage(idx + 1)}
-                  isActive={currentPage === idx + 1}
-                >
-                  {idx + 1}
-                </PaginationLink>
+                      {isFannyLoser && (
+                        <Badge variant="destructive" className="ml-2">
+                          Fanny!
+                        </Badge>
+                      )}
+                    </div>
+                  );
+                };
+
+                let team_A_data: MatchTeamInfo;
+                let team_B_data: MatchTeamInfo;
+                if (match.winner_team.team_id < match.loser_team.team_id) {
+                  team_A_data = match.winner_team;
+                  team_B_data = match.loser_team;
+                } else {
+                  team_A_data = match.loser_team;
+                  team_B_data = match.winner_team;
+                }
+
+                const isTeamAWinner =
+                  team_A_data.team_id === match.winner_team.team_id;
+                const isTeamAFannyLoser =
+                  !isTeamAWinner &&
+                  match.is_fanny &&
+                  team_A_data.team_id === match.loser_team.team_id;
+                const isTeamBWinner =
+                  team_B_data.team_id === match.winner_team.team_id;
+                const isTeamBFannyLoser =
+                  !isTeamBWinner &&
+                  match.is_fanny &&
+                  team_B_data.team_id === match.loser_team.team_id;
+
+                return (
+                  <React.Fragment key={match.match_id}>
+                    <TableRow>
+                      <TableCell className="w-1/10 text-center">
+                        {renderFormattedDate(match.played_at)}
+                      </TableCell>
+                      <TableCell className="w-1/4">
+                        {renderTeamCell(
+                          team_A_data,
+                          isTeamAWinner,
+                          isTeamAFannyLoser,
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center font-semibold">
+                        VS
+                      </TableCell>
+                      <TableCell className="w-1/4">
+                        {renderTeamCell(
+                          team_B_data,
+                          isTeamBWinner,
+                          isTeamBFannyLoser,
+                        )}
+                      </TableCell>
+                      <TableCell className="max-w-xs w-full overflow-hidden text-ellipsis text-center">
+                        {match.notes?.trim() && (
+                          <div className="flex items-center justify-center text-sm text-slate-600 dark:text-slate-300">
+                            <MessageSquareText className="h-4 w-2 mr-2 flex-shrink-0" />
+                            <span
+                              className="truncate italic"
+                              title={match.notes}
+                            >
+                              {match.notes}
+                            </span>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  </React.Fragment>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-center mt-4">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() =>
+                    setCurrentPage((prev: any) => Math.max(1, prev - 1))
+                  }
+                  aria-disabled={currentPage === 1}
+                  className={
+                    currentPage === 1 ? "pointer-events-none opacity-50" : ""
+                  }
+                />
               </PaginationItem>
-            ))}
-            <PaginationItem>
-              <PaginationNext
-                onClick={() => setCurrentPage((prev: any) => Math.min(totalPages, prev + 1))}
-                aria-disabled={currentPage === totalPages}
-                className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </div>
-    )}
-  </div>
-);
-}
+              {Array.from({ length: totalPages }, (_, idx) => (
+                <PaginationItem key={idx + 1}>
+                  <PaginationLink
+                    onClick={() => setCurrentPage(idx + 1)}
+                    isActive={currentPage === idx + 1}
+                  >
+                    {idx + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() =>
+                    setCurrentPage((prev: any) =>
+                      Math.min(totalPages, prev + 1),
+                    )
+                  }
+                  aria-disabled={currentPage === totalPages}
+                  className={
+                    currentPage === totalPages
+                      ? "pointer-events-none opacity-50"
+                      : ""
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default MatchHistoryUI;

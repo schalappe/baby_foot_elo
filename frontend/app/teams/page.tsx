@@ -8,26 +8,29 @@
  *
  * Usage: Routed to '/teams' by Next.js.
  */
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import useSWR from 'swr';
-import { Team } from '@/types/team.types';
-import { getTeamRankings } from '@/services/teamService'; 
-import { TeamRankingsDisplay } from '@/components/rankings/TeamRankingsDisplay';
-import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import { NewMatchDialog } from '@/components/matches/NewMatchDialog';
+import { useEffect } from "react";
+import useSWR from "swr";
+import { Team } from "@/types/team.types";
+import { getTeamRankings } from "@/services/teamService";
+import { TeamRankingsDisplay } from "@/components/rankings/TeamRankingsDisplay";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { NewMatchDialog } from "@/components/matches/NewMatchDialog";
 
-const TEAMS_API_ENDPOINT = '/api/v1/teams/rankings?limit=100';
+const TEAMS_API_ENDPOINT = "/api/v1/teams/rankings?limit=100";
 
 export default function TeamRankingsPage() {
-  const { data: teams, error: teamsError, isLoading: teamsLoading } = 
-    useSWR<Team[]>(TEAMS_API_ENDPOINT, getTeamRankings, {
-      revalidateOnFocus: true,
-      revalidateOnMount: true,
-      refreshInterval: 5000, // Refresh every 5 seconds
-    });
+  const {
+    data: teams,
+    error: teamsError,
+    isLoading: teamsLoading,
+  } = useSWR<Team[]>(TEAMS_API_ENDPOINT, getTeamRankings, {
+    revalidateOnFocus: true,
+    revalidateOnMount: true,
+    refreshInterval: 5000, // Refresh every 5 seconds
+  });
 
   useEffect(() => {
     if (teamsError) {
@@ -43,14 +46,22 @@ export default function TeamRankingsPage() {
         </h1>
         <div className="flex space-x-2">
           <NewMatchDialog>
-            <Button variant="outline" size="lg">Ajouter une Partie</Button>
+            <Button variant="outline" size="lg">
+              Ajouter une Partie
+            </Button>
           </NewMatchDialog>
         </div>
       </div>
-      <TeamRankingsDisplay 
-        teams={teams ?? []} 
-        isLoading={teamsLoading} 
-        error={teamsError ? (teamsError instanceof Error ? teamsError : new Error(String(teamsError))) : null} 
+      <TeamRankingsDisplay
+        teams={teams ?? []}
+        isLoading={teamsLoading}
+        error={
+          teamsError
+            ? teamsError instanceof Error
+              ? teamsError
+              : new Error(String(teamsError))
+            : null
+        }
       />
     </main>
   );

@@ -10,9 +10,9 @@
  */
 "use client";
 
-import React from 'react';
-import PlayerDetail from '@/components/players/PlayerDetail';
-import { useParams } from 'next/navigation';
+import React from "react";
+import PlayerDetail from "@/components/players/PlayerDetail";
+import { useParams } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const PlayerDetailPage: React.FC = () => {
@@ -21,7 +21,7 @@ const PlayerDetailPage: React.FC = () => {
 
   let playerId: number | undefined = undefined;
 
-  if (typeof playerIdString === 'string') {
+  if (typeof playerIdString === "string") {
     const parsedId = parseInt(playerIdString, 10);
     if (!isNaN(parsedId)) {
       playerId = parsedId;

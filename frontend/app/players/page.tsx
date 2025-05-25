@@ -10,8 +10,8 @@
  */
 "use client";
 
-import React from 'react';
-import PlayersList from '@/components/players/PlayersList';
+import React from "react";
+import PlayersList from "@/components/players/PlayersList";
 
 const PlayersPage: React.FC = () => {
   return (

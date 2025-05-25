@@ -12,8 +12,8 @@
  *   - getTeamMatches: Fetch matches for a team
  */
 // frontend/services/teamService.ts
-import axios from 'axios';
-import { Team, TeamStatistics, TeamMatchWithElo } from '@/types/team.types';
+import axios from "axios";
+import { Team, TeamStatistics, TeamMatchWithElo } from "@/types/team.types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -27,13 +27,16 @@ export const getTeamRankings = async (): Promise<Team[]> => {
     });
     return response.data;
   } catch (error) {
-    console.error('Échec de la récupération des équipes:', error);
+    console.error("Échec de la récupération des équipes:", error);
     throw error;
   }
 };
 
 // Function to find an existing team or create a new one.
-export const findOrCreateTeam = async (player1_id: number, player2_id: number): Promise<Team> => {
+export const findOrCreateTeam = async (
+  player1_id: number,
+  player2_id: number,
+): Promise<Team> => {
   try {
     const response = await axios.post<Team>(`${API_URL}/teams/`, {
       player1_id,
@@ -41,7 +44,10 @@ export const findOrCreateTeam = async (player1_id: number, player2_id: number): 
     });
     return response.data;
   } catch (error) {
-    console.error(`Échec de la recherche ou de la création de l'équipe pour les joueurs ${player1_id} et ${player2_id}:`, error);
+    console.error(
+      `Échec de la recherche ou de la création de l'équipe pour les joueurs ${player1_id} et ${player2_id}:`,
+      error,
+    );
     throw error;
   }
 };
@@ -85,12 +91,19 @@ export const getTeamById = async (teamId: number): Promise<Team> => {
  * @param team_id - The ID of the team to fetch statistics for
  * @returns Promise<TeamStatistics> - Team statistics data
  */
-export const getTeamStatistics = async (team_id: number): Promise<TeamStatistics> => {
+export const getTeamStatistics = async (
+  team_id: number,
+): Promise<TeamStatistics> => {
   try {
-    const response = await axios.get<TeamStatistics>(`${API_URL}/teams/${team_id}/statistics`);
+    const response = await axios.get<TeamStatistics>(
+      `${API_URL}/teams/${team_id}/statistics`,
+    );
     return response.data;
   } catch (error) {
-    console.error(`Échec de la récupération des statistiques pour l'équipe ${team_id}:`, error);
+    console.error(
+      `Échec de la récupération des statistiques pour l'équipe ${team_id}:`,
+      error,
+    );
     throw error;
   }
 };
@@ -108,15 +121,18 @@ export const getTeamStatistics = async (team_id: number): Promise<TeamStatistics
 
 export const getTeamMatches = async (
   teamId: number,
-  params?: { skip?: number; limit?: number }
+  params?: { skip?: number; limit?: number },
 ): Promise<TeamMatchWithElo[]> => {
   try {
-    const response = await axios.get<TeamMatchWithElo[]>(`${API_URL}/teams/${teamId}/matches`, {
-      params: {
-        skip: params?.skip,
-        limit: params?.limit,
+    const response = await axios.get<TeamMatchWithElo[]>(
+      `${API_URL}/teams/${teamId}/matches`,
+      {
+        params: {
+          skip: params?.skip,
+          limit: params?.limit,
+        },
       },
-    });
+    );
     return response.data;
   } catch (error) {
     console.error(`Failed to fetch matches for team with ID ${teamId}:`, error);
