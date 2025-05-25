@@ -32,8 +32,12 @@ import { NewMatchDialog } from '@/components/matches/NewMatchDialog';
 const PLAYERS_API_ENDPOINT = '/api/v1/players/rankings?limit=100';
 
 export default function Home() {
-  const { data: players, error: playersError, isLoading: playersLoading } = 
-    useSWR<Player[]>(PLAYERS_API_ENDPOINT, getPlayerRankings); 
+  const { data: players, error: playersError, isLoading: playersLoading } =
+    useSWR<Player[]>(PLAYERS_API_ENDPOINT, getPlayerRankings, {
+      revalidateOnFocus: true,
+      revalidateOnMount: true,
+      refreshInterval: 5000, // Refresh every 5 seconds
+    });
 
   const [isAddPlayerDialogOpen, setIsAddPlayerDialogOpen] = useState(false);
 

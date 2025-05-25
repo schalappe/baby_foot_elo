@@ -23,7 +23,11 @@ const TEAMS_API_ENDPOINT = '/api/v1/teams/rankings?limit=100';
 
 export default function TeamRankingsPage() {
   const { data: teams, error: teamsError, isLoading: teamsLoading } = 
-    useSWR<Team[]>(TEAMS_API_ENDPOINT, getTeamRankings);
+    useSWR<Team[]>(TEAMS_API_ENDPOINT, getTeamRankings, {
+      revalidateOnFocus: true,
+      revalidateOnMount: true,
+      refreshInterval: 5000, // Refresh every 5 seconds
+    });
 
   useEffect(() => {
     if (teamsError) {
