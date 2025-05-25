@@ -15,7 +15,7 @@ from app.db.repositories.teams import (
     delete_team,
     get_all_teams,
     get_team,
-    get_teams_by_player,
+    get_teams_by_player_id,
     update_team,
 )
 from app.exceptions.teams import (
@@ -110,7 +110,7 @@ def get_teams_by_player_id(player_id: int) -> List[TeamResponse]:
         If there's an error retrieving the teams.
     """
     try:
-        teams = get_teams_by_player(player_id)
+        teams = get_teams_by_player_id(player_id)
         return [get_team_by_id(team["team_id"]) for team in teams]
     except Exception as exc:
         logger.error(f"Error retrieving teams for player {player_id}: {exc}")

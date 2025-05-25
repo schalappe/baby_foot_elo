@@ -165,61 +165,7 @@ def get_team(team_id: int) -> Optional[Dict[str, Any]]:
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_all_teams(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
-    """
-    Get all teams from the database.
-
-    Parameters
-    ----------
-    limit : int, optional
-        Maximum number of teams to return, by default 100.
-    offset : int, optional
-        Number of teams to skip for pagination, by default 0.
-
-    Returns
-    -------
-    List[Dict[str, Any]]
-        List of team dictionaries.
-    """
-    try:
-        rows = (
-            SelectQueryBuilder("Teams")
-            .select(
-                "team_id",
-                "player1_id",
-                "player2_id",
-                "global_elo",
-                "created_at",
-                "last_match_at",
-            )
-            .order_by_clause("global_elo DESC")
-            .limit(limit)
-            .offset(offset)
-            .execute()
-        )
-        return (
-            [
-                {
-                    "team_id": row[0],
-                    "player1_id": row[1],
-                    "player2_id": row[2],
-                    "global_elo": row[3],
-                    "created_at": row[4],
-                    "last_match_at": row[5],
-                    "rank": idx + 1,
-                }
-                for idx, row in enumerate(rows)
-            ]
-            if rows
-            else []
-        )
-    except Exception as exc:
-        logger.error(f"Failed to get all teams: {exc}")
-        return []
-
-
-@with_retry(max_retries=3, retry_delay=0.5)
-def get_teams_by_player(player_id: int) -> List[Dict[str, Any]]:
+def get_teams_by_player_id(player_id: int) -> List[Dict[str, Any]]:
     """
     Get all teams that a specific player is part of.
 
@@ -270,6 +216,60 @@ def get_teams_by_player(player_id: int) -> List[Dict[str, Any]]:
         return teams
     except Exception as exc:
         logger.error(f"Failed to get teams for player ID {player_id}: {exc}")
+        return []
+
+
+@with_retry(max_retries=3, retry_delay=0.5)
+def get_all_teams(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+    """
+    Get all teams from the database.
+
+    Parameters
+    ----------
+    limit : int, optional
+        Maximum number of teams to return, by default 100.
+    offset : int, optional
+        Number of teams to skip for pagination, by default 0.
+
+    Returns
+    -------
+    List[Dict[str, Any]]
+        List of team dictionaries.
+    """
+    try:
+        rows = (
+            SelectQueryBuilder("Teams")
+            .select(
+                "team_id",
+                "player1_id",
+                "player2_id",
+                "global_elo",
+                "created_at",
+                "last_match_at",
+            )
+            .order_by_clause("global_elo DESC")
+            .limit(limit)
+            .offset(offset)
+            .execute()
+        )
+        return (
+            [
+                {
+                    "team_id": row[0],
+                    "player1_id": row[1],
+                    "player2_id": row[2],
+                    "global_elo": row[3],
+                    "created_at": row[4],
+                    "last_match_at": row[5],
+                    "rank": idx + 1,
+                }
+                for idx, row in enumerate(rows)
+            ]
+            if rows
+            else []
+        )
+    except Exception as exc:
+        logger.error(f"Failed to get all teams: {exc}")
         return []
 
 
