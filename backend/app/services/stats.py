@@ -14,7 +14,7 @@ from app.exceptions.teams import TeamNotFoundError, TeamOperationError
 from app.models.match import MatchWithEloResponse
 from app.models.team import TeamResponse
 from app.services.players import get_player_by_id
-from app.services.teams import get_team_by_id
+from app.services.teams import get_team
 
 
 def get_player_matches(player_id: int, limit: int = 10, offset: int = 0, **filters) -> List[MatchWithEloResponse]:
@@ -44,8 +44,8 @@ def get_player_matches(player_id: int, limit: int = 10, offset: int = 0, **filte
         response = []
         for match in matches:
             # ##: Get teams.
-            winner_team = get_team_by_id(match["winner_team_id"])
-            loser_team = get_team_by_id(match["loser_team_id"])
+            winner_team = get_team(match["winner_team_id"])
+            loser_team = get_team(match["loser_team_id"])
 
             # ##: Create match response.
             match_response = MatchWithEloResponse(
@@ -88,8 +88,8 @@ def get_team_matches(team_id: int, limit: int = 100, offset: int = 0) -> List[Ma
         for match in matches:
             try:
                 # ##: Get teams.
-                winner_team = get_team_by_id(match["winner_team_id"])
-                loser_team = get_team_by_id(match["loser_team_id"])
+                winner_team = get_team(match["winner_team_id"])
+                loser_team = get_team(match["loser_team_id"])
 
                 # ##: Create match response.
                 match_response = MatchWithEloResponse(
@@ -212,7 +212,7 @@ def get_team_statistics(team_id: int) -> Dict[str, Any]:
     """
     try:
         # ##: Get team details.
-        team = get_team_by_id(team_id)
+        team = get_team(team_id)
 
         elo_history = get_team_elo_history(team_id)
 
@@ -329,7 +329,7 @@ def get_active_team_rankings(limit: int = 100, days_since_last_match: Optional[i
         result = []
         for rank, team in enumerate(teams, 1):
             try:
-                team_response = get_team_by_id(team["team_id"])
+                team_response = get_team(team["team_id"])
                 team_response.rank = rank
                 result.append(team_response)
             except Exception as e:

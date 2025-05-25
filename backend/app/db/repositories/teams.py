@@ -121,7 +121,7 @@ def batch_insert_teams(teams: List[Dict[str, Any]]) -> List[Optional[int]]:
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_team(team_id: int) -> Optional[Dict[str, Any]]:
+def get_team_by_id(team_id: int) -> Optional[Dict[str, Any]]:
     """
     Get a team by ID.
 

@@ -14,7 +14,7 @@ from app.db.repositories.teams import (
     create_team,
     delete_team,
     get_all_teams,
-    get_team,
+    get_team_by_id,
     get_teams_by_player_id,
     update_team,
 )
@@ -28,7 +28,7 @@ from app.models.team import TeamCreate, TeamResponse, TeamUpdate
 from app.services import players as players_service
 
 
-def get_team_by_id(team_id: int) -> TeamResponse:
+def get_team(team_id: int) -> TeamResponse:
     """
     Retrieve a team by its ID with associated player details.
 
@@ -111,7 +111,7 @@ def get_teams_by_player_id(player_id: int) -> List[TeamResponse]:
     """
     try:
         teams = get_teams_by_player_id(player_id)
-        return [get_team_by_id(team["team_id"]) for team in teams]
+        return [get_team(team["team_id"]) for team in teams]
     except Exception as exc:
         logger.error(f"Error retrieving teams for player {player_id}: {exc}")
         raise TeamOperationError(f"Failed to retrieve teams for player {player_id}") from exc
@@ -165,7 +165,7 @@ def create_new_team(team_data: TeamCreate) -> TeamResponse:
             raise TeamOperationError("Failed to create team in the database.")
 
         # ##: Return the created team with full details.
-        return get_team_by_id(team_id)
+        return get_team(team_id)
 
     except (TeamAlreadyExistsError, InvalidTeamDataError, TeamOperationError):
         raise
@@ -205,7 +205,7 @@ def update_existing_team(team_id: int, team_update: TeamUpdate) -> TeamResponse:
     """
     try:
         # ##: Check if team exists.
-        if not get_team(team_id):
+        if not get_team_by_id(team_id):
             raise TeamNotFoundError(f"ID: {team_id}")
 
         # ##: Update the team in the database.
@@ -213,7 +213,7 @@ def update_existing_team(team_id: int, team_update: TeamUpdate) -> TeamResponse:
         if not success:
             raise TeamOperationError(f"Failed to update team with ID {team_id}")
 
-        return get_team_by_id(team_id)
+        return get_team(team_id)
 
     except TeamNotFoundError:
         raise
@@ -287,7 +287,7 @@ def get_all_teams_with_stats(skip: int = 0, limit: int = 100) -> List[TeamRespon
     """
     try:
         teams = get_all_teams(limit=limit, offset=skip)
-        responses = [get_team_by_id(team["team_id"]) for team in teams]
+        responses = [get_team(team["team_id"]) for team in teams]
         return responses
     except Exception as exc:
         logger.error(f"Error retrieving teams: {exc}")

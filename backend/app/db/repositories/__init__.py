@@ -34,7 +34,7 @@ from app.db.repositories.teams import (
     create_team,
     delete_team,
     get_all_teams,
-    get_team,
+    get_team_by_id,
     get_teams_by_player_id,
     update_team,
 )
@@ -56,7 +56,7 @@ __all__ = [
     "batch_insert_players",
     # ##: Teams.
     "create_team",
-    "get_team",
+    "get_team_by_id",
     "get_all_teams",
     "update_team",
     "delete_team",
