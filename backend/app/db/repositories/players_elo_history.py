@@ -126,7 +126,7 @@ def batch_record_player_elo_updates(elo_updates: List[Dict[str, Any]]) -> List[O
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_player_elo_history(
+def get_player_elo_history_by_id(
     player_id: int,
     limit: int = 100,
     offset: int = 0,

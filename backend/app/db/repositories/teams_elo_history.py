@@ -125,7 +125,7 @@ def batch_record_team_elo_updates(elo_updates: List[Dict[str, Any]]) -> List[Opt
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_team_elo_history(
+def get_team_elo_history_by_id(
     team_id: int,
     limit: int = 100,
     offset: int = 0,
