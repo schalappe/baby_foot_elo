@@ -77,7 +77,7 @@ const MatchHistoryPage = () => {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const PAGE_SIZE = 10; // Number of matches per page
+  const PAGE_SIZE = 30; // Number of matches per page
 
   const filteredMatches = useMemo(() => {
     let tempMatches = matches;
