@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 from loguru import logger
 
 from app.db.builders import SelectQueryBuilder
-from app.db.repositories.players import get_player
+from app.db.repositories.players import get_player_by_id_or_name
 from app.db.repositories.teams import get_team
 from app.db.session import with_retry
 
@@ -169,7 +169,7 @@ def get_player_stats(player_id: int) -> Optional[Dict[str, Any]]:
     """
     try:
         # ##: Get player details.
-        player = get_player(player_id)
+        player = get_player_by_id_or_name(player_id=player_id)
         if not player:
             return None
         match_stats = get_player_match_stats(player_id)

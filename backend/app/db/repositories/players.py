@@ -87,32 +87,38 @@ def batch_insert_players(players: List[Dict[str, Any]]) -> List[Optional[int]]:
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_player(player_id: int) -> Optional[Dict[str, Any]]:
+def get_player_by_id_or_name(player_id: Optional[int] = None, name: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """
-    Get a player by ID.
+    Get a player by ID or name.
 
     Parameters
     ----------
-    player_id : int
+    player_id : Optional[int]
         ID of the player to retrieve.
+    name : Optional[str]
+        Name of the player to find.
 
     Returns
     -------
     Optional[Dict[str, Any]]
         Player data as a dictionary, or None if not found.
+
+    Raises
+    ------
+    ValueError
+        If neither player_id nor name is provided.
     """
+    if player_id is None and name is None:
+        raise ValueError("Either player_id or name must be provided.")
+
     try:
-        result = (
-            SelectQueryBuilder("Players")
-            .select(
-                "player_id",
-                "name",
-                "global_elo",
-                "created_at",
-            )
-            .where("player_id = ?", player_id)
-            .execute(fetch_all=False)
-        )
+        query_builder = SelectQueryBuilder("Players").select("player_id", "name", "global_elo", "created_at")
+        if player_id is not None:
+            query_builder.where("player_id = ?", player_id)
+        if name is not None:
+            query_builder.where("name = ?", name)
+
+        result = query_builder.execute(fetch_all=False)
         if result:
             return {
                 "player_id": result[0],
@@ -122,35 +128,7 @@ def get_player(player_id: int) -> Optional[Dict[str, Any]]:
             }
         return None
     except Exception as exc:
-        logger.error(f"Failed to get player by ID {player_id}: {exc}")
-        return None
-
-
-@with_retry(max_retries=3, retry_delay=0.5)
-def get_player_by_name(name: str) -> Optional[Dict[str, Any]]:
-    """
-    Get a player by name.
-
-    Parameters
-    ----------
-    name : str
-        Name of the player to find.
-
-    Returns
-    -------
-    Optional[Dict[str, Any]]
-        Player data if found, None otherwise.
-    """
-    try:
-        query, params = SelectQueryBuilder("Players").where("name = ?", name).build()
-        with transaction() as db_manager:
-            player = db_manager.fetchone(query, params)
-
-        if player:
-            return dict(zip(["player_id", "name", "global_elo", "created_at"], player))
-        return None
-    except Exception as e:
-        logger.error(f"Error getting player by name '{name}': {e}")
+        logger.error(f"Failed to get player by ID {player_id} or name {name}: {exc}")
         return None
 
 
@@ -215,88 +193,71 @@ def update_player(
     bool
         True if the player was updated successfully, False otherwise.
     """
+    update_fields = {}
+    if name is not None:
+        update_fields["name"] = name
+    if global_elo is not None:
+        update_fields["global_elo"] = global_elo
+
+    if not update_fields:
+        logger.warning(f"No fields to update for player ID {player_id}.")
+        return False
+
     try:
-        update_builder = UpdateQueryBuilder("Players")
-        if name is not None:
-            update_builder.set(name=name)
-        if global_elo is not None:
-            update_builder.set(global_elo=global_elo)
-        if not update_builder.set_clauses:
-            return False
-
-        update_builder.where("player_id = ?", player_id)
-        query, params = update_builder.build()
-
+        query, params = UpdateQueryBuilder("Players").set(**update_fields).where("player_id = ?", player_id).build()
         with transaction() as db_manager:
-            result = db_manager.fetchone(query, params)
-            return bool(result[0])
+            db_manager.execute(query, params)
+        logger.info(f"Player ID {player_id} updated successfully.")
+        return True
     except Exception as exc:
         logger.error(f"Failed to update player ID {player_id}: {exc}")
         return False
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def batch_update_players(players: List[Dict[str, Any]]) -> List[bool]:
+def batch_update_players(players: List[Dict[str, Any]]) -> bool:
     """
-    Batch update players in the database.
+    Batch update player information.
 
     Parameters
     ----------
     players : List[Dict[str, Any]]
-        A list of dictionaries, where each dictionary represents a player
-        and contains 'player_id' and other fields to update (e.g., 'name', 'global_elo').
+        A list of dictionaries, where each dictionary contains 'player_id' and
+        the fields to update (e.g., 'global_elo', 'name').
 
     Returns
     -------
-    List[bool]
-        A list of booleans indicating the success of each individual player update.
+    bool
+        True if the batch update was successful, False otherwise.
     """
-    results: List[bool] = []
-    queries_and_params: List[tuple[str, tuple]] = []
+    try:
+        with transaction() as db_manager:
+            for player_data in players:
+                player_id = player_data.get("player_id")
+                if player_id is None:
+                    logger.warning("Skipping player update due to missing player_id.")
+                    continue
 
-    for player_data in players:
-        player_id = player_data.get("player_id")
-        if player_id is None:
-            logger.warning("Skipping player data without 'player_id' in batch update.")
-            results.append(False)
-            continue
+                update_fields = {key: value for key, value in player_data.items() if key != "player_id"}
+                if not update_fields:
+                    logger.warning(f"No fields to update for player ID {player_id}.")
+                    continue
 
-        update_builder = UpdateQueryBuilder("Players")
-        updated_fields = False
-        if "name" in player_data:
-            update_builder.set(name=player_data["name"])
-            updated_fields = True
-        if "global_elo" in player_data:
-            update_builder.set(global_elo=player_data["global_elo"])
-            updated_fields = True
-
-        if not updated_fields:
-            logger.warning(f"No fields to update for player ID {player_id}.")
-            results.append(False)
-            continue
-
-        update_builder.where("player_id = ?", player_id)
-        query, params = update_builder.build()
-        queries_and_params.append((query, params))
-
-    if not queries_and_params:
-        return []
-
-    with transaction() as db_manager:
-        for query, params in queries_and_params:
-            try:
-                result = db_manager.fetchone(query, params)
-                results.append(bool(result[0]) if result else False)
-            except Exception as exc:
-                logger.error(f"Error updating player in batch: {exc}")
-                results.append(False)
-    return results
+                query, params = (
+                    UpdateQueryBuilder("Players").set(**update_fields).where("player_id = ?", player_id).build()
+                )
+                db_manager.execute(query, params)
+        logger.info("Batch update of players completed successfully.")
+        return True
+    except Exception as exc:
+        logger.error(f"Failed during batch update of players: {exc}")
+        return False
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
 def delete_player(player_id: int) -> bool:
     """
-    Delete a player from the database.
+    Delete a player by ID.
 
     Parameters
     ----------
@@ -306,12 +267,10 @@ def delete_player(player_id: int) -> bool:
     Returns
     -------
     bool
-        True if the player was deleted successfully, False otherwise
+        True if the player was deleted successfully, False otherwise.
     """
     try:
-        delete_builder = DeleteQueryBuilder("Players").where("player_id = ?", player_id)
-        query, params = delete_builder.build()
-
+        query, params = DeleteQueryBuilder("Players").where("player_id = ?", player_id).build()
         with transaction() as db_manager:
             result = db_manager.fetchone(query, params)
             return bool(result[0])

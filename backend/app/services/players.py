@@ -11,7 +11,7 @@ from app.db.repositories.players import (
     create_player,
     delete_player,
     get_all_players,
-    get_player_by_name,
+    get_player_by_id_or_name,
     update_player,
 )
 from app.db.repositories.players_elo_history import get_player_elo_history
@@ -100,7 +100,7 @@ def create_new_player(player_data: PlayerCreate) -> PlayerResponse:
         raise InvalidPlayerDataError("Player name cannot be empty or whitespace only")
 
     # ##: Check for existing player with same name.
-    existing_player = get_player_by_name(player_data.name)
+    existing_player = get_player_by_id_or_name(name=player_data.name)
     if existing_player:
         raise PlayerAlreadyExistsError(player_data.name)
 
@@ -166,7 +166,7 @@ def update_existing_player(player_id: int, player_update: PlayerUpdate) -> Playe
 
         # ##: If name is being updated, check for conflicts
         if player_update.name and player_update.name != existing_player.name:
-            conflict_player = get_player_by_name(player_update.name)
+            conflict_player = get_player_by_id_or_name(name=player_update.name)
             if conflict_player and conflict_player.player_id != player_id:
                 raise PlayerAlreadyExistsError(player_update.name)
 
