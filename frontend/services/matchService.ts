@@ -20,6 +20,12 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+/**
+ * Fetches all matches from the backend.
+ *
+ * @returns A promise that resolves to an array of Match objects.
+ * @throws {Error} If the API request fails.
+ */
 export const getMatches = async (): Promise<Match[]> => {
   try {
     const response = await axios.get(`${API_URL}/matches`);
@@ -30,6 +36,13 @@ export const getMatches = async (): Promise<Match[]> => {
   }
 };
 
+/**
+ * Fetches a single match by its ID, including player details.
+ *
+ * @param id - The unique identifier of the match.
+ * @returns A promise that resolves to a BackendMatchWithEloResponse object, or undefined if not found.
+ * @throws {Error} If the API request fails.
+ */
 export const getMatchWithPlayerDetailsById = async (
   id: string,
 ): Promise<BackendMatchWithEloResponse | undefined> => {
@@ -42,6 +55,13 @@ export const getMatchWithPlayerDetailsById = async (
   }
 };
 
+/**
+ * Fetches a single match by its ID, including team details.
+ *
+ * @param id - The unique identifier of the match.
+ * @returns A promise that resolves to a BackendMatchWithEloResponse object, or undefined if not found.
+ * @throws {Error} If the API request fails.
+ */
 export const getMatchWithTeamDetailsById = async (
   id: string,
 ): Promise<BackendMatchWithEloResponse | undefined> => {
@@ -54,6 +74,13 @@ export const getMatchWithTeamDetailsById = async (
   }
 };
 
+/**
+ * Creates a new match with the provided data.
+ *
+ * @param matchData - The data for the match to be created.
+ * @returns A promise that resolves to the newly created BackendMatchWithEloResponse object.
+ * @throws {Error} If the match creation fails.
+ */
 export const createMatch = async (
   matchData: BackendMatchCreatePayload,
 ): Promise<BackendMatchWithEloResponse> => {

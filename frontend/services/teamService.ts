@@ -17,7 +17,12 @@ import { Team, TeamStatistics, TeamMatchWithElo } from "@/types/team.types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// Fetch team rankings (sorted by Elo descending).
+/**
+ * Fetches team rankings, sorted by Elo in descending order.
+ *
+ * @returns A promise that resolves to an array of Team objects, sorted by rank.
+ * @throws {Error} If the API request fails.
+ */
 export const getTeamRankings = async (): Promise<Team[]> => {
   try {
     const response = await axios.get<Team[]>(`${API_URL}/teams/rankings`, {
@@ -32,7 +37,14 @@ export const getTeamRankings = async (): Promise<Team[]> => {
   }
 };
 
-// Function to find an existing team or create a new one.
+/**
+ * Finds an existing team based on player IDs or creates a new one if it doesn't exist.
+ *
+ * @param player1_id - The ID of the first player in the team.
+ * @param player2_id - The ID of the second player in the team.
+ * @returns A promise that resolves to the found or newly created Team object.
+ * @throws {Error} If the team cannot be found or created.
+ */
 export const findOrCreateTeam = async (
   player1_id: number,
   player2_id: number,
@@ -52,26 +64,14 @@ export const findOrCreateTeam = async (
   }
 };
 
-// Fetch team details by ID (with player details)
 /**
- * Fetch detailed information about a specific team by ID, including player details.
+ * Fetches detailed information about a specific team by ID, including player details.
  *
  * Calls the backend endpoint `/teams/{team_id}` and returns a Team object with nested player1 and player2.
  *
- * Parameters
- * ----------
- * teamId : number
- *     The ID of the team to fetch.
- *
- * Returns
- * -------
- * Promise<Team>
- *     The team details, including player information.
- *
- * Throws
- * ------
- * Error
- *     If the request fails or the team is not found.
+ * @param teamId - The ID of the team to fetch.
+ * @returns A promise that resolves to the Team object with player details.
+ * @throws {Error} If the team is not found or the request fails.
  */
 export const getTeamById = async (teamId: number): Promise<Team> => {
   try {
@@ -84,12 +84,13 @@ export const getTeamById = async (teamId: number): Promise<Team> => {
 };
 
 /**
- * Fetch detailed statistics for a specific team by ID.
+ * Fetches detailed statistics for a specific team by ID.
  *
  * Calls the backend endpoint `/teams/{team_id}/statistics` and returns a TeamStatistics object.
  *
- * @param team_id - The ID of the team to fetch statistics for
- * @returns Promise<TeamStatistics> - Team statistics data
+ * @param team_id - The ID of the team to fetch statistics for.
+ * @returns A promise that resolves to the TeamStatistics object.
+ * @throws {Error} If the team statistics cannot be fetched or the request fails.
  */
 export const getTeamStatistics = async (
   team_id: number,
@@ -108,17 +109,16 @@ export const getTeamStatistics = async (
   }
 };
 
-// Fetch team matches (paginated, with ELO change info)
 /**
- * Fetch matches for a specific team by team ID, with pagination.
+ * Fetches matches for a specific team by team ID, with pagination.
  *
  * Calls the backend endpoint `/teams/{team_id}/matches?skip=&limit=` and returns a TeamMatchWithElo[] array.
  *
- * @param teamId - The ID of the team to fetch matches for
- * @param params - Optional pagination parameters: skip (number), limit (number)
- * @returns Promise<TeamMatchWithElo[]> - Array of matches with ELO info
+ * @param teamId - The ID of the team to fetch matches for.
+ * @param params - Optional pagination parameters: skip (number), limit (number).
+ * @returns A promise that resolves to an array of TeamMatchWithElo objects.
+ * @throws {Error} If the matches cannot be fetched or the request fails.
  */
-
 export const getTeamMatches = async (
   teamId: number,
   params?: { skip?: number; limit?: number },

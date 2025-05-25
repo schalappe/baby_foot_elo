@@ -22,6 +22,13 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+/**
+ * Fetches all players from the backend. Can be filtered using optional parameters.
+ *
+ * @param params - Optional parameters for filtering players (e.g., name, limit, offset).
+ * @returns A promise that resolves to an array of Player objects.
+ * @throws {Error} If the API request fails.
+ */
 export const getPlayers = async (
   params?: GetPlayersParams,
 ): Promise<Player[]> => {
@@ -42,6 +49,13 @@ export const getPlayers = async (
   }
 };
 
+/**
+ * Fetches a single player by their ID.
+ *
+ * @param playerId - The unique identifier of the player.
+ * @returns A promise that resolves to a Player object.
+ * @throws {Error} If the player is not found or the API request fails.
+ */
 export const getPlayerById = async (playerId: number): Promise<Player> => {
   try {
     const response = await axios.get(`${API_URL}/players/${playerId}`);
@@ -55,6 +69,13 @@ export const getPlayerById = async (playerId: number): Promise<Player> => {
   }
 };
 
+/**
+ * Creates a new player with the given name.
+ *
+ * @param name - The name of the player to create.
+ * @returns A promise that resolves to the newly created Player object.
+ * @throws {Error} If the player creation fails.
+ */
 export const createPlayer = async (name: string): Promise<Player> => {
   try {
     const response = await axios.post(`${API_URL}/players`, { name });
@@ -65,6 +86,12 @@ export const createPlayer = async (name: string): Promise<Player> => {
   }
 };
 
+/**
+ * Fetches a list of players ordered by their global ELO ranking.
+ *
+ * @returns A promise that resolves to an array of Player objects, sorted by rank.
+ * @throws {Error} If the API request fails.
+ */
 export const getPlayerRankings = async (): Promise<Player[]> => {
   try {
     const response = await axios.get<Player[]>(`${API_URL}/players/rankings`, {
@@ -79,6 +106,13 @@ export const getPlayerRankings = async (): Promise<Player[]> => {
   }
 };
 
+/**
+ * Fetches detailed statistics for a specific player.
+ *
+ * @param playerId - The unique identifier of the player.
+ * @returns A promise that resolves to a PlayerStats object.
+ * @throws {Error} If the player statistics are not found or the API request fails.
+ */
 export const getPlayerStats = async (
   playerId: number,
 ): Promise<PlayerStats> => {
@@ -96,6 +130,14 @@ export const getPlayerStats = async (
   }
 };
 
+/**
+ * Fetches a list of matches played by a specific player.
+ *
+ * @param playerId - The unique identifier of the player.
+ * @param params - Optional parameters for filtering matches (e.g., limit, offset, date range).
+ * @returns A promise that resolves to an array of BackendMatchWithEloResponse objects.
+ * @throws {Error} If the API request fails.
+ */
 export const getPlayerMatches = async (
   playerId: number,
   params?: GetPlayerMatchesParams,
