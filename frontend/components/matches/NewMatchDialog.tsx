@@ -32,7 +32,7 @@ export function NewMatchDialog() {
           Ajouter une Partie
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[700px] md:max-w-[900px] lg:max-w-[1200px] max-h-[90vh]">
+      <DialogContent className="sm:max-w-[700px]">
         <DialogHeader>
           <DialogTitle>Créer un nouveau match</DialogTitle>
           <DialogDescription>

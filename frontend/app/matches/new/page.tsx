@@ -28,19 +28,13 @@ import { CalendarIcon, AlertCircle, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/components/ui/popoverDialog";
 import {
   Select,
   SelectContent,
@@ -292,300 +286,289 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
-      <Card className="w-full">
-        <CardContent>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Team A Players */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="teamAPlayer1">Équipe A - Joueur 1</Label>
-                <Controller
-                  control={control}
-                  name="teamAPlayer1"
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner le joueur 1" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>Joueurs</SelectLabel>
-                          {getAvailablePlayers(
-                            allPlayers,
-                            selectedPlayerIds(),
-                            field.value,
-                          ).map((player) => (
-                            <SelectItem
-                              key={player.player_id}
-                              value={player.player_id.toString()}
-                            >
-                              {player.name}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.teamAPlayer1 && (
-                  <p className="text-red-500 text-sm">
-                    {errors.teamAPlayer1.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="teamAPlayer2">Équipe A - Joueur 2</Label>
-                <Controller
-                  control={control}
-                  name="teamAPlayer2"
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner le joueur 2" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>Joueurs</SelectLabel>
-                          {getAvailablePlayers(
-                            allPlayers,
-                            selectedPlayerIds(),
-                            field.value,
-                          ).map((player) => (
-                            <SelectItem
-                              key={player.player_id}
-                              value={player.player_id.toString()}
-                            >
-                              {player.name}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.teamAPlayer2 && (
-                  <p className="text-red-500 text-sm">
-                    {errors.teamAPlayer2.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Team B Players */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="teamBPlayer1">Équipe B - Joueur 1</Label>
-                <Controller
-                  control={control}
-                  name="teamBPlayer1"
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner le joueur 1" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>Joueurs</SelectLabel>
-                          {getAvailablePlayers(
-                            allPlayers,
-                            selectedPlayerIds(),
-                            field.value,
-                          ).map((player) => (
-                            <SelectItem
-                              key={player.player_id}
-                              value={player.player_id.toString()}
-                            >
-                              {player.name}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.teamBPlayer1 && (
-                  <p className="text-red-500 text-sm">
-                    {errors.teamBPlayer1.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="teamBPlayer2">Équipe B - Joueur 2</Label>
-                <Controller
-                  control={control}
-                  name="teamBPlayer2"
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner le joueur 2" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>Joueurs</SelectLabel>
-                          {getAvailablePlayers(
-                            allPlayers,
-                            selectedPlayerIds(),
-                            field.value,
-                          ).map((player) => (
-                            <SelectItem
-                              key={player.player_id}
-                              value={player.player_id.toString()}
-                            >
-                              {player.name}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.teamBPlayer2 && (
-                  <p className="text-red-500 text-sm">
-                    {errors.teamBPlayer2.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Winning Team */}
-            <div className="space-y-2">
-              <Label htmlFor="winningTeam">Équipe gagnante</Label>
-              <Controller
-                control={control}
-                name="winningTeam"
-                render={({ field }) => (
-                  <RadioGroup
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    className="flex space-x-4"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="A" id="winningTeamA" />
-                      <Label htmlFor="winningTeamA">Équipe A</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="B" id="winningTeamB" />
-                      <Label htmlFor="winningTeamB">Équipe B</Label>
-                    </div>
-                  </RadioGroup>
-                )}
-              />
-              {errors.winningTeam && (
-                <p className="text-red-500 text-sm">
-                  {errors.winningTeam.message}
-                </p>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Team A Players */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="teamAPlayer1">Équipe A - Joueur 1</Label>
+            <Controller
+              control={control}
+              name="teamAPlayer1"
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner le joueur 1" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Joueurs</SelectLabel>
+                      {getAvailablePlayers(
+                        allPlayers,
+                        selectedPlayerIds(),
+                        field.value,
+                      ).map((player) => (
+                        <SelectItem
+                          key={player.player_id}
+                          value={player.player_id.toString()}
+                        >
+                          {player.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               )}
-            </div>
-
-            {/* Is Fanny */}
-            <div className="flex items-center space-x-2">
-              <Controller
-                control={control}
-                name="isFanny"
-                render={({ field }) => (
-                  <Checkbox
-                    id="isFanny"
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                )}
-              />
-              <Label htmlFor="isFanny">Fanny</Label>
-            </div>
-
-            {/* Match Date */}
-            <div className="space-y-2">
-              <Label htmlFor="matchDate">Date du match</Label>
-              <Controller
-                control={control}
-                name="matchDate"
-                render={({ field }) => (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !field.value && "text-muted-foreground",
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {field.value ? (
-                          format(field.value, "PPP", { locale: fr })
-                        ) : (
-                          <span>Choisir une date</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                )}
-              />
-              {errors.matchDate && (
-                <p className="text-red-500 text-sm">
-                  {errors.matchDate.message}
-                </p>
-              )}
-            </div>
-
-            {/* Notes */}
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes (optionnel)</Label>
-              <Controller
-                control={control}
-                name="notes"
-                render={({ field }) => (
-                  <Textarea
-                    id="notes"
-                    placeholder="Ajouter des notes sur le match..."
-                    {...field}
-                    value={field.value || ""}
-                  />
-                )}
-              />
-              {errors.notes && (
-                <p className="text-red-500 text-sm">{errors.notes.message}</p>
-              )}
-            </div>
-
-            {/* Submission Status Alert */}
-            {submissionStatus && (
-              <Alert
-                variant={
-                  submissionStatus.type === "success"
-                    ? "default"
-                    : "destructive"
-                }
-                className={
-                  submissionStatus.type === "success"
-                    ? "bg-green-100 border-green-400 text-green-700"
-                    : ""
-                }
-              >
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>
-                  {submissionStatus.type === "success" ? "Succès" : "Erreur"}
-                </AlertTitle>
-                <AlertDescription>{submissionStatus.message}</AlertDescription>
-              </Alert>
+            />
+            {errors.teamAPlayer1 && (
+              <p className="text-red-500 text-sm">
+                {errors.teamAPlayer1.message}
+              </p>
             )}
-
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="teamAPlayer2">Équipe A - Joueur 2</Label>
+            <Controller
+              control={control}
+              name="teamAPlayer2"
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner le joueur 2" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Joueurs</SelectLabel>
+                      {getAvailablePlayers(
+                        allPlayers,
+                        selectedPlayerIds(),
+                        field.value,
+                      ).map((player) => (
+                        <SelectItem
+                          key={player.player_id}
+                          value={player.player_id.toString()}
+                        >
+                          {player.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               )}
-              Créer le match
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+            />
+            {errors.teamAPlayer2 && (
+              <p className="text-red-500 text-sm">
+                {errors.teamAPlayer2.message}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Team B Players */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="teamBPlayer1">Équipe B - Joueur 1</Label>
+            <Controller
+              control={control}
+              name="teamBPlayer1"
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner le joueur 1" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Joueurs</SelectLabel>
+                      {getAvailablePlayers(
+                        allPlayers,
+                        selectedPlayerIds(),
+                        field.value,
+                      ).map((player) => (
+                        <SelectItem
+                          key={player.player_id}
+                          value={player.player_id.toString()}
+                        >
+                          {player.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {errors.teamBPlayer1 && (
+              <p className="text-red-500 text-sm">
+                {errors.teamBPlayer1.message}
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="teamBPlayer2">Équipe B - Joueur 2</Label>
+            <Controller
+              control={control}
+              name="teamBPlayer2"
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner le joueur 2" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Joueurs</SelectLabel>
+                      {getAvailablePlayers(
+                        allPlayers,
+                        selectedPlayerIds(),
+                        field.value,
+                      ).map((player) => (
+                        <SelectItem
+                          key={player.player_id}
+                          value={player.player_id.toString()}
+                        >
+                          {player.name}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {errors.teamBPlayer2 && (
+              <p className="text-red-500 text-sm">
+                {errors.teamBPlayer2.message}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Winning Team */}
+        <div className="space-y-2">
+          <Label htmlFor="winningTeam">Équipe gagnante</Label>
+          <Controller
+            control={control}
+            name="winningTeam"
+            render={({ field }) => (
+              <RadioGroup
+                onValueChange={field.onChange}
+                value={field.value}
+                className="flex space-x-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="A" id="winningTeamA" />
+                  <Label htmlFor="winningTeamA">Équipe A</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="B" id="winningTeamB" />
+                  <Label htmlFor="winningTeamB">Équipe B</Label>
+                </div>
+              </RadioGroup>
+            )}
+          />
+          {errors.winningTeam && (
+            <p className="text-red-500 text-sm">{errors.winningTeam.message}</p>
+          )}
+        </div>
+
+        {/* Is Fanny */}
+        <div className="flex items-center space-x-2">
+          <Controller
+            control={control}
+            name="isFanny"
+            render={({ field }) => (
+              <Checkbox
+                id="isFanny"
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            )}
+          />
+          <Label htmlFor="isFanny">Fanny</Label>
+        </div>
+
+        {/* Match Date */}
+        <div className="space-y-2">
+          <Label htmlFor="matchDate">Date du match</Label>
+          <Controller
+            control={control}
+            name="matchDate"
+            render={({ field }) => (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !field.value && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {field.value ? (
+                      format(field.value, "PPP", { locale: fr })
+                    ) : (
+                      <span>Choisir une date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={field.value}
+                    locale={fr}
+                    onSelect={field.onChange}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+          />
+          {errors.matchDate && (
+            <p className="text-red-500 text-sm">{errors.matchDate.message}</p>
+          )}
+        </div>
+
+        {/* Notes */}
+        <div className="space-y-2">
+          <Label htmlFor="notes">Notes (optionnel)</Label>
+          <Controller
+            control={control}
+            name="notes"
+            render={({ field }) => (
+              <Textarea
+                id="notes"
+                placeholder="Ajouter des notes sur le match..."
+                {...field}
+                value={field.value || ""}
+              />
+            )}
+          />
+          {errors.notes && (
+            <p className="text-red-500 text-sm">{errors.notes.message}</p>
+          )}
+        </div>
+
+        {/* Submission Status Alert */}
+        {submissionStatus && (
+          <Alert
+            variant={
+              submissionStatus.type === "success" ? "default" : "destructive"
+            }
+            className={
+              submissionStatus.type === "success"
+                ? "bg-green-100 border-green-400 text-green-700"
+                : ""
+            }
+          >
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>
+              {submissionStatus.type === "success" ? "Succès" : "Erreur"}
+            </AlertTitle>
+            <AlertDescription>{submissionStatus.message}</AlertDescription>
+          </Alert>
+        )}
+
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Créer le match
+        </Button>
+      </form>
     </div>
   );
 };
