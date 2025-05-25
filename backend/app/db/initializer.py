@@ -8,9 +8,9 @@ from sys import stderr
 
 from loguru import logger
 
-from app.schemas import matches, players, players_elo_history, teams, teams_elo_history
 from app.core import config
 from app.db.database import DatabaseManager
+from app.schemas import matches, players, players_elo_history, teams, teams_elo_history
 
 # ##: Constants for database initialization.
 SEQUENCES = [
