@@ -14,7 +14,7 @@ from app.db.repositories.players import (
     get_player_by_id_or_name,
     update_player_name_or_elo,
 )
-from app.db.repositories.players_elo_history import get_player_elo_history
+from app.db.repositories.players_elo_history import get_player_elo_history_by_id
 from app.db.repositories.stats import get_player_stats
 from app.db.repositories.teams import create_team_by_player_ids
 from app.exceptions.players import (
@@ -27,7 +27,7 @@ from app.models.elo_history import EloHistoryResponse
 from app.models.player import PlayerCreate, PlayerResponse, PlayerUpdate
 
 
-def get_player_by_id(player_id: int) -> PlayerResponse:
+def get_player(player_id: int) -> PlayerResponse:
     """
     Retrieve a player by their ID with associated statistics.
 
@@ -70,6 +70,44 @@ def get_player_by_id(player_id: int) -> PlayerResponse:
     except Exception as exc:
         logger.error(f"Error retrieving player with ID {player_id}: {exc}")
         raise PlayerOperationError(f"Failed to retrieve player with ID {player_id}") from exc
+
+
+# ##: TODO: Delete a player should also delete all teams and matches associated with it.
+# and recalculate ELO ratings for all players.
+def delete_player(player_id: int) -> bool:
+    """
+    Delete a player by their ID.
+
+    Parameters
+    ----------
+    player_id : int
+        The ID of the player to delete.
+
+    Returns
+    -------
+    bool
+        True if the player was deleted successfully, False otherwise.
+
+    Raises
+    ------
+    PlayerOperationError
+        If the deletion operation fails.
+    """
+    try:
+        # ##: Check if player exists first
+        existing_player = get_player_by_id(player_id)
+        if not existing_player:
+            raise PlayerNotFoundError(f"ID: {player_id}")
+
+        success = delete_player_by_id(player_id)
+        if not success:
+            raise PlayerOperationError(f"Failed to delete player with ID {player_id}")
+        return True
+    except PlayerNotFoundError:
+        raise
+    except Exception as exc:
+        logger.error(f"Error deleting player with ID {player_id}: {exc}")
+        raise PlayerOperationError(f"Failed to delete player with ID {player_id}") from exc
 
 
 def create_new_player(player_data: PlayerCreate) -> PlayerResponse:
@@ -185,44 +223,6 @@ def update_existing_player(player_id: int, player_update: PlayerUpdate) -> Playe
         raise PlayerOperationError(f"Failed to update player with ID {player_id}") from exc
 
 
-# ##: TODO: Delete a player should also delete all teams and matches associated with it.
-# and recalculate ELO ratings for all players.
-def delete_player(player_id: int) -> bool:
-    """
-    Delete a player by their ID.
-
-    Parameters
-    ----------
-    player_id : int
-        The ID of the player to delete.
-
-    Returns
-    -------
-    bool
-        True if the player was deleted successfully, False otherwise.
-
-    Raises
-    ------
-    PlayerOperationError
-        If the deletion operation fails.
-    """
-    try:
-        # ##: Check if player exists first
-        existing_player = get_player_by_id(player_id)
-        if not existing_player:
-            raise PlayerNotFoundError(f"ID: {player_id}")
-
-        success = delete_player_by_id(player_id)
-        if not success:
-            raise PlayerOperationError(f"Failed to delete player with ID {player_id}")
-        return True
-    except PlayerNotFoundError:
-        raise
-    except Exception as exc:
-        logger.error(f"Error deleting player with ID {player_id}: {exc}")
-        raise PlayerOperationError(f"Failed to delete player with ID {player_id}") from exc
-
-
 def get_all_players_with_stats() -> List[PlayerResponse]:
     """
     Retrieve all players with their statistics.
@@ -246,9 +246,7 @@ def get_all_players_with_stats() -> List[PlayerResponse]:
         raise PlayerOperationError("Failed to retrieve all players with statistics") from exc
 
 
-def get_player_elo_history_by_id(
-    player_id: int, limit: int = 100, offset: int = 0, **filters
-) -> List[EloHistoryResponse]:
+def get_player_elo_history(player_id: int, limit: int = 100, offset: int = 0, **filters) -> List[EloHistoryResponse]:
     """
     Retrieve a paginated list of ELO history records for a specific player.
 
@@ -269,7 +267,7 @@ def get_player_elo_history_by_id(
         A list of ELO history records for the player.
     """
     try:
-        elo_history = get_player_elo_history(player_id, limit, offset, **filters)
+        elo_history = get_player_elo_history_by_id(player_id, limit, offset, **filters)
         return [EloHistoryResponse(**history) for history in elo_history]
     except Exception as exc:
         logger.error(f"Error retrieving ELO history for player {player_id}: {exc}")
