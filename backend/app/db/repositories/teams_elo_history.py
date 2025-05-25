@@ -185,50 +185,7 @@ def get_team_elo_history(
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_team_elo_history_by_match(match_id: int) -> List[Dict[str, Any]]:
-    """
-    Get all team ELO history records for a specific match.
-
-    Parameters
-    ----------
-    match_id : int
-        ID of the match.
-
-    Returns
-    -------
-    List[Dict[str, Any]]
-        List of ELO history records for the match.
-    """
-    try:
-        with transaction() as db:
-            query, params = (
-                SelectQueryBuilder("Teams_ELO_History")
-                .select("*")
-                .where("match_id = ?", match_id)
-                .order_by_clause("history_id ASC")
-                .build()
-            )
-
-            rows = db.fetchall(query, params)
-            return [
-                {
-                    "history_id": row[0],
-                    "team_id": row[1],
-                    "match_id": row[2],
-                    "old_elo": row[3],
-                    "new_elo": row[4],
-                    "difference": row[5],
-                    "date": row[6],
-                }
-                for row in rows
-            ]
-    except Exception as exc:
-        logger.error(f"Failed to get team ELO history by match: {exc}")
-        return []
-
-
-@with_retry(max_retries=3, retry_delay=0.5)
-def get_team_elo_history_by_team_match(team_id: int, match_id: int) -> Optional[Dict[str, Any]]:
+def get_team_elo_history_by_match_id(team_id: int, match_id: int) -> Optional[Dict[str, Any]]:
     """
     Get the ELO history record for a specific team and match combination.
 
@@ -269,3 +226,46 @@ def get_team_elo_history_by_team_match(team_id: int, match_id: int) -> Optional[
     except Exception as exc:
         logger.error(f"Failed to get team ELO history by team and match: {exc}")
         return None
+
+
+@with_retry(max_retries=3, retry_delay=0.5)
+def get_teams_elo_history_by_match_id(match_id: int) -> List[Dict[str, Any]]:
+    """
+    Get all team ELO history records for a specific match.
+
+    Parameters
+    ----------
+    match_id : int
+        ID of the match.
+
+    Returns
+    -------
+    List[Dict[str, Any]]
+        List of ELO history records for the match.
+    """
+    try:
+        with transaction() as db:
+            query, params = (
+                SelectQueryBuilder("Teams_ELO_History")
+                .select("*")
+                .where("match_id = ?", match_id)
+                .order_by_clause("history_id ASC")
+                .build()
+            )
+
+            rows = db.fetchall(query, params)
+            return [
+                {
+                    "history_id": row[0],
+                    "team_id": row[1],
+                    "match_id": row[2],
+                    "old_elo": row[3],
+                    "new_elo": row[4],
+                    "difference": row[5],
+                    "date": row[6],
+                }
+                for row in rows
+            ]
+    except Exception as exc:
+        logger.error(f"Failed to get team ELO history by match: {exc}")
+        return []

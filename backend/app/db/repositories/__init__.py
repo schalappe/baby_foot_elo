@@ -41,8 +41,8 @@ from app.db.repositories.teams import (
 from app.db.repositories.teams_elo_history import (
     batch_record_team_elo_updates,
     get_team_elo_history,
-    get_team_elo_history_by_match,
-    get_team_elo_history_by_team_match,
+    get_team_elo_history_by_match_id,
+    get_teams_elo_history_by_match_id,
     record_team_elo_update,
 )
 
@@ -81,8 +81,8 @@ __all__ = [
     "record_team_elo_update",
     "batch_record_team_elo_updates",
     "get_team_elo_history",
-    "get_team_elo_history_by_match",
-    "get_team_elo_history_by_team_match",
+    "get_team_elo_history_by_match_id",
+    "get_teams_elo_history_by_match_id",
     # ##: Stats.
     "get_player_stats",
     "get_team_stats",
