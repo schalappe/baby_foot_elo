@@ -24,9 +24,9 @@ from app.db.repositories.players import (
 from app.db.repositories.players_elo_history import (
     batch_record_player_elo_updates,
     get_player_elo_history,
-    get_player_elo_history_by_match,
-    get_player_elo_history_by_player_match,
-    record_elo_update,
+    get_player_elo_history_by_match_id,
+    get_players_elo_history_by_match_id,
+    record_player_elo_update,
 )
 from app.db.repositories.stats import get_player_stats, get_team_stats
 from app.db.repositories.teams import (
@@ -72,11 +72,11 @@ __all__ = [
     "get_matches_by_date_range",
     "get_fanny_matches",
     # ##: Players ELO History.
-    "record_elo_update",
+    "record_player_elo_update",
     "batch_record_player_elo_updates",
     "get_player_elo_history",
-    "get_player_elo_history_by_match",
-    "get_player_elo_history_by_player_match",
+    "get_player_elo_history_by_match_id",
+    "get_players_elo_history_by_match_id",
     # ##: Teams ELO History.
     "record_team_elo_update",
     "batch_record_team_elo_updates",
