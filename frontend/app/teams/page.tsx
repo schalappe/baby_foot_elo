@@ -45,11 +45,7 @@ export default function TeamRankingsPage() {
           Classement des Équipes
         </h1>
         <div className="flex space-x-2">
-          <NewMatchDialog>
-            <Button variant="outline" size="lg">
-              Ajouter une Partie
-            </Button>
-          </NewMatchDialog>
+          <NewMatchDialog />
         </div>
       </div>
       <TeamRankingsDisplay

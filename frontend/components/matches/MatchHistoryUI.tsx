@@ -403,11 +403,7 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
             </SelectGroup>
           </SelectContent>
         </Select>
-        <NewMatchDialog>
-          <Button variant="default" className="w-full md:w-auto">
-            Ajouter une Partie
-          </Button>
-        </NewMatchDialog>
+        <NewMatchDialog />
       </div>
       <Card>
         <CardContent className="p-0">

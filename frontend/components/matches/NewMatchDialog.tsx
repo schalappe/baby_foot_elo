@@ -3,6 +3,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -11,18 +12,12 @@ import { Button } from "@/components/ui/button";
 import NewMatchPage from "@/app/matches/new/page";
 import { useState } from "react";
 
-interface NewMatchDialogProps {
-  children: React.ReactNode;
-}
-
 /**
  * NewMatchDialog component provides a dialog for creating a new match.
  *
- * @param props - Props for the NewMatchDialog component.
- * @param props.children - React node to be used as the dialog trigger.
  * @returns The rendered NewMatchDialog component.
  */
-export function NewMatchDialog({ children }: NewMatchDialogProps) {
+export function NewMatchDialog() {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleMatchCreated = () => {
@@ -32,10 +27,17 @@ export function NewMatchDialog({ children }: NewMatchDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[700px] md:max-w-[900px] lg:max-w-[1200px] max-h-[90vh] overflow-y-auto">
+      <DialogTrigger asChild>
+        <Button variant="outline" size="lg">
+          Ajouter une Partie
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[700px] md:max-w-[900px] lg:max-w-[1200px] max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Ajouter une nouvelle partie</DialogTitle>
+          <DialogTitle>Créer un nouveau match</DialogTitle>
+          <DialogDescription>
+            Remplissez les informations suivantes pour créer un nouveau match.
+          </DialogDescription>
         </DialogHeader>
         <NewMatchPage onMatchCreated={handleMatchCreated} isDialog={true} />
       </DialogContent>

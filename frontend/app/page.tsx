@@ -81,11 +81,7 @@ export default function Home() {
             </DialogContent>
           </Dialog>
 
-          <NewMatchDialog>
-            <Button variant="outline" size="lg">
-              Ajouter une Partie
-            </Button>
-          </NewMatchDialog>
+          <NewMatchDialog />
         </div>
       </div>
       <PlayerRankingsDisplay

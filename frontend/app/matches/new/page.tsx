@@ -293,14 +293,6 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
   return (
     <div className="container mx-auto p-4 max-w-2xl">
       <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">
-            Créer un nouveau match
-          </CardTitle>
-          <CardDescription>
-            Remplissez les détails du match ci-dessous.
-          </CardDescription>
-        </CardHeader>
         <CardContent>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Team A Players */}
