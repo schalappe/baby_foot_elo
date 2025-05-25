@@ -53,23 +53,88 @@ import {
   PaginationNext,
 } from "@/components/ui/pagination";
 
+/**
+ * Props for the MatchHistoryUI component.
+ */
 interface MatchHistoryUIProps {
+  /**
+   * Array of match data.
+   */
   matches: Match[];
+  /**
+   * Array of all players for filtering.
+   */
   allPlayers: Player[];
+  /**
+   * Loading state for matches.
+   */
   matchesLoading: boolean;
+  /**
+   * Loading state for players.
+   */
   playersLoading: boolean;
+  /**
+   * Error object for matches.
+   */
   matchesError: Error | undefined;
+  /**
+   * Error object for players.
+   */
   playersError: Error | undefined;
+  /**
+   * Current page number for pagination.
+   */
   currentPage: number;
+  /**
+   * Function to set the current page.
+   */
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
+  /**
+   * Currently selected date range filter.
+   */
   dateRangeFilter: DateRange | undefined;
+  /**
+   * Function to set the date range filter.
+   */
   setDateRangeFilter: (range: DateRange | undefined) => void;
+  /**
+   * Currently selected player ID filter.
+   */
   selectedPlayerIdFilter: string | undefined;
+  /**
+   * Function to set the player ID filter.
+   */
   setSelectedPlayerIdFilter: (playerId: string | undefined) => void;
+  /**
+   * Currently selected match outcome filter.
+   */
   matchOutcomeFilter: "win" | "loss" | undefined;
+  /**
+   * Function to set the match outcome filter.
+   */
   setMatchOutcomeFilter: (outcome: "win" | "loss" | undefined) => void;
 }
 
+/**
+ * MatchHistoryUI component displays a comprehensive match history with filtering and pagination.
+ *
+ * @param props - Props for the MatchHistoryUI component.
+ * @param props.matches - Array of match data.
+ * @param props.allPlayers - Array of all players for filtering.
+ * @param props.matchesLoading - Loading state for matches.
+ * @param props.playersLoading - Loading state for players.
+ * @param props.matchesError - Error object for matches.
+ * @param props.playersError - Error object for players.
+ * @param props.currentPage - Current page number for pagination.
+ * @param props.setCurrentPage - Function to set the current page.
+ * @param props.dateRangeFilter - Currently selected date range filter.
+ * @param props.setDateRangeFilter - Function to set the date range filter.
+ * @param props.selectedPlayerIdFilter - Currently selected player ID filter.
+ * @param props.setSelectedPlayerIdFilter - Function to set the player ID filter.
+ * @param props.matchOutcomeFilter - Currently selected match outcome filter.
+ * @param props.setMatchOutcomeFilter - Function to set the match outcome filter.
+ * @returns The rendered MatchHistoryUI component.
+ */
 const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
   matches,
   allPlayers,
@@ -86,20 +151,41 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
   matchOutcomeFilter,
   setMatchOutcomeFilter,
 }) => {
+  /**
+   * Handles changes to the date range filter.
+   *
+   * @param range - The new date range.
+   */
   const handleDateRangeChange = (range: DateRange | undefined) => {
     setDateRangeFilter(range);
   };
 
+  /**
+   * Handles changes to the player filter.
+   *
+   * @param playerId - The ID of the selected player, or "all" to clear the filter.
+   */
   const handlePlayerFilterChange = (playerId: string) => {
     setSelectedPlayerIdFilter(playerId === "all" ? undefined : playerId);
     setCurrentPage(1);
   };
 
+  /**
+   * Handles changes to the match outcome filter.
+   *
+   * @param outcome - The selected outcome ("win", "loss", or "any").
+   */
   const handleMatchOutcomeChange = (outcome: "win" | "loss" | "any") => {
     setMatchOutcomeFilter(outcome === "any" ? undefined : outcome);
     setCurrentPage(1);
   };
 
+  /**
+   * Retrieves the name of a player given their ID.
+   *
+   * @param playerId - The ID of the player.
+   * @returns The player's name, or a default string if not found.
+   */
   const getPlayerName = (playerId: number) => {
     const player = (allPlayers || []).find((p) => p.player_id === playerId);
     return player ? player.name : `Unknown Player (${playerId})`;
@@ -108,6 +194,9 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
   // Pagination state
   const PAGE_SIZE = 30; // Number of matches per page
 
+  /**
+   * Memoized filtered matches based on date range, player, and outcome filters.
+   */
   const filteredMatches = useMemo(() => {
     let tempMatches = matches || [];
 
@@ -177,6 +266,9 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
 
   // Pagination logic
   const totalPages = Math.ceil((filteredMatches || []).length / PAGE_SIZE);
+  /**
+   * Memoized paginated matches based on filtered matches and current page.
+   */
   const paginatedMatches = useMemo(() => {
     const startIdx = (currentPage - 1) * PAGE_SIZE;
     return (filteredMatches || []).slice(startIdx, startIdx + PAGE_SIZE);
@@ -186,6 +278,12 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
     setCurrentPage(1);
   }, [dateRangeFilter, selectedPlayerIdFilter, matchOutcomeFilter]);
 
+  /**
+   * Renders the player's name, handling cases where player info might be missing.
+   *
+   * @param player - The player information object.
+   * @returns A JSX element displaying the player's name or an "Unknown Player" message.
+   */
   const renderPlayerName = (player?: MatchPlayerInfo) => {
     if (!player || typeof player.name !== "string") {
       return <span className="text-red-500">Joueur Inconnu</span>;

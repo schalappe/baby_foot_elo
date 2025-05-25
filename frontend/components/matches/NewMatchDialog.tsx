@@ -15,6 +15,13 @@ interface NewMatchDialogProps {
   children: React.ReactNode;
 }
 
+/**
+ * NewMatchDialog component provides a dialog for creating a new match.
+ *
+ * @param props - Props for the NewMatchDialog component.
+ * @param props.children - React node to be used as the dialog trigger.
+ * @returns The rendered NewMatchDialog component.
+ */
 export function NewMatchDialog({ children }: NewMatchDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
 

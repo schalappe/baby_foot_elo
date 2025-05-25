@@ -10,6 +10,11 @@
 import React from "react";
 import EntityLoadingSkeleton from "@/components/common/EntityLoadingSkeleton";
 
+/**
+ * Displays a loading skeleton for team detail pages.
+ *
+ * @returns The rendered team loading skeleton.
+ */
 const TeamLoadingSkeleton: React.FC = () => <EntityLoadingSkeleton />;
 
 export default TeamLoadingSkeleton;
