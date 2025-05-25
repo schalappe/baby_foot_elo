@@ -169,7 +169,7 @@ def get_all_players() -> List[Dict[str, Any]]:
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def update_player(
+def update_player_name_or_elo(
     player_id: int,
     name: Optional[str] = None,
     global_elo: Optional[int] = None,

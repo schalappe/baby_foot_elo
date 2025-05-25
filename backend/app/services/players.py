@@ -12,7 +12,7 @@ from app.db.repositories.players import (
     delete_player,
     get_all_players,
     get_player_by_id_or_name,
-    update_player,
+    update_player_name_or_elo,
 )
 from app.db.repositories.players_elo_history import get_player_elo_history
 from app.db.repositories.stats import get_player_stats
@@ -171,7 +171,9 @@ def update_existing_player(player_id: int, player_update: PlayerUpdate) -> Playe
                 raise PlayerAlreadyExistsError(player_update.name)
 
         # ##: Update the player.
-        success = update_player(player_id=player_id, name=player_update.name, global_elo=player_update.global_elo)
+        success = update_player_name_or_elo(
+            player_id=player_id, name=player_update.name, global_elo=player_update.global_elo
+        )
         if not success:
             raise PlayerOperationError(f"Failed to update player with ID {player_id}")
 
