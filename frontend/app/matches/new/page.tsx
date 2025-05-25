@@ -367,7 +367,7 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
                   />
                 )}
               />
-              <Label htmlFor="isFanny">Match "Fanny" (10-0)</Label>
+              <Label htmlFor="isFanny">Match &quot;Fanny&quot;</Label>
             </div>
 
             {/* Match Date */}
