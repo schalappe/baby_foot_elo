@@ -235,7 +235,21 @@ def get_player_elo_history_by_match(match_id: int) -> List[Dict[str, Any]]:
 
 @with_retry(max_retries=3, retry_delay=0.5)
 def get_player_elo_history_by_player_match(player_id: int, match_id: int) -> Optional[Dict[str, Any]]:
+    """
+    Get the ELO history for a specific player and match.
 
+    Parameters
+    ----------
+    player_id : int
+        ID of the player
+    match_id : int
+        ID of the match
+
+    Returns
+    -------
+    Optional[Dict[str, Any]]
+        ELO history record for the player and match, or None if not found
+    """
     try:
         builder = (
             SelectQueryBuilder("Players_ELO_History")

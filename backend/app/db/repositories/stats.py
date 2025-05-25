@@ -15,7 +15,19 @@ from app.db.session import with_retry
 
 @with_retry(max_retries=3, retry_delay=0.5)
 def get_player_match_stats(player_id: int) -> Dict[str, Any]:
+    """
+    Get the match statistics for a player.
 
+    Parameters
+    ----------
+    player_id : int
+        ID of the player
+
+    Returns
+    -------
+    Dict[str, Any]
+        Match statistics for the player
+    """
     # ##: Get match count via QueryBuilder
     mc_result = (
         SelectQueryBuilder("Matches m")
@@ -78,7 +90,19 @@ def get_player_match_stats(player_id: int) -> Dict[str, Any]:
 
 
 def get_team_match_stats(team_id: int) -> Dict[str, Any]:
+    """
+    Get the match statistics for a team.
 
+    Parameters
+    ----------
+    team_id : int
+        ID of the team
+
+    Returns
+    -------
+    Dict[str, Any]
+        Match statistics for the team
+    """
     # ##: Get match count via QueryBuilder
     mc_result = (
         SelectQueryBuilder("Matches m")
@@ -166,6 +190,19 @@ def get_player_stats(player_id: int) -> Optional[Dict[str, Any]]:
 
 
 def get_team_stats(team_id: int) -> Optional[Dict[str, Any]]:
+    """
+    Get comprehensive stats for a team.
+
+    Parameters
+    ----------
+    team_id : int
+        ID of the team
+
+    Returns
+    -------
+    Optional[Dict[str, Any]]
+        Team statistics, or None if team not found
+    """
     try:
         # ##: Get team details.
         team = get_team(team_id)
