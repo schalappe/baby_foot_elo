@@ -36,7 +36,6 @@ from app.db.repositories.teams import (
     delete_team,
     get_all_teams,
     get_team,
-    get_team_rankings,
     get_teams_by_player,
     update_team,
 )
@@ -65,7 +64,6 @@ __all__ = [
     "delete_team",
     "batch_insert_teams",
     "get_teams_by_player",
-    "get_team_rankings",
     # ##: Matches.
     "create_match",
     "get_match",

@@ -7,15 +7,9 @@ from typing import Any, Dict, List, Optional
 from loguru import logger
 
 from app.db.repositories.matches import get_matches_by_player, get_matches_by_team
-from app.db.repositories.players_elo_history import (
-    get_player_elo_history,
-    get_player_elo_history_by_player_match,
-)
-from app.db.repositories.teams import get_team_rankings
-from app.db.repositories.teams_elo_history import (
-    get_team_elo_history,
-    get_team_elo_history_by_team_match,
-)
+from app.db.repositories.players_elo_history import get_player_elo_history
+from app.db.repositories.teams import get_all_teams
+from app.db.repositories.teams_elo_history import get_team_elo_history
 from app.exceptions.teams import TeamNotFoundError, TeamOperationError
 from app.models.match import MatchWithEloResponse
 from app.models.team import TeamResponse
@@ -313,7 +307,7 @@ def get_active_team_rankings(limit: int = 100, days_since_last_match: Optional[i
     """
     try:
         # ##: Get team rankings from repository.
-        teams = get_team_rankings(limit=limit)
+        teams = get_all_teams(limit=limit)
 
         # ##: Apply additional filters.
         if days_since_last_match is not None:

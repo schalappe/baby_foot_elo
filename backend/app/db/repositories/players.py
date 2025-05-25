@@ -168,7 +168,7 @@ def get_all_players() -> List[Dict[str, Any]]:
         rows = (
             SelectQueryBuilder("Players")
             .select("player_id", "name", "global_elo", "created_at")
-            .order_by_clause("name")
+            .order_by_clause("global_elo DESC")
             .execute()
         )
         return (
@@ -178,8 +178,9 @@ def get_all_players() -> List[Dict[str, Any]]:
                     "name": row[1],
                     "global_elo": row[2],
                     "created_at": row[3],
+                    "rank": idx + 1,
                 }
-                for row in rows
+                for idx, row in enumerate(rows)
             ]
             if rows
             else []
