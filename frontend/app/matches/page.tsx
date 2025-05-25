@@ -24,10 +24,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button'; 
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertCircle, CalendarDays, UserSearch, Trophy, Skull, MessageSquareText } from 'lucide-react'; 
+import { AlertCircle, UserSearch, Trophy, Skull, MessageSquareText } from 'lucide-react'; 
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { NewMatchDialog } from '@/components/matches/NewMatchDialog';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 import { DateRange } from 'react-day-picker'; 
 import { DateRangePicker } from '@/components/ui/date-range-picker';
@@ -68,28 +67,9 @@ const MatchHistoryPage = () => {
     setCurrentPage(1);
   };
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
   const getPlayerName = (playerId: number) => {
     const player = (allPlayers || []).find(p => p.player_id === playerId);
     return player ? player.name : `Unknown Player (${playerId})`;
-  };
-
-  const getTeamPlayers = (team: MatchTeamInfo) => {
-    return [team.player1.player_id, team.player2.player_id].map(id => getPlayerName(id)).join(', ');
-  };
-
-  const getPlayerDisplay = (player: MatchPlayerInfo) => {
-    return (
-      <div className="flex items-center space-x-2">
-        <Avatar className="h-8 w-8">
-          <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
-        </Avatar>
-        <span>{player.name}</span>
-      </div>
-    );
   };
 
   // Pagination state
