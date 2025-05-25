@@ -165,7 +165,7 @@ def create_new_player(player_data: PlayerCreate) -> PlayerResponse:
                     logger.info(f"Team for {p1_id} and {p2_id} already exists or could not be created.")
 
         # ##: Return the complete player data.
-        return get_player_by_id(player_id)
+        return get_player(player_id)
     except Exception as exc:
         logger.error(f"Error creating player '{player_data.name}': {exc}")
         raise PlayerOperationError(f"Failed to create player: {str(exc)}") from exc
@@ -198,7 +198,7 @@ def update_existing_player(player_id: int, player_update: PlayerUpdate) -> Playe
     """
     try:
         # ##: Check if player exists.
-        existing_player = get_player_by_id(player_id)
+        existing_player = get_player(player_id)
         if not existing_player:
             raise PlayerNotFoundError(f"ID: {player_id}")
 
@@ -215,7 +215,7 @@ def update_existing_player(player_id: int, player_update: PlayerUpdate) -> Playe
         if not success:
             raise PlayerOperationError(f"Failed to update player with ID {player_id}")
 
-        return get_player_by_id(player_id)
+        return get_player(player_id)
     except (PlayerNotFoundError, PlayerAlreadyExistsError):
         raise
     except Exception as exc:
@@ -239,7 +239,7 @@ def get_all_players_with_stats() -> List[PlayerResponse]:
     """
     try:
         players = get_all_players()
-        responses = [get_player_by_id(player["player_id"]) for player in players]
+        responses = [get_player(player["player_id"]) for player in players]
         return responses
     except Exception as exc:
         logger.error(f"Error retrieving all players with stats: {exc}")

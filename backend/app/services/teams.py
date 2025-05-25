@@ -58,8 +58,8 @@ def get_team(team_id: int) -> TeamResponse:
             raise TeamNotFoundError(f"ID: {team_id}")
 
         # ##: Get player details for both team members.
-        player1 = players_service.get_player_by_id(team["player1_id"])
-        player2 = players_service.get_player_by_id(team["player2_id"])
+        player1 = players_service.get_player(team["player1_id"])
+        player2 = players_service.get_player(team["player2_id"])
 
         if not player1 or not player2:
             logger.error(f"One or both players not found for team {team_id}")

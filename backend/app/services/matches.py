@@ -34,7 +34,7 @@ from app.exceptions.matches import (
 )
 from app.models.match import MatchCreate, MatchResponse, MatchWithEloResponse
 from app.services.elo import process_match_result
-from app.services.teams import get_team_by_id
+from app.services.teams import get_team
 
 
 def get_match(match_id: int) -> MatchResponse:
@@ -63,8 +63,8 @@ def get_match(match_id: int) -> MatchResponse:
     # ##: Fetch team details.
     return MatchResponse(
         match_id=match_data["match_id"],
-        winner_team=get_team_by_id(match_data["winner_team_id"]),
-        loser_team=get_team_by_id(match_data["loser_team_id"]),
+        winner_team=get_team(match_data["winner_team_id"]),
+        loser_team=get_team(match_data["loser_team_id"]),
         winner_team_id=match_data["winner_team_id"],
         loser_team_id=match_data["loser_team_id"],
         is_fanny=match_data["is_fanny"],
@@ -127,8 +127,8 @@ def get_matches(
             try:
                 match = MatchResponse(
                     match_id=match_data["match_id"],
-                    winner_team=get_team_by_id(match_data["winner_team_id"]),
-                    loser_team=get_team_by_id(match_data["loser_team_id"]),
+                    winner_team=get_team(match_data["winner_team_id"]),
+                    loser_team=get_team(match_data["loser_team_id"]),
                     winner_team_id=match_data["winner_team_id"],
                     loser_team_id=match_data["loser_team_id"],
                     is_fanny=match_data["is_fanny"],
@@ -218,8 +218,8 @@ def create_new_match(match_data: MatchCreate) -> MatchWithEloResponse:
 
     try:
         # ##: Get team details.
-        winner_team = get_team_by_id(match_data.winner_team_id)
-        loser_team = get_team_by_id(match_data.loser_team_id)
+        winner_team = get_team(match_data.winner_team_id)
+        loser_team = get_team(match_data.loser_team_id)
 
         if not winner_team or not loser_team:
             raise MatchCreationError(detail="One or both teams not found")
@@ -238,6 +238,8 @@ def create_new_match(match_data: MatchCreate) -> MatchWithEloResponse:
 
         # ##: Process ELO updates.
         players_change, teams_change = process_match_result(winning_team=winner_team, losing_team=loser_team)
+        logger.debug(f"Players change: {players_change}")
+        logger.debug(f"Teams change: {teams_change}")
 
         # ##: Update players.
         batch_update_players_elo(
@@ -245,7 +247,6 @@ def create_new_match(match_data: MatchCreate) -> MatchWithEloResponse:
                 {
                     "player_id": player_id,
                     "global_elo": change["new_elo"],
-                    "last_match_at": match_data.played_at,
                 }
                 for player_id, change in players_change.items()
             ]

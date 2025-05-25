@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
 from app.db.repositories.matches import get_matches_by_player_id, get_matches_by_team_id
 from app.db.repositories.players_elo_history import get_player_elo_history_by_id
-from app.db.repositories.teams import get_all_teams
 from app.db.repositories.teams_elo_history import get_team_elo_history_by_id
 from app.exceptions.players import PlayerOperationError
 from app.exceptions.teams import TeamNotFoundError, TeamOperationError
