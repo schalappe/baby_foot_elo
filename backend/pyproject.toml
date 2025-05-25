@@ -18,6 +18,10 @@ dependencies = [
 ]
 
 [tool.poetry]
+name = "baby-foot-elo"
+version = "0.1.0"
+description = "Backend pour la gestion du classement ELO de Baby Foot IHM"
+authors = ["Kone Abdallah Hakim <71593784+schalappe@users.noreply.github.com>"]
 
 [tool.poetry.group.dev.dependencies]
 isort = "^6.0.1"
