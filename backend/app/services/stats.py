@@ -6,14 +6,14 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
-from app.db.repositories.matches import get_matches_by_player, get_matches_by_team
-from app.db.repositories.players_elo_history import get_player_elo_history
+from app.db.repositories.matches import get_matches_by_player_id, get_matches_by_team_id
+from app.db.repositories.players_elo_history import get_player_elo_history_by_id
 from app.db.repositories.teams import get_all_teams
-from app.db.repositories.teams_elo_history import get_team_elo_history
+from app.db.repositories.teams_elo_history import get_team_elo_history_by_id
 from app.exceptions.teams import TeamNotFoundError, TeamOperationError
 from app.models.match import MatchWithEloResponse
 from app.models.team import TeamResponse
-from app.services.players import get_player_by_id
+from app.services.players import get_player
 from app.services.teams import get_team
 
 
@@ -38,7 +38,7 @@ def get_player_matches(player_id: int, limit: int = 10, offset: int = 0, **filte
         A list of matches the player participated in.
     """
     try:
-        matches = get_matches_by_player(player_id, limit, offset, **filters)
+        matches = get_matches_by_player_id(player_id, limit, offset, **filters)
 
         # ##: Convert to response model.
         response = []
@@ -81,7 +81,7 @@ def get_team_matches(team_id: int, limit: int = 100, offset: int = 0) -> List[Ma
     """
     try:
         # ##: Get matches from repository
-        matches = get_matches_by_team(team_id, limit=limit, offset=offset)
+        matches = get_matches_by_team_id(team_id, limit=limit, offset=offset)
 
         # ##: Convert to MatchWithEloResponse models
         result = []
@@ -125,10 +125,10 @@ def get_player_statistics(player_id: int) -> Dict[str, Any]:
         A dictionary containing the player's statistics.
     """
     try:
-        player = get_player_by_id(player_id)
+        player = get_player(player_id)
 
         # ##: Get ELO history for additional stats.
-        elo_history = get_player_elo_history(player_id)
+        elo_history = get_player_elo_history_by_id(player_id)
 
         # ##: Process ELO history if available.
         elo_changes = []
@@ -157,8 +157,8 @@ def get_player_statistics(player_id: int) -> Dict[str, Any]:
 
         # ##: Calculate average ELO change.
         avg_elo_change = sum(elo_changes) / len(elo_changes) if elo_changes else 0
-        highest_elo = max(elo_values) if elo_values else stats.get("global_elo", 1000)
-        lowest_elo = min(elo_values) if elo_values else stats.get("global_elo", 1000)
+        highest_elo = max(elo_values) if elo_values else player.global_elo
+        lowest_elo = min(elo_values) if elo_values else player.global_elo
 
         # ##: Calculate recent stats
         recent_matches_played = recent_wins + recent_losses
@@ -214,7 +214,7 @@ def get_team_statistics(team_id: int) -> Dict[str, Any]:
         # ##: Get team details.
         team = get_team(team_id)
 
-        elo_history = get_team_elo_history(team_id)
+        elo_history = get_team_elo_history_by_id(team_id)
 
         # ##: Get ELO history.
         elo_changes = []
