@@ -4,14 +4,14 @@ This module provides a collection of repositories for database operations.
 """
 
 from app.db.repositories.matches import (
-    create_match,
-    delete_match,
+    create_match_by_team_ids,
+    delete_match_by_id,
     get_all_matches,
     get_fanny_matches,
-    get_match,
+    get_match_by_id,
     get_matches_by_date_range,
-    get_matches_by_player,
-    get_matches_by_team,
+    get_matches_by_player_id,
+    get_matches_by_team_id,
 )
 from app.db.repositories.players import (
     batch_insert_players_by_name,
@@ -63,12 +63,12 @@ __all__ = [
     "batch_insert_teams_by_player_ids",
     "get_teams_by_player_id",
     # ##: Matches.
-    "create_match",
-    "get_match",
-    "delete_match",
+    "create_match_by_team_ids",
+    "get_match_by_id",
+    "delete_match_by_id",
     "get_all_matches",
-    "get_matches_by_team",
-    "get_matches_by_player",
+    "get_matches_by_team_id",
+    "get_matches_by_player_id",
     "get_matches_by_date_range",
     "get_fanny_matches",
     # ##: Players ELO History.

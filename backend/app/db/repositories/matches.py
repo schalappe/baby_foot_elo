@@ -13,7 +13,7 @@ from app.db.session import transaction, with_retry
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def create_match(
+def create_match_by_team_ids(
     winner_team_id: int,
     loser_team_id: int,
     played_at: Union[datetime, str],
@@ -79,7 +79,7 @@ def create_match(
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_match(match_id: int) -> Optional[Dict[str, Any]]:
+def get_match_by_id(match_id: int) -> Optional[Dict[str, Any]]:
     """
     Get a match by ID.
 
@@ -112,7 +112,7 @@ def get_match(match_id: int) -> Optional[Dict[str, Any]]:
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_matches_by_team(team_id: int, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+def get_matches_by_team_id(team_id: int, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
     """
     Get all matches involving a specific team.
 
@@ -230,7 +230,7 @@ def get_matches_by_date_range(
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def get_matches_by_player(
+def get_matches_by_player_id(
     player_id: int,
     limit: int = 100,
     offset: int = 0,
@@ -411,7 +411,7 @@ def get_all_matches(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
-def delete_match(match_id: int) -> bool:
+def delete_match_by_id(match_id: int) -> bool:
     """
     Delete a match from the database.
 
