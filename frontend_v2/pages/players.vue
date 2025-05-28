@@ -44,17 +44,17 @@
 
 <template>
     <div>
-        <h1 class="text-2xl font-bold mb-4">Liste des joueurs</h1>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div v-for="player in players" :key="String(player.player_id)" class="bg-white p-4 rounded shadow">
-                <h2 class="text-xl font-semibold">{{ player.name }}</h2>
-                <p class="text-gray-600">ID: {{ player.player_id }}</p>
-                <p class="text-gray-600">EloScore: {{ player.global_elo }}</p>
-                <p class="text-gray-600">Victoires {{ player.wins }}</p>
-                <p class="text-gray-600">Défaites: {{ player.losses }}</p>
-                <!-- Ajoutez d'autres détails du joueur ici si nécessaire -->
-            </div>
-        </div>
+      <h1 class="text-2xl font-bold mb-4">Liste des joueurs</h1>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div v-for="player in players" :key="String(player.player_id)" class="bg-white p-4 rounded shadow">
+              <h2 class="text-xl font-semibold">{{ player.name }}</h2>
+              <p class="text-gray-600">ID: {{ player.player_id }}</p>
+              <p class="text-gray-600">EloScore: {{ player.global_elo }}</p>
+              <p class="text-gray-600">Victoires {{ player.wins }}</p>
+              <p class="text-gray-600">Défaites: {{ player.losses }}</p>
+              <!-- Ajoutez d'autres détails du joueur ici si nécessaire -->
+          </div>
+      </div>
     </div>
     <div>
         <h1 class="text-xl font-bold mt-8">Ajouter un Nouveau Joueur</h1>

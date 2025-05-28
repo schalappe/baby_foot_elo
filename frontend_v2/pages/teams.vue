@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import type { TeamModel } from '@/models/TeamModel';
-    import { inject, ref, type Ref } from 'vue';
+    import { inject, type Ref } from 'vue';
     const teams =  inject<Ref<TeamModel[]>>('teams');
 </script>
 

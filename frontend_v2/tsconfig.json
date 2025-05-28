@@ -19,5 +19,5 @@
     "types": ["@nuxt/schema", "@types/node"]
   },
   "exclude": ["node_modules", ".nuxt", "dist"],
-  "include": ["types", "nuxt.config.ts", "components", "pages", "composables", "plugins", "models"]
+  "include": ["types", "nuxt.config.ts", "nuxt.d.ts", "components", "pages", "composables", "plugins", "models"]
 }

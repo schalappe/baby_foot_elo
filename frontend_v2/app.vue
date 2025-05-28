@@ -1,18 +1,11 @@
 <script setup lang="ts">
-  import { computed, provide } from 'vue';
-  import type { NavLinkModel } from './models/NavLinkModel';
+  import { computed, provide, ref } from 'vue';
   import type { PlayerModel } from './models/PlayerModel';
   import type { TeamModel } from './models/TeamModel';
   import type { MatchModel } from './models/MatchModel';
   import { useApi } from './composable/useApi';
-
-  const nav: NavLinkModel[] = [
-    { label: 'ranking', to: '/' },
-    { label: 'players', to: '/players' },
-    { label: 'teams', to: '/teams' },
-    { label: 'matches', to: '/matches' },
-    { label: 'test', to: '/test' },
-  ]
+  import { useTheme } from 'vuetify';
+  import '@mdi/font/css/materialdesignicons.css'
 
   const { read } = useApi();
   const { data: players, pending: playersPending, error: playersError } = read<PlayerModel[]>('/players');
@@ -22,6 +15,12 @@
   const allPending = computed(() => playersPending.value || teamsPending.value || matchesPending.value);
   const anyError = computed(() => playersError.value || teamsError.value || matchesError.value);
 
+  const value = ref(0);
+  const theme = useTheme();
+  function toggleTheme ()  {
+    theme.global.name.value = theme.global.current.value.dark ? 'light' : 'dark';
+  };  
+  
   provide('players', players);
   provide('teams', teams);
   provide('matches', matches);
@@ -31,32 +30,98 @@
 
 
 <template>
-  <div class="p-4 bg-green-200">
-    <h1 class="text-2xl font-bold">Babyfoot Contest</h1>
+  <NuxtLayout >
     <NuxtLoadingIndicator />
-    <nav>
-      <ul class="flex gap-4">
-        <li v-for="link in nav" :key="link.to">
-          <NuxtLink :to="link.to" class="text-blue-600 hover:underline">
-            {{ link.label }}
-          </NuxtLink>
-        </li>
-      </ul>
-    </nav>
-  </div>
     <div v-if="playersPending || teamsPending || matchesPending" class="loading-indicator">
-    Chargement des données...
-  </div>
-  <div v-if="playersError || teamsError || matchesError" class="error-indicator">
-    Une erreur est survenue lors du chargement des données initiales.
-    <p v-if="playersError">Joueurs: {{ playersError?.message }}</p>
-    <p v-if="teamsError">Équipes: {{ teamsError?.message }}</p>
-    <p v-if="matchesError">Matchs: {{ matchesError?.message }}</p>
-  </div>
-  <NuxtPage />
+      Chargement des données...
+    </div>
+    <div v-if="playersError || teamsError || matchesError" class="error-indicator">
+      Une erreur est survenue lors du chargement des données initiales.
+      <p v-if="playersError">Joueurs: {{ playersError?.message }}</p>
+      <p v-if="teamsError">Équipes: {{ teamsError?.message }}</p>
+      <p v-if="matchesError">Matchs: {{ matchesError?.message }}</p>
+    </div>
+    <v-app>
+      <v-app-bar class="d-flex align-center">
+        <v-bottom-navigation       
+          v-model="value"
+          style="height: 64px;"
+          active
+        >
+          <v-btn class="custom-btn-width" value="ranking" :to="'/'">
+            <span>Ranking</span>
+          </v-btn>
+          <v-btn class="custom-btn-width" value="players" :to="'/players'">
+            <span>Players</span>
+          </v-btn>
+          <v-btn class="custom-btn-width" value="teams" :to="'/teams'">
+            <span>Teams</span>
+          </v-btn>
+          <v-btn class="custom-btn-width" value="matches" :to="'/matches'">
+            <span>Matches</span>
+          </v-btn>
+          <v-btn class="theme-toggle-btn" variant="outlined" @click="toggleTheme">
+            <v-icon>{{ theme.global.current.value.dark ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
+          </v-btn>
+        </v-bottom-navigation>
+      </v-app-bar>
+      <v-main>
+        <v-container>
+            <div class="color-container" style="margin-top: 60px;">
+                <v-btn class="theme-title" color="purple">Thème Clair & Sombre</v-btn>
+                <v-btn class="color-box" color="primary">primary</v-btn>
+                <v-btn class="color-box" color="secondary">secondary</v-btn>
+                <v-btn class="color-box" color="accent">accent</v-btn>
+                <v-btn class="color-box" color="error">error</v-btn>
+                <v-btn class="color-box" color="info">info</v-btn>
+                <v-btn class="color-box" color="success">success</v-btn>
+                <v-btn class="color-box" color="warning">warning</v-btn>
+            </div>
+            <NuxtPage style="margin-top: 0px;" />
+        </v-container>
+      </v-main>
+    </v-app>
+  </NuxtLayout>
 </template>
 
+
 <style scoped>
+
+  .theme-toggle-btn {
+    width: 12px !important;
+    vertical-align: center !important;
+    border-radius: 50% !important;
+  }
+
+  .custom-btn-width {
+    min-width: 160px !important;
+    vertical-align: center !important;
+    text-transform: uppercase !important;
+    font-weight: bold !important;
+    font-size: 16px !important;
+    color: 'secondary' !important;
+  }
+
+  .color-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+  }
+  .color-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      text-align: center;
+  }
+  .theme-title {
+      width: 100%;
+      font-weight: bold;
+      margin-bottom: 5px;
+  }
+
   .loading-indicator {
     padding: 10px;
     background-color: #e0f2fe;
