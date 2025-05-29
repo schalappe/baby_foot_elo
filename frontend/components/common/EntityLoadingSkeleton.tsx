@@ -8,7 +8,7 @@
  *   - EntityLoadingSkeleton: React.FC for loading state display.
  */
 import React from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "../ui/skeleton";
 
 /**
  * Generic loading skeleton for entity detail views (player, team, etc).

@@ -15,7 +15,7 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination";
+} from "../ui/pagination";
 import { BackendMatchWithEloResponse } from "@/types/match.types";
 
 interface EntityMatchesSectionProps {

@@ -9,8 +9,8 @@
  *   - PodiumGridProps: Props interface for PodiumGrid.
  */
 import React from "react";
-import { Card, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardTitle } from "../ui/card";
+import { Badge } from "../ui/badge";
 import Link from "next/link";
 
 /**

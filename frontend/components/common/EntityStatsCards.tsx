@@ -8,18 +8,13 @@
  *   - EntityStatsCards: React.FC for entity statistics display.
  */
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Badge } from "../ui/badge";
 import { TrendingUpIcon, TrendingDownIcon } from "lucide-react";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart";
 import { LineChart, Line, YAxis, CartesianGrid } from "recharts";
 import { ResponsiveContainer, PieChart, Pie, Label } from "recharts";
-import { EntityStats } from '@/types/stats.types';
-
+import { EntityStats } from "@/types/stats.types";
 
 interface EntityStatsCardsProps {
   stats: EntityStats;

@@ -8,7 +8,7 @@
  *   - EntityErrorAlert: React.FC for error/not-found display.
  */
 import React from "react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 
 interface EntityErrorAlertProps {
   error?: string;
