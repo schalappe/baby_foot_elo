@@ -7,9 +7,9 @@
  * Exports:
  *   - SiteHeader: React.FC for the main app header.
  */
-import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { Separator } from "./ui/separator";
+import { SidebarTrigger } from "./ui/sidebar";
+import { ThemeToggle } from "./ThemeToggle";
 
 /**
  * Renders the main application header bar with sidebar trigger, title, and theme toggle.
