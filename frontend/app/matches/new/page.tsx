@@ -718,4 +718,6 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
   );
 };
 
-export default NewMatchPage;
+export default function Page() {
+  return <NewMatchPage />;
+}
