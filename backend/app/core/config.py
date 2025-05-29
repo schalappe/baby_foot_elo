@@ -4,6 +4,7 @@ Module containing configuration class.
 """
 
 from os import environ
+from urllib.parse import quote_plus # For password quoting
 
 from dotenv import load_dotenv
 
@@ -22,11 +23,15 @@ class Config:
     ----------
     env : str
         The current environment (either "dev" or "prod").
+    database_url_env : str | None
+        Full database connection URL from the DATABASE_URL environment variable.
 
     Methods
     -------
     get_db_url() -> str
-        Return the URL of the DuckDB database to use.
+        Return the URL of the PostgreSQL database to use.
+    get_frontend_url() -> str
+        Return the URL of the frontend application.
     """
 
     def __init__(self):
@@ -35,28 +40,32 @@ class Config:
 
         The environment variable ENV is used to select between the development and production environments.
         If ENV is not set, the development environment is assumed.
+        The database connection URL is loaded from the DATABASE_URL environment variable.
         """
         self.env = environ.get("ENV", "dev")
+        self.database_url_env = environ.get("DATABASE_URL")
 
-    def get_db_url(self):
+    def get_db_url(self) -> str:
         """
-        Return the URL of the DuckDB database to use.
+        Return the URL of the PostgreSQL database to use from the DATABASE_URL environment variable.
 
         Returns
         -------
         str
-            The URL of the DuckDB database to use.
+            The URL of the PostgreSQL database.
 
         Raises
         ------
         ValueError
-            If the environment is invalid.
+            If the DATABASE_URL environment variable is not set.
         """
-        if self.env == "dev":
-            return "duckdb://:memory:"
-        if self.env == "prod":
-            return environ.get("DB_URL")
-        raise ValueError("Invalid environment")
+        if self.database_url_env:
+            return self.database_url_env
+        
+        raise ValueError(
+            "DATABASE_URL environment variable is not set. "
+            "Please ensure it is configured in your .env file or environment."
+        )
 
     def get_frontend_url(self):
         """

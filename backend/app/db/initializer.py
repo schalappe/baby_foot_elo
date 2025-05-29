@@ -138,7 +138,7 @@ def initialize_database(db_manager: DatabaseManager):
 
 
 def main():
-    """Main function to initialize the database."""
+    """Main function to initialize the database for PostgreSQL."""
 
     # ##: Configure Loguru logger.
     logger.remove()
@@ -147,39 +147,17 @@ def main():
     )
 
     db_url = config.get_db_url()
-    logger.info(f"Using database URL from config: {db_url}")
-
-    # ##: Extract path from URL like duckdb:///path/to/file.duckdb
-    if db_url.startswith("duckdb:///"):
-        db_path_str = db_url[len("duckdb:///") :]
-    elif db_url.startswith("duckdb://:memory:"):
-        logger.info("Using in-memory database. No persistent file will be created.")
-        db_path_str = ":memory:"
-    else:
-        logger.error(f"Unsupported DB_URL format: {db_url}")
-        return
+    logger.info(f"Attempting to initialize database using URL: {db_url}")
 
     db_manager = None
     try:
-        if db_path_str != ":memory:":
-            db_file_path = Path(db_path_str)
-            db_dir = db_file_path.parent
-            logger.info(f"Target database file: {db_file_path}")
-            try:
-                db_dir.mkdir(parents=True, exist_ok=True)
-                logger.info(f"Ensured database directory exists: {db_dir}")
-            except OSError as e:
-                logger.error(f"Error creating database directory {db_dir}: {e}")
-                return
-            db_manager = DatabaseManager(db_path=str(db_file_path))
-        else:
-            db_manager = DatabaseManager(db_path=":memory:")
+        db_manager = DatabaseManager()
+        logger.info("DatabaseManager initialized for PostgreSQL.")
 
-        logger.info(f"Initializing DatabaseManager with path: {db_path_str}")
         initialize_database(db_manager)
-        logger.info("Database initialization process completed successfully.")
+        logger.info("Database schema initialization process completed successfully for PostgreSQL.")
     except Exception as e:
-        logger.exception("An error occurred during database initialization")
+        logger.exception("An error occurred during PostgreSQL database schema initialization")
         raise
     finally:
         if db_manager:

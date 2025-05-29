@@ -7,23 +7,26 @@ import threading
 from logging import getLogger
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-import duckdb
+import psycopg2
+from psycopg2.extras import DictCursor
+
+from backend.app.core.config import config
 
 logger = getLogger(__name__)
 
 
 class DatabaseManager:
     """
-    Manages DuckDB connections, query execution, and transactions.
-    Supports configuration for file path and connection parameters.
+    Manages PostgreSQL connections, query execution, and transactions.
+    Uses connection details from the global application configuration.
     """
 
     _instance = None
     _lock = threading.Lock()
 
-    def __new__(cls, db_path: str = ":memory:", **conn_params):
+    def __new__(cls, **conn_params):
         """
-        Singleton pattern for connection pooling if desired
+        Singleton pattern for the database manager.
         """
         if not cls._instance:
             with cls._lock:
@@ -32,20 +35,18 @@ class DatabaseManager:
                     cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self, db_path: str = ":memory:", **conn_params):
+    def __init__(self, **conn_params):
         """
-        Initialize a new database connection.
+        Initialize the database manager.
 
         Parameters
         ----------
-        db_path : str
-            Path to the DuckDB database file.
         conn_params : dict
-            Connection parameters for DuckDB.
+            Additional connection parameters for psycopg2.connect().
         """
         if getattr(self, "_initialized", False):
             return
-        self.db_path = db_path
+        self.db_url = config.get_db_url()
         self.conn_params = conn_params
         self.connection = None
         self._initialized = True
@@ -53,13 +54,13 @@ class DatabaseManager:
 
     def connect(self):
         """
-        Establish a connection to the DuckDB database.
+        Establish a connection to the PostgreSQL database.
         """
         try:
-            self.connection = duckdb.connect(self.db_path, **self.conn_params)
-            logger.info("Connected to DuckDB at %s", self.db_path)
-        except Exception as exc:
-            logger.error("Failed to connect to DuckDB: %s", exc)
+            self.connection = psycopg2.connect(dsn=self.db_url, **self.conn_params)
+            logger.info("Connected to PostgreSQL database.")
+        except psycopg2.Error as exc:
+            logger.error("Failed to connect to PostgreSQL: %s", exc)
             raise
 
     # pylint: disable=no-self-argument
@@ -69,16 +70,17 @@ class DatabaseManager:
         """
 
         def wrapper(self, *args, **kwargs):
-            if self.connection is None:
+            if self.connection is None or self.connection.closed:
                 self.connect()
             return method(self, *args, **kwargs)
 
         return wrapper
 
     @_ensure_connection
-    def execute(self, query: str, params: Optional[Union[List, Tuple, Dict]] = None) -> Any:
+    def execute(self, query: str, params: Optional[Union[List, Tuple, Dict]] = None) -> None:
         """
-        Execute a SQL query.
+        Execute a SQL query (typically DDL or DML like INSERT, UPDATE, DELETE).
+        Commits the transaction.
 
         Parameters
         ----------
@@ -86,27 +88,21 @@ class DatabaseManager:
             SQL query to execute.
         params : Optional[Union[List, Tuple, Dict]], optional
             Parameters for the query, defaults to None.
-
-        Returns
-        -------
-        Any
-            Result of the query execution.
         """
         try:
-            if params:
-                result = self.connection.execute(query, params)
-            else:
-                result = self.connection.execute(query)
-            logger.debug("Executed query: %s | Params: %s", query, params)
-            return result
-        except Exception as exc:
+            with self.connection.cursor() as cur:
+                cur.execute(query, params)
+            self.connection.commit()
+            logger.debug("Executed query and committed: %s | Params: %s", query, params)
+        except psycopg2.Error as exc:
             logger.error("Query execution failed: %s\nQuery: %s\nParams: %s", exc, query, params)
+            self.connection.rollback()
             raise
 
     @_ensure_connection
     def fetchall(self, query: str, params: Optional[Union[List, Tuple, Dict]] = None) -> List[Tuple]:
         """
-        Fetch all rows from a query result.
+        Fetch all rows from a SELECT query result.
 
         Parameters
         ----------
@@ -120,13 +116,20 @@ class DatabaseManager:
         List[Tuple]
             List of tuples containing the query results.
         """
-        cur = self.execute(query, params)
-        return cur.fetchall()
+        try:
+            with self.connection.cursor(cursor_factory=DictCursor) as cur:
+                cur.execute(query, params)
+                result = cur.fetchall()
+            logger.debug("Fetched all from query: %s | Params: %s", query, params)
+            return result
+        except psycopg2.Error as exc:
+            logger.error("Fetch all failed: %s\nQuery: %s\nParams: %s", exc, query, params)
+            raise
 
     @_ensure_connection
     def fetchone(self, query: str, params: Optional[Union[List, Tuple, Dict]] = None) -> Optional[Tuple]:
         """
-        Fetch a single row from a query result.
+        Fetch a single row from a SELECT query result.
 
         Parameters
         ----------
@@ -140,16 +143,23 @@ class DatabaseManager:
         Optional[Tuple]
             Single tuple containing the query result, or None if no result.
         """
-        cur = self.execute(query, params)
-        return cur.fetchone()
+        try:
+            with self.connection.cursor(cursor_factory=DictCursor) as cur:
+                cur.execute(query, params)
+                result = cur.fetchone()
+            logger.debug("Fetched one from query: %s | Params: %s", query, params)
+            return result
+        except psycopg2.Error as exc:
+            logger.error("Fetch one failed: %s\nQuery: %s\nParams: %s", exc, query, params)
+            raise
 
     def close(self):
         """
         Close the database connection.
         """
-        if self.connection:
+        if self.connection and not self.connection.closed:
             self.connection.close()
-            logger.info("DuckDB connection closed.")
+            logger.info("PostgreSQL connection closed.")
             self.connection = None
 
     def __del__(self):
