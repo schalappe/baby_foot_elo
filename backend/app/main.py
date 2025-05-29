@@ -28,9 +28,12 @@ from app.utils.validation import (
 
 @asynccontextmanager
 async def lifespan(app):
-    db = DatabaseManager(db_path=config.get_db_url())
-    initialize_database(db)
-    yield
+    db_manager = DatabaseManager(db_path=config.get_db_url())
+    initialize_database(db_manager)
+    try:
+        yield
+    finally:
+        db_manager.close()
 
 
 app = FastAPI(
