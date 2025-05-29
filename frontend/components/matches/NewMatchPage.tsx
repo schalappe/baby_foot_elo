@@ -1,14 +1,14 @@
 /**
- * matches/new/page.tsx
+ * components/matches/NewMatchPage.tsx
  *
- * Enhanced page for creating a new match in the Baby Foot ELO app.
+ * Enhanced component for creating a new match in the Baby Foot ELO app.
  *
  * - Provides a form to create and submit a new match.
  * - Fetches players and teams for match assignment.
  * - Uses react-hook-form and ShadCN UI components.
  * - Enhanced with better error handling and UX improvements.
  *
- * Usage: Routed to '/matches/new' by Next.js.
+ * Usage: Used as a component, not a Next.js page.
  */
 "use client";
 
@@ -79,36 +79,14 @@ const matchFormSchema = z
     notes: z.string().optional(),
   })
   .refine(
-    (data) => {
-      const players = [
-        data.teamAPlayer1,
-        data.teamAPlayer2,
-        data.teamBPlayer1,
-        data.teamBPlayer2,
-      ].filter(Boolean);
-      return new Set(players).size === players.length;
-    },
+    (data) =>
+      data.teamAPlayer1 !== data.teamAPlayer2 &&
+      data.teamBPlayer1 !== data.teamBPlayer2 &&
+      ![data.teamAPlayer1, data.teamAPlayer2].includes(data.teamBPlayer1) &&
+      ![data.teamAPlayer1, data.teamAPlayer2].includes(data.teamBPlayer2),
     {
-      message: "Chaque joueur ne peut être sélectionné qu'une seule fois.",
-      path: ["teamAPlayer1"],
-    },
-  )
-  .refine(
-    (data) => {
-      return data.teamAPlayer1 !== data.teamAPlayer2;
-    },
-    {
-      message: "Les deux joueurs de l'équipe A doivent être différents.",
-      path: ["teamAPlayer2"],
-    },
-  )
-  .refine(
-    (data) => {
-      return data.teamBPlayer1 !== data.teamBPlayer2;
-    },
-    {
-      message: "Les deux joueurs de l'équipe B doivent être différents.",
-      path: ["teamBPlayer2"],
+      message: "Un joueur ne peut être sélectionné qu'une seule fois.",
+      path: ["teamAPlayer1", "teamAPlayer2", "teamBPlayer1", "teamBPlayer2"],
     },
   );
 

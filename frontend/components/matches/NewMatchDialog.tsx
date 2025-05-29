@@ -9,7 +9,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import NewMatchPage from "@/app/matches/new/page";
+import NewMatchPage from "@/components/matches/NewMatchPage";
 import { useState } from "react";
 
 /**
