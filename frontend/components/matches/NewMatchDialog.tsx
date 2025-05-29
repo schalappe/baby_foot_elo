@@ -31,7 +31,7 @@ export function NewMatchDialog() {
           Ajouter une Partie
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[700px]">
+      <DialogContent className="w-full max-w-lg sm:max-w-2xl max-h-[90vh] overflow-y-auto p-2 sm:p-6">
         <DialogHeader>
           <DialogTitle>Ajouter une Partie</DialogTitle>
         </DialogHeader>
