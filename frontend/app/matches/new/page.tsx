@@ -114,7 +114,10 @@ const matchFormSchema = z
 
 type MatchFormValues = z.infer<typeof matchFormSchema>;
 
-const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
+export default function NewMatchPage({
+  onMatchCreated,
+  isDialog,
+}: NewMatchPageProps) {
   const router = useRouter();
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [loadingPlayers, setLoadingPlayers] = useState<boolean>(true);
@@ -716,8 +719,4 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
       </form>
     </div>
   );
-};
-
-export default function Page() {
-  return <NewMatchPage />;
 }
