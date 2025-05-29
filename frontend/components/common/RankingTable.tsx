@@ -52,7 +52,7 @@ import {
  */
 export interface RankingTableProps<T> {
   data: T[];
-  columns: ColumnDef<T, any>[];
+  columns: ColumnDef<T, unknown>[];
   isLoading: boolean;
   error: Error | null;
 }

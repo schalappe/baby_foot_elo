@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useEffect } from "react";
 import Link from "next/link";
 import { Match, MatchPlayerInfo, MatchTeamInfo } from "@/types/match.types";
 import { Player } from "@/types/player.types";
@@ -22,7 +22,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -178,17 +177,6 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
   const handleMatchOutcomeChange = (outcome: "win" | "loss" | "any") => {
     setMatchOutcomeFilter(outcome === "any" ? undefined : outcome);
     setCurrentPage(1);
-  };
-
-  /**
-   * Retrieves the name of a player given their ID.
-   *
-   * @param playerId - The ID of the player.
-   * @returns The player's name, or a default string if not found.
-   */
-  const getPlayerName = (playerId: number) => {
-    const player = (allPlayers || []).find((p) => p.player_id === playerId);
-    return player ? player.name : `Unknown Player (${playerId})`;
   };
 
   // Pagination state
@@ -397,7 +385,7 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
           <SelectContent>
             <SelectGroup>
               <SelectLabel>Résultat du match</SelectLabel>
-              <SelectItem value="any">N'importe quel résultat</SelectItem>
+              <SelectItem value="any">N&apos;importe quel résultat</SelectItem>
               <SelectItem value="win">Victoire</SelectItem>
               <SelectItem value="loss">Défaite</SelectItem>
             </SelectGroup>
@@ -584,7 +572,7 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
               <PaginationItem>
                 <PaginationPrevious
                   onClick={() =>
-                    setCurrentPage((prev: any) => Math.max(1, prev - 1))
+                    setCurrentPage((prev: number) => Math.max(1, prev - 1))
                   }
                   aria-disabled={currentPage === 1}
                   className={
@@ -605,7 +593,7 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
               <PaginationItem>
                 <PaginationNext
                   onClick={() =>
-                    setCurrentPage((prev: any) =>
+                    setCurrentPage((prev: number) =>
                       Math.min(totalPages, prev + 1),
                     )
                   }

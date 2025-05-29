@@ -34,7 +34,7 @@ interface EntityStats {
     losses: number;
     matches_played?: number;
   };
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface EntityStatsCardsProps {

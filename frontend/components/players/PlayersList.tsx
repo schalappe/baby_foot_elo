@@ -66,11 +66,28 @@ const PlayersList: React.FC = () => {
     try {
       const data = await getPlayers();
       setPlayers(Array.isArray(data) ? data : []);
-    } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.detail ||
-        err.message ||
-        "Erreur lors de la récupération des joueurs.";
+    } catch (err: unknown) {
+      let errorMessage = "Erreur lors de la récupération des joueurs.";
+      if (
+        typeof err === "object" &&
+        err !== null &&
+        "response" in err &&
+        typeof (err as { response?: unknown }).response === "object" &&
+        (err as { response: unknown }).response !== null &&
+        "data" in (err as { response: { data?: unknown } }).response &&
+        typeof (err as { response: { data?: unknown } }).response.data ===
+          "object" &&
+        (err as { response: { data: unknown } }).response.data !== null &&
+        "detail" in
+          (err as { response: { data: { detail?: unknown } } }).response.data
+      ) {
+        errorMessage = String(
+          (err as { response: { data: { detail?: unknown } } }).response.data
+            .detail,
+        );
+      } else if (err instanceof Error && err.message) {
+        errorMessage = err.message;
+      }
       setError(errorMessage);
       setPlayers([]);
     }

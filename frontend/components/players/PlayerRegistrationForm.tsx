@@ -55,6 +55,22 @@ export function PlayerRegistrationForm({
     },
   });
 
+  function isErrorWithStatus409(
+    error: unknown,
+  ): error is { response: { status: number } } {
+    return (
+      typeof error === "object" &&
+      error !== null &&
+      "response" in error &&
+      typeof (error as { response?: unknown }).response === "object" &&
+      (error as { response: unknown }).response !== null &&
+      "status" in (error as { response: { status?: unknown } }).response &&
+      typeof (error as { response: { status?: unknown } }).response.status ===
+        "number" &&
+      (error as { response: { status: number } }).response.status === 409
+    );
+  }
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       await createPlayer(values.name);
@@ -63,9 +79,9 @@ export function PlayerRegistrationForm({
       });
       form.reset();
       onPlayerRegistered();
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Check for duplicate player name (409 Conflict status)
-      if (error.response && error.response.status === 409) {
+      if (isErrorWithStatus409(error)) {
         toast.error("Nom de joueur déjà utilisé", {
           description:
             "Un joueur avec ce nom existe déjà. Veuillez choisir un nom différent.",
@@ -80,7 +96,9 @@ export function PlayerRegistrationForm({
           description:
             error instanceof Error
               ? error.message
-              : "Une erreur inconnue est survenue.",
+              : typeof error === "string"
+                ? error
+                : "Une erreur inconnue est survenue.",
         });
       }
       console.error("Création du joueur echouée:", error);
