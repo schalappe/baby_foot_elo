@@ -166,7 +166,7 @@ async def list_players_endpoint(
 async def get_player_rankings_endpoint(
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of players to return"),
     days_since_last_match: Optional[int] = Query(
-        30, ge=1, description="Only include players whose last match was at least this many days ago"
+        180, ge=1, description="Only include players whose last match was at least this many days ago"
     ),
 ):
     """
@@ -177,7 +177,7 @@ async def get_player_rankings_endpoint(
     limit : int, optional
         Maximum number of players to return (default: 100, max: 1000).
     days_since_last_match : Optional[int], optional
-        Only include players whose last match was at least this many days ago, by default 30.
+        Only include players whose last match was at least this many days ago, by default 180.
 
     Returns
     -------

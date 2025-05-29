@@ -195,7 +195,7 @@ async def get_teams_endpoint(
 async def get_team_rankings_endpoint(
     limit: int = Query(200, ge=1, le=1000, description="Maximum number of teams to return"),
     days_since_last_match: Optional[int] = Query(
-        30, ge=1, description="Only include teams whose last match was at least this many days ago"
+        180, ge=1, description="Only include teams whose last match was at least this many days ago"
     ),
 ) -> List[TeamResponse]:
     """
@@ -212,7 +212,7 @@ async def get_team_rankings_endpoint(
     limit : int, optional
         Maximum number of teams to return, by default 200 (max 1000).
     days_since_last_match : Optional[int], optional
-        Only include teams whose last match was at least this many days ago, by default 30.
+        Only include teams whose last match was at least this many days ago, by default 180.
 
     Returns
     -------
