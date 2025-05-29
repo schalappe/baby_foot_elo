@@ -25,13 +25,7 @@ import * as z from "zod";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import {
-  CalendarIcon,
-  AlertCircle,
-  Loader2,
-  Users,
-  Trophy,
-} from "lucide-react";
+import { CalendarIcon, AlertCircle, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -358,7 +352,6 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
   return (
     <div className="container mx-auto p-4 max-w-2xl">
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-
         {/* Team A Players */}
         <Card>
           <CardHeader>
