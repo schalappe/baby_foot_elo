@@ -3,6 +3,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -33,7 +34,10 @@ export function NewMatchDialog() {
       </DialogTrigger>
       <DialogContent className="w-full max-w-lg sm:max-w-2xl max-h-[90vh] overflow-y-auto p-2 sm:p-6">
         <DialogHeader>
-          <DialogTitle>Ajouter une Partie</DialogTitle>
+          <DialogTitle>Créer un nouveau match</DialogTitle>
+          <DialogDescription>
+            Remplissez les informations suivantes pour créer un nouveau match.
+          </DialogDescription>
         </DialogHeader>
         <NewMatchPage onMatchCreated={handleMatchCreated} isDialog={true} />
       </DialogContent>
