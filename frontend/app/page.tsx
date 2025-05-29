@@ -16,17 +16,17 @@ import useSWR, { mutate } from "swr";
 import { Player } from "@/types/player.types";
 import { getPlayerRankings } from "../services/playerService";
 import { PlayerRankingsDisplay } from "../components/rankings/PlayerRankingsDisplay";
-import { Button } from "@/components/ui/button";
+import { Button } from "../components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { PlayerRegistrationForm } from "@/components/players/PlayerRegistrationForm";
+} from "../components/ui/dialog";
+import { PlayerRegistrationForm } from "../components/players/PlayerRegistrationForm";
 import { toast } from "sonner";
-import { NewMatchDialog } from "@/components/matches/NewMatchDialog";
+import { NewMatchDialog } from "../components/matches/NewMatchDialog";
 
 const PLAYERS_API_ENDPOINT = "/api/v1/players/rankings?limit=100";
 

@@ -11,9 +11,13 @@
 "use client";
 
 import React from "react";
-import PlayerDetail from "@/components/players/PlayerDetail";
+import PlayerDetail from "../../../components/players/PlayerDetail";
 import { useParams } from "next/navigation";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "../../../components/ui/alert";
 
 const PlayerDetailPage: React.FC = () => {
   const params = useParams();

@@ -13,12 +13,12 @@
  */
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Toaster } from "@/components/ui/sonner";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
-import { ThemeProvider } from "@/components/ThemeProvider";
+import { Toaster } from "../components/ui/sonner";
+import { SidebarProvider, SidebarInset } from "../components/ui/sidebar";
+import { AppSidebar } from "../components/app-sidebar";
+import { ThemeProvider } from "../components/ThemeProvider";
 import "./globals.css";
-import { SiteHeader } from "@/components/Header";
+import { SiteHeader } from "../components/Header";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

@@ -13,10 +13,10 @@
 import { useEffect } from "react";
 import useSWR from "swr";
 import { Team } from "@/types/team.types";
-import { getTeamRankings } from "@/services/teamService";
-import { TeamRankingsDisplay } from "@/components/rankings/TeamRankingsDisplay";
+import { getTeamRankings } from "../../services/teamService";
+import { TeamRankingsDisplay } from "../../components/rankings/TeamRankingsDisplay";
 import { toast } from "sonner";
-import { NewMatchDialog } from "@/components/matches/NewMatchDialog";
+import { NewMatchDialog } from "../../components/matches/NewMatchDialog";
 
 const TEAMS_API_ENDPOINT = "/api/v1/teams/rankings?limit=100";
 
