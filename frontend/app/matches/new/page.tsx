@@ -687,7 +687,7 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
                 )}
               />
               <Label htmlFor="isFanny" className="cursor-pointer">
-                Fanny (10-0)
+                Fanny
               </Label>
             </div>
 
