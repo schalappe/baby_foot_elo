@@ -8,6 +8,7 @@
  *   - Player, PlayerStats, PlayerMatches, GetPlayersParams, etc.
  */
 // frontend/types/player.types.ts
+import { EntityStats } from "@/types/stats.types";
 
 export interface Player {
   player_id: number;
@@ -20,7 +21,10 @@ export interface Player {
   creation_date: string;
 }
 
-export interface PlayerStats {
+/**
+ * PlayerStats extends EntityStats for compatibility with generic stats cards.
+ */
+export interface PlayerStats extends EntityStats {
   player_id: number;
   name: string;
   global_elo: number;
@@ -57,5 +61,5 @@ export interface GetPlayersParams {
   limit?: number;
   skip?: number;
   sort_by?: string;
-  order?: 'asc' | 'desc';
+  order?: "asc" | "desc";
 }

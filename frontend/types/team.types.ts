@@ -8,8 +8,9 @@
  *   - Team, TeamMatchWithElo, TeamStatistics, etc.
  */
 // frontend/types/team.types.ts
-import { Player } from '@/types/player.types';
-import { BackendMatchWithEloResponse } from '@/types/match.types';
+import { Player } from "@/types/player.types";
+import { EntityStats } from "@/types/stats.types";
+import { BackendMatchWithEloResponse } from "@/types/match.types";
 
 /**
  * Represents a team with detailed player information, as returned by the backend TeamResponse.
@@ -32,18 +33,17 @@ export interface Team {
   rank?: number | null;
 }
 
-
 export type TeamMatchWithElo = BackendMatchWithEloResponse;
 
 /**
- * Team statistics structure returned from the backend statistics endpoint.
- *
- * Corresponds to the output of get_team_statistics (backend).
+ * TeamStatistics extends EntityStats for compatibility with generic stats cards.
+ * Adds matches_played as an alias for total_matches.
  */
-export interface TeamStatistics {
+export interface TeamStatistics extends EntityStats {
   team_id: number;
   global_elo: number;
   total_matches: number;
+  matches_played: number;
   wins: number;
   losses: number;
   win_rate: number;

@@ -8,7 +8,6 @@
  *   - Match, BackendMatchCreatePayload, BackendMatchWithEloResponse, etc.
  */
 // frontend/types/match.types.ts
-import { Player } from './player.types';
 
 export interface GetPlayerMatchesParams {
   limit?: number;
@@ -75,7 +74,9 @@ export interface BackendMatchWithEloResponse {
   year: number;
   month: number;
   day: number;
-  elo_changes: { [player_id: number]: EloChange } | {[team_id: number]: EloChange};
+  elo_changes:
+    | { [player_id: number]: EloChange }
+    | { [team_id: number]: EloChange };
   winner_team: BackendTeamResponse;
   loser_team: BackendTeamResponse;
 }

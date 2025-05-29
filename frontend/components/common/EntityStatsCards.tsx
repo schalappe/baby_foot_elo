@@ -18,24 +18,8 @@ import {
 } from "@/components/ui/chart";
 import { LineChart, Line, YAxis, CartesianGrid } from "recharts";
 import { ResponsiveContainer, PieChart, Pie, Label } from "recharts";
+import { EntityStats } from '@/types/stats.types';
 
-// The stats object must have these fields for the generic card to work
-interface EntityStats {
-  global_elo: number;
-  elo_values: number[];
-  wins: number;
-  losses: number;
-  win_rate: number;
-  matches_played?: number;
-  recent: {
-    elo_changes: number[];
-    win_rate: number;
-    wins: number;
-    losses: number;
-    matches_played?: number;
-  };
-  [key: string]: unknown;
-}
 
 interface EntityStatsCardsProps {
   stats: EntityStats;
