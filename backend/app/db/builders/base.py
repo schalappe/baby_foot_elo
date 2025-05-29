@@ -30,6 +30,47 @@ class BaseQueryBuilder:
         self.where_clauses = []
         self.where_params = []
 
+    def _format_query_with_indexed_placeholders(
+        self, query_template: str, params: List[Any], start_index: int = 1
+    ) -> Tuple[str, List[Any], int]:
+        """
+        Replaces '?' placeholders in a query template with '$n' style placeholders
+        and reorders parameters accordingly.
+
+        Parameters
+        ----------
+        query_template : str
+            The SQL query template with '?' placeholders.
+        params : List[Any]
+            A list of parameters corresponding to the '?' placeholders.
+        start_index : int, optional
+            The starting index for the '$n' placeholders (default is 1).
+
+        Returns
+        -------
+        Tuple[str, List[Any], int]
+            A tuple containing:
+            - The formatted query string with '$n' placeholders.
+            - The list of parameters (can be the same if order doesn't change, but returned for consistency).
+            - The next available parameter index.
+        """
+        parts = query_template.split("?")
+        if len(parts) - 1 != len(params):
+            raise ValueError("Mismatch between '?' placeholders and number of parameters provided.")
+
+        formatted_query = ""
+        current_param_idx = start_index
+        param_list_for_clause = []
+
+        for i, part in enumerate(parts):
+            formatted_query += part
+            if i < len(params):
+                formatted_query += f"${current_param_idx}"
+                param_list_for_clause.append(params[i])
+                current_param_idx += 1
+
+        return formatted_query, param_list_for_clause, current_param_idx
+
     def where(self, clause: str, *params) -> "BaseQueryBuilder":
         """
         Add a WHERE clause.
@@ -66,7 +107,9 @@ class BaseQueryBuilder:
         """
         raise NotImplementedError
 
-    def execute(self, fetch_all: bool = True) -> Union[List[Tuple], Optional[Tuple], int]:
+    def execute(
+        self, fetch_all: bool = True
+    ) -> Union[List[Tuple], Optional[Tuple], Any, int]:  # Added Any for returning_column case
         """
         Build and execute the query.
 
@@ -84,11 +127,20 @@ class BaseQueryBuilder:
 
         try:
             with transaction() as db_manager:
-                if hasattr(self, "select_fields"):
+                is_insert_with_returning = False
+                if self.__class__.__name__ == "InsertQueryBuilder":
+                    if getattr(self, "returning_column", None):
+                        is_insert_with_returning = True
+
+                if is_insert_with_returning:
+                    result = db_manager.fetchone(query, params)
+                    return result[0] if result else None
+                elif hasattr(self, "select_fields"):
                     if fetch_all:
                         return db_manager.fetchall(query, params)
                     return db_manager.fetchone(query, params)
-                return db_manager.execute(query, params)
+                else:
+                    return db_manager.execute(query, params)
         except Exception as exc:
             logger.error(f"Failed to execute query: {exc}")
             return []

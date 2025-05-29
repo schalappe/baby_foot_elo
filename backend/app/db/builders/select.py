@@ -157,7 +157,7 @@ class SelectQueryBuilder(BaseQueryBuilder):
 
     def build(self) -> Tuple[str, List[Any]]:
         """
-        Build the SELECT SQL query and parameters.
+        Build the SELECT SQL query and parameters for PostgreSQL.
 
         Returns
         -------
@@ -165,10 +165,25 @@ class SelectQueryBuilder(BaseQueryBuilder):
             SQL query string and list of parameters.
         """
         query = f"SELECT {', '.join(map(str, self.select_fields))} FROM {self.base_table}"
+        params: List[Any] = []
+        current_param_idx = 1
+
         if self.joins:
             query += " " + " ".join(self.joins)
+
         if self.where_clauses:
-            query += " WHERE " + " AND ".join(self.where_clauses)
+            raw_where_query_part = " AND ".join(self.where_clauses)
+            formatted_where_clause_str, where_params_for_query, next_param_idx = (
+                self._format_query_with_indexed_placeholders(
+                    raw_where_query_part, self.where_params, current_param_idx
+                )
+            )
+
+            if formatted_where_clause_str:
+                query += f" WHERE {formatted_where_clause_str}"
+                params.extend(where_params_for_query)
+                current_param_idx = next_param_idx
+
         if self.group_by:
             query += f" GROUP BY {self.group_by}"
         if self.order_by:
@@ -177,4 +192,5 @@ class SelectQueryBuilder(BaseQueryBuilder):
             query += f" LIMIT {self.limit_val}"
         if self.offset_val is not None:
             query += f" OFFSET {self.offset_val}"
-        return query, self.where_params
+
+        return query, params

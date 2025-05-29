@@ -25,8 +25,7 @@ class UpdateQueryBuilder(BaseQueryBuilder):
             The table to update.
         """
         super().__init__(base_table)
-        self.set_clauses = []
-        self.set_params = []
+        self.update_fields_values: List[Tuple[str, Any]] = []  # Stores (field, value) tuples
 
     def set(self, **field_values) -> UpdateQueryBuilder:
         """
@@ -43,23 +42,47 @@ class UpdateQueryBuilder(BaseQueryBuilder):
             Self for method chaining.
         """
         for k, v in field_values.items():
-            self.set_clauses.append(f"{k} = ?")
-            self.set_params.append(v)
+            self.update_fields_values.append((k, v))
         return self
 
     def build(self) -> Tuple[str, List[Any]]:
         """
-        Build the UPDATE SQL query and parameters.
+        Build the UPDATE SQL query and parameters for PostgreSQL.
 
         Returns
         -------
         Tuple[str, List[Any]]
             SQL query string and list of parameters.
+
+        Raises
+        ------
+        ValueError
+            If no fields are set for update.
         """
-        set_clause = ", ".join(self.set_clauses)
-        query = f"UPDATE {self.base_table} SET {set_clause}"
-        params = self.set_params.copy()
+        if not self.update_fields_values:
+            raise ValueError("No fields provided for UPDATE operation.")
+
+        params: List[Any] = []
+        set_clause_parts: List[str] = []
+        current_param_idx = 1
+
+        for field, value in self.update_fields_values:
+            set_clause_parts.append(f"{field} = ${current_param_idx}")
+            params.append(value)
+            current_param_idx += 1
+
+        set_clause_str = ", ".join(set_clause_parts)
+        query = f"UPDATE {self.base_table} SET {set_clause_str}"
+
         if self.where_clauses:
-            query += " WHERE " + " AND ".join(self.where_clauses)
-            params.extend(self.where_params)
+            if self.where_clauses:
+                raw_where_query_part = " AND ".join(self.where_clauses)
+                formatted_where_clause_str, where_params_for_query, _ = self._format_query_with_indexed_placeholders(
+                    raw_where_query_part, self.where_params, current_param_idx
+                )
+
+                if formatted_where_clause_str:
+                    query += f" WHERE {formatted_where_clause_str}"
+                    params.extend(where_params_for_query)
+
         return query, params
