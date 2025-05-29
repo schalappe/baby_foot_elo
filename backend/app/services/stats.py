@@ -313,22 +313,18 @@ def get_active_team_rankings(limit: int = 100, days_since_last_match: Optional[i
         # ##: Apply additional filters.
         if days_since_last_match is not None:
             filtered_teams = []
+
+            last_match_at_threshold = datetime.now() - timedelta(days=days_since_last_match)
             for team in teams:
                 if team.last_match_at is None:
                     continue
 
-                days = (datetime.now() - team.last_match_at).days
-                if days >= days_since_last_match:
+                if team.last_match_at <= last_match_at_threshold:
                     continue
-
                 filtered_teams.append(team)
 
             # ##: Re-sort after filtering.
             teams = sorted(filtered_teams, key=lambda x: x.global_elo, reverse=True)
-
-        # ##: Add rank information.
-        for rank, team in enumerate(teams, 1):
-            team.rank = rank
 
         return teams
 

@@ -30,14 +30,6 @@ const getTeamName = (team: Team): string => {
 // --- Column Definitions ---
 export const columns: ColumnDef<Team>[] = [
   {
-    accessorKey: "rank",
-    header: ({}) => <Button variant="ghost">Rank</Button>,
-    cell: ({ row }) => (
-      <div className="text-center">{row.getValue("rank") ?? "-"}</div>
-    ),
-    enableSorting: true,
-  },
-  {
     // Custom accessor for team name derived from players
     id: "teamName",
     accessorFn: (row) => getTeamName(row),
