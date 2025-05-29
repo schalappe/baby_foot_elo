@@ -14,11 +14,11 @@
 import React, { useState } from "react";
 import { Match } from "@/types/match.types";
 import { Player } from "@/types/player.types";
-import { getMatches } from "@/services/matchService";
-import { getPlayers as getPlayerList } from "@/services/playerService";
+import { getMatches } from "../../services/matchService";
+import { getPlayers as getPlayerList } from "../../services/playerService";
 import { DateRange } from "react-day-picker";
 import useSWR from "swr";
-import MatchHistoryUI from "@/components/matches/MatchHistoryUI";
+import MatchHistoryUI from "../../components/matches/MatchHistoryUI";
 
 const MatchHistoryPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
