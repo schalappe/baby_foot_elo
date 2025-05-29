@@ -1,20 +1,21 @@
 /**
  * matches/new/page.tsx
  *
- * Page for creating a new match in the Baby Foot ELO app.
+ * Enhanced page for creating a new match in the Baby Foot ELO app.
  *
  * - Provides a form to create and submit a new match.
  * - Fetches players and teams for match assignment.
  * - Uses react-hook-form and ShadCN UI components.
+ * - Enhanced with better error handling and UX improvements.
  *
  * Usage: Routed to '/matches/new' by Next.js.
  */
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Player } from "@/types/player.types";
-import { BackendMatchCreatePayload } from "@/types/match.types";
+import type { Player } from "@/types/player.types";
+import type { BackendMatchCreatePayload } from "@/types/match.types";
 import { getPlayers } from "@/services/playerService";
 import { findOrCreateTeam } from "@/services/teamService";
 import { createMatch } from "@/services/matchService";
@@ -24,11 +25,17 @@ import * as z from "zod";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CalendarIcon, AlertCircle, Loader2 } from "lucide-react";
+import {
+  CalendarIcon,
+  AlertCircle,
+  Loader2,
+  Users,
+  Trophy,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
   Popover,
@@ -49,6 +56,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 
 interface NewMatchPageProps {
   onMatchCreated?: () => void;
@@ -90,6 +98,24 @@ const matchFormSchema = z
       message: "Chaque joueur ne peut être sélectionné qu'une seule fois.",
       path: ["teamAPlayer1"],
     },
+  )
+  .refine(
+    (data) => {
+      return data.teamAPlayer1 !== data.teamAPlayer2;
+    },
+    {
+      message: "Les deux joueurs de l'équipe A doivent être différents.",
+      path: ["teamAPlayer2"],
+    },
+  )
+  .refine(
+    (data) => {
+      return data.teamBPlayer1 !== data.teamBPlayer2;
+    },
+    {
+      message: "Les deux joueurs de l'équipe B doivent être différents.",
+      path: ["teamBPlayer2"],
+    },
   );
 
 type MatchFormValues = z.infer<typeof matchFormSchema>;
@@ -121,8 +147,9 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
   const {
     watch,
     control,
-    formState: { errors },
+    formState: { errors, isValid },
     reset,
+    trigger,
   } = form;
 
   const watchedValues = watch();
@@ -141,15 +168,42 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
     watchedValues.teamBPlayer2,
   ]);
 
+  // Memoized team compositions for better UX
+  const teamCompositions = useMemo(() => {
+    const getPlayerName = (playerId: string) =>
+      allPlayers.find((p) => p.player_id.toString() === playerId)?.name || "";
+
+    return {
+      teamA: {
+        player1: getPlayerName(watchedValues.teamAPlayer1),
+        player2: getPlayerName(watchedValues.teamAPlayer2),
+        complete: watchedValues.teamAPlayer1 && watchedValues.teamAPlayer2,
+      },
+      teamB: {
+        player1: getPlayerName(watchedValues.teamBPlayer1),
+        player2: getPlayerName(watchedValues.teamBPlayer2),
+        complete: watchedValues.teamBPlayer1 && watchedValues.teamBPlayer2,
+      },
+    };
+  }, [allPlayers, watchedValues]);
+
   useEffect(() => {
     const fetchPlayersList = async () => {
       try {
         setLoadingPlayers(true);
         const fetchedPlayers = await getPlayers();
-        setAllPlayers(fetchedPlayers);
-        setPageError(null);
+        if (fetchedPlayers.length === 0) {
+          setPageError(
+            "Aucun joueur trouvé. Veuillez d'abord créer des joueurs.",
+          );
+        } else {
+          setAllPlayers(fetchedPlayers);
+          setPageError(null);
+        }
       } catch (err) {
-        setPageError("Échec de la récupération des joueurs.");
+        setPageError(
+          "Échec de la récupération des joueurs. Veuillez réessayer.",
+        );
         console.error("Échec de la récupération des joueurs:", err);
       } finally {
         setLoadingPlayers(false);
@@ -158,32 +212,43 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
     fetchPlayersList();
   }, []);
 
+  // Auto-validate form when players change
+  useEffect(() => {
+    if (selectedPlayerIds().length > 0) {
+      trigger();
+    }
+  }, [selectedPlayerIds, trigger]);
+
   const onSubmit = async (data: MatchFormValues) => {
     setIsSubmitting(true);
     setSubmissionStatus(null);
 
-    if (
-      !data.teamAPlayer1 ||
-      !data.teamAPlayer2 ||
-      !data.teamBPlayer1 ||
-      !data.teamBPlayer2
-    ) {
-      setSubmissionStatus({
-        type: "error",
-        message: "Tous les joueurs doivent être sélectionnés.",
-      });
-      setIsSubmitting(false);
-      return;
-    }
-
-    const p1A = parseInt(data.teamAPlayer1, 10);
-    const p2A = parseInt(data.teamAPlayer2, 10);
-    const p1B = parseInt(data.teamBPlayer1, 10);
-    const p2B = parseInt(data.teamBPlayer2, 10);
-
     try {
-      const teamA = await findOrCreateTeam(p1A, p2A);
-      const teamB = await findOrCreateTeam(p1B, p2B);
+      // Validate all players are selected
+      if (
+        !data.teamAPlayer1 ||
+        !data.teamAPlayer2 ||
+        !data.teamBPlayer1 ||
+        !data.teamBPlayer2
+      ) {
+        throw new Error("Tous les joueurs doivent être sélectionnés.");
+      }
+
+      const p1A = Number.parseInt(data.teamAPlayer1, 10);
+      const p2A = Number.parseInt(data.teamAPlayer2, 10);
+      const p1B = Number.parseInt(data.teamBPlayer1, 10);
+      const p2B = Number.parseInt(data.teamBPlayer2, 10);
+
+      // Validate player IDs
+      if (isNaN(p1A) || isNaN(p2A) || isNaN(p1B) || isNaN(p2B)) {
+        throw new Error("IDs de joueurs invalides.");
+      }
+
+      // Find or create teams
+      const [teamA, teamB] = await Promise.all([
+        findOrCreateTeam(p1A, p2A),
+        findOrCreateTeam(p1B, p2B),
+      ]);
 
       if (!teamA || !teamB || !teamA.team_id || !teamB.team_id) {
         throw new Error(
@@ -216,10 +281,11 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
         message: "Match créé avec succès!",
       });
       reset();
+
       if (isDialog && onMatchCreated) {
-        onMatchCreated(); // Close dialog
+        setTimeout(() => onMatchCreated(), 1000); // Small delay to show success message
       } else {
-        setTimeout(() => router.push("/"), 1500); // Redirect if not in dialog
+        setTimeout(() => router.push("/"), 1500);
       }
     } catch (err) {
       const errorMessage =
@@ -247,6 +313,11 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
     );
   };
 
+  const clearForm = () => {
+    reset();
+    setSubmissionStatus(null);
+  };
+
   if (loadingPlayers) {
     return (
       <div className="container mx-auto p-4 max-w-2xl space-y-6">
@@ -258,7 +329,7 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex space-x-4">
-              <Skeleton className="h-10 w-1/2" />{" "}
+              <Skeleton className="h-10 w-1/2" />
               <Skeleton className="h-10 w-1/4" />
             </div>
             {[1, 2, 3, 4].map((i) => (
@@ -287,262 +358,404 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
   return (
     <div className="container mx-auto p-4 max-w-2xl">
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Team A Players */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="teamAPlayer1">Équipe A - Joueur 1</Label>
-            <Controller
-              control={control}
-              name="teamAPlayer1"
-              render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner le joueur 1" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Joueurs</SelectLabel>
-                      {getAvailablePlayers(
-                        allPlayers,
-                        selectedPlayerIds(),
-                        field.value,
-                      ).map((player) => (
-                        <SelectItem
-                          key={player.player_id}
-                          value={player.player_id.toString()}
-                        >
-                          {player.name}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.teamAPlayer1 && (
-              <p className="text-red-500 text-sm">
-                {errors.teamAPlayer1.message}
-              </p>
+        {/* Team Preview Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <Card
+            className={cn(
+              "transition-all duration-200",
+              teamCompositions.teamA.complete && "ring-2 ring-primary/20",
+              watchedValues.winningTeam === "A" &&
+                "ring-2 ring-green-500/50 bg-green-50/50",
             )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="teamAPlayer2">Équipe A - Joueur 2</Label>
-            <Controller
-              control={control}
-              name="teamAPlayer2"
-              render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner le joueur 2" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Joueurs</SelectLabel>
-                      {getAvailablePlayers(
-                        allPlayers,
-                        selectedPlayerIds(),
-                        field.value,
-                      ).map((player) => (
-                        <SelectItem
-                          key={player.player_id}
-                          value={player.player_id.toString()}
-                        >
-                          {player.name}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.teamAPlayer2 && (
-              <p className="text-red-500 text-sm">
-                {errors.teamAPlayer2.message}
-              </p>
+          >
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Users className="h-5 w-5" />
+                Équipe A
+                {watchedValues.winningTeam === "A" && (
+                  <Badge
+                    variant="secondary"
+                    className="bg-green-100 text-green-800"
+                  >
+                    <Trophy className="h-3 w-3 mr-1" />
+                    Gagnante
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="text-sm">
+                  <span className="font-medium">Joueur 1:</span>{" "}
+                  {teamCompositions.teamA.player1 || "Non sélectionné"}
+                </div>
+                <div className="text-sm">
+                  <span className="font-medium">Joueur 2:</span>{" "}
+                  {teamCompositions.teamA.player2 || "Non sélectionné"}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card
+            className={cn(
+              "transition-all duration-200",
+              teamCompositions.teamB.complete && "ring-2 ring-primary/20",
+              watchedValues.winningTeam === "B" &&
+                "ring-2 ring-green-500/50 bg-green-50/50",
             )}
-          </div>
+          >
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Users className="h-5 w-5" />
+                Équipe B
+                {watchedValues.winningTeam === "B" && (
+                  <Badge
+                    variant="secondary"
+                    className="bg-green-100 text-green-800"
+                  >
+                    <Trophy className="h-3 w-3 mr-1" />
+                    Gagnante
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="text-sm">
+                  <span className="font-medium">Joueur 1:</span>{" "}
+                  {teamCompositions.teamB.player1 || "Non sélectionné"}
+                </div>
+                <div className="text-sm">
+                  <span className="font-medium">Joueur 2:</span>{" "}
+                  {teamCompositions.teamB.player2 || "Non sélectionné"}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Team A Players */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Équipe A</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="teamAPlayer1">Joueur 1</Label>
+                <Controller
+                  control={control}
+                  name="teamAPlayer1"
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner le joueur 1" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Joueurs disponibles</SelectLabel>
+                          {getAvailablePlayers(
+                            allPlayers,
+                            selectedPlayerIds(),
+                            field.value,
+                          ).map((player) => (
+                            <SelectItem
+                              key={player.player_id}
+                              value={player.player_id.toString()}
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <span>{player.name}</span>
+                                <Badge variant="outline" className="ml-2">
+                                  {player.global_elo} ELO
+                                </Badge>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.teamAPlayer1 && (
+                  <p className="text-red-500 text-sm">
+                    {errors.teamAPlayer1.message}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="teamAPlayer2">Joueur 2</Label>
+                <Controller
+                  control={control}
+                  name="teamAPlayer2"
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner le joueur 2" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Joueurs disponibles</SelectLabel>
+                          {getAvailablePlayers(
+                            allPlayers,
+                            selectedPlayerIds(),
+                            field.value,
+                          ).map((player) => (
+                            <SelectItem
+                              key={player.player_id}
+                              value={player.player_id.toString()}
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <span>{player.name}</span>
+                                <Badge variant="outline" className="ml-2">
+                                  {player.global_elo} ELO
+                                </Badge>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.teamAPlayer2 && (
+                  <p className="text-red-500 text-sm">
+                    {errors.teamAPlayer2.message}
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Team B Players */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="teamBPlayer1">Équipe B - Joueur 1</Label>
-            <Controller
-              control={control}
-              name="teamBPlayer1"
-              render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner le joueur 1" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Joueurs</SelectLabel>
-                      {getAvailablePlayers(
-                        allPlayers,
-                        selectedPlayerIds(),
-                        field.value,
-                      ).map((player) => (
-                        <SelectItem
-                          key={player.player_id}
-                          value={player.player_id.toString()}
-                        >
-                          {player.name}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.teamBPlayer1 && (
-              <p className="text-red-500 text-sm">
-                {errors.teamBPlayer1.message}
-              </p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="teamBPlayer2">Équipe B - Joueur 2</Label>
-            <Controller
-              control={control}
-              name="teamBPlayer2"
-              render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner le joueur 2" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Joueurs</SelectLabel>
-                      {getAvailablePlayers(
-                        allPlayers,
-                        selectedPlayerIds(),
-                        field.value,
-                      ).map((player) => (
-                        <SelectItem
-                          key={player.player_id}
-                          value={player.player_id.toString()}
-                        >
-                          {player.name}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.teamBPlayer2 && (
-              <p className="text-red-500 text-sm">
-                {errors.teamBPlayer2.message}
-              </p>
-            )}
-          </div>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Équipe B</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="teamBPlayer1">Joueur 1</Label>
+                <Controller
+                  control={control}
+                  name="teamBPlayer1"
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner le joueur 1" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Joueurs disponibles</SelectLabel>
+                          {getAvailablePlayers(
+                            allPlayers,
+                            selectedPlayerIds(),
+                            field.value,
+                          ).map((player) => (
+                            <SelectItem
+                              key={player.player_id}
+                              value={player.player_id.toString()}
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <span>{player.name}</span>
+                                <Badge variant="outline" className="ml-2">
+                                  {player.global_elo} ELO
+                                </Badge>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.teamBPlayer1 && (
+                  <p className="text-red-500 text-sm">
+                    {errors.teamBPlayer1.message}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="teamBPlayer2">Joueur 2</Label>
+                <Controller
+                  control={control}
+                  name="teamBPlayer2"
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner le joueur 2" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Joueurs disponibles</SelectLabel>
+                          {getAvailablePlayers(
+                            allPlayers,
+                            selectedPlayerIds(),
+                            field.value,
+                          ).map((player) => (
+                            <SelectItem
+                              key={player.player_id}
+                              value={player.player_id.toString()}
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <span>{player.name}</span>
+                                <Badge variant="outline" className="ml-2">
+                                  {player.global_elo} ELO
+                                </Badge>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.teamBPlayer2 && (
+                  <p className="text-red-500 text-sm">
+                    {errors.teamBPlayer2.message}
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Winning Team */}
-        <div className="space-y-2">
-          <Label htmlFor="winningTeam">Équipe gagnante</Label>
-          <Controller
-            control={control}
-            name="winningTeam"
-            render={({ field }) => (
-              <RadioGroup
-                onValueChange={field.onChange}
-                value={field.value}
-                className="flex space-x-4"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="A" id="winningTeamA" />
-                  <Label htmlFor="winningTeamA">Équipe A</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="B" id="winningTeamB" />
-                  <Label htmlFor="winningTeamB">Équipe B</Label>
-                </div>
-              </RadioGroup>
-            )}
-          />
-          {errors.winningTeam && (
-            <p className="text-red-500 text-sm">{errors.winningTeam.message}</p>
-          )}
-        </div>
-
-        {/* Is Fanny */}
-        <div className="flex items-center space-x-2">
-          <Controller
-            control={control}
-            name="isFanny"
-            render={({ field }) => (
-              <Checkbox
-                id="isFanny"
-                checked={field.value}
-                onCheckedChange={field.onChange}
-              />
-            )}
-          />
-          <Label htmlFor="isFanny">Fanny</Label>
-        </div>
-
-        {/* Match Date */}
-        <div className="space-y-2">
-          <Label htmlFor="matchDate">Date du match</Label>
-          <Controller
-            control={control}
-            name="matchDate"
-            render={({ field }) => (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !field.value && "text-muted-foreground",
-                    )}
+        {/* Match Details */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Détails du Match</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Winning Team */}
+            <div className="space-y-2">
+              <Label htmlFor="winningTeam">Équipe gagnante</Label>
+              <Controller
+                control={control}
+                name="winningTeam"
+                render={({ field }) => (
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    className="flex space-x-4"
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {field.value ? (
-                      format(field.value, "PPP", { locale: fr })
-                    ) : (
-                      <span>Choisir une date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    locale={fr}
-                    onSelect={field.onChange}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            )}
-          />
-          {errors.matchDate && (
-            <p className="text-red-500 text-sm">{errors.matchDate.message}</p>
-          )}
-        </div>
-
-        {/* Notes */}
-        <div className="space-y-2">
-          <Label htmlFor="notes">Notes (optionnel)</Label>
-          <Controller
-            control={control}
-            name="notes"
-            render={({ field }) => (
-              <Textarea
-                id="notes"
-                placeholder="Ajouter des notes sur le match..."
-                {...field}
-                value={field.value || ""}
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="A" id="winningTeamA" />
+                      <Label htmlFor="winningTeamA" className="cursor-pointer">
+                        Équipe A
+                        {teamCompositions.teamA.complete && (
+                          <span className="text-sm text-muted-foreground ml-1">
+                            ({teamCompositions.teamA.player1} &{" "}
+                            {teamCompositions.teamA.player2})
+                          </span>
+                        )}
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="B" id="winningTeamB" />
+                      <Label htmlFor="winningTeamB" className="cursor-pointer">
+                        Équipe B
+                        {teamCompositions.teamB.complete && (
+                          <span className="text-sm text-muted-foreground ml-1">
+                            ({teamCompositions.teamB.player1} &{" "}
+                            {teamCompositions.teamB.player2})
+                          </span>
+                        )}
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                )}
               />
-            )}
-          />
-          {errors.notes && (
-            <p className="text-red-500 text-sm">{errors.notes.message}</p>
-          )}
-        </div>
+              {errors.winningTeam && (
+                <p className="text-red-500 text-sm">
+                  {errors.winningTeam.message}
+                </p>
+              )}
+            </div>
+
+            {/* Is Fanny */}
+            <div className="flex items-center space-x-2">
+              <Controller
+                control={control}
+                name="isFanny"
+                render={({ field }) => (
+                  <Checkbox
+                    id="isFanny"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                )}
+              />
+              <Label htmlFor="isFanny" className="cursor-pointer">
+                Fanny (10-0)
+              </Label>
+            </div>
+
+            {/* Match Date */}
+            <div className="space-y-2">
+              <Label htmlFor="matchDate">Date du match</Label>
+              <Controller
+                control={control}
+                name="matchDate"
+                render={({ field }) => (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !field.value && "text-muted-foreground",
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {field.value ? (
+                          format(field.value, "PPP", { locale: fr })
+                        ) : (
+                          <span>Choisir une date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        locale={fr}
+                        onSelect={field.onChange}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                )}
+              />
+              {errors.matchDate && (
+                <p className="text-red-500 text-sm">
+                  {errors.matchDate.message}
+                </p>
+              )}
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes (optionnel)</Label>
+              <Controller
+                control={control}
+                name="notes"
+                render={({ field }) => (
+                  <Textarea
+                    id="notes"
+                    placeholder="Ajouter des notes sur le match..."
+                    {...field}
+                    value={field.value || ""}
+                    rows={3}
+                  />
+                )}
+              />
+              {errors.notes && (
+                <p className="text-red-500 text-sm">{errors.notes.message}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Submission Status Alert */}
         {submissionStatus && (
@@ -564,10 +777,25 @@ const NewMatchPage = ({ onMatchCreated, isDialog }: NewMatchPageProps) => {
           </Alert>
         )}
 
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Créer le match
-        </Button>
+        {/* Action Buttons */}
+        <div className="flex gap-3">
+          <Button
+            type="submit"
+            className="flex-1"
+            disabled={isSubmitting || !isValid}
+          >
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Créer le match
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={clearForm}
+            disabled={isSubmitting}
+          >
+            Réinitialiser
+          </Button>
+        </div>
       </form>
     </div>
   );

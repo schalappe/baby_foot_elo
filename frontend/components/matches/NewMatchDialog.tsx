@@ -33,12 +33,6 @@ export function NewMatchDialog() {
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[700px]">
-        <DialogHeader>
-          <DialogTitle>Créer un nouveau match</DialogTitle>
-          <DialogDescription>
-            Remplissez les informations suivantes pour créer un nouveau match.
-          </DialogDescription>
-        </DialogHeader>
         <NewMatchPage onMatchCreated={handleMatchCreated} isDialog={true} />
       </DialogContent>
     </Dialog>

@@ -15,7 +15,6 @@ import useSWR from "swr";
 import { Team } from "@/types/team.types";
 import { getTeamRankings } from "@/services/teamService";
 import { TeamRankingsDisplay } from "@/components/rankings/TeamRankingsDisplay";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { NewMatchDialog } from "@/components/matches/NewMatchDialog";
 
