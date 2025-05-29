@@ -10,7 +10,7 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 import psycopg2
 from psycopg2.extras import DictCursor
 
-from backend.app.core.config import config
+from app.core.config import config
 
 logger = getLogger(__name__)
 

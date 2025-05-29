@@ -25,9 +25,11 @@ def transaction():
     ```
     """
     logger.debug("Entering transaction context.")
+    db_manager = DatabaseManager()
     try:
-        with DatabaseManager() as db:
-            yield db
+        yield db_manager
     except Exception as exc:
         logger.error(f"Error within transaction context: {exc}", exc_info=True)
         raise
+    finally:
+        db_manager.close()
