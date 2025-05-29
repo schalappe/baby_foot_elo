@@ -22,7 +22,7 @@ import { createMatch } from "../../services/matchService";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { cn } from "@/lib/utils";
+import { cn } from "../../lib/utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { CalendarIcon, AlertCircle, Loader2 } from "lucide-react";
