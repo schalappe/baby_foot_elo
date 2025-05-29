@@ -8,7 +8,7 @@
  *   - TeamErrorAlert: React.FC for team error display.
  */
 import React from "react";
-import EntityErrorAlert from "@/components/common/EntityErrorAlert";
+import EntityErrorAlert from "../common/EntityErrorAlert";
 
 interface TeamErrorAlertProps {
   error?: string;

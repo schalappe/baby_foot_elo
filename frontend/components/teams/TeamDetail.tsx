@@ -17,7 +17,7 @@ import TeamStatsCards from "./TeamStatsCards";
 import TeamMatchesSection from "./TeamMatchesSection";
 import TeamLoadingSkeleton from "./TeamLoadingSkeleton";
 import TeamErrorAlert from "./TeamErrorAlert";
-import { getTeamStatistics, getTeamMatches } from "@/services/teamService";
+import { getTeamStatistics, getTeamMatches } from "../../services/teamService";
 
 interface TeamDetailProps {
   teamId: number;
