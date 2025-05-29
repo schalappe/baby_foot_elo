@@ -9,6 +9,7 @@ from loguru import logger
 
 from app.db.database import DatabaseManager
 
+
 @contextmanager
 def transaction():
     """

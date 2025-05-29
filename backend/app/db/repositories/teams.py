@@ -6,8 +6,8 @@ Operations related to the Teams table.
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-from psycopg2 import IntegrityError
 from loguru import logger
+from psycopg2 import IntegrityError
 
 from app.db.builders.delete import DeleteQueryBuilder
 from app.db.builders.insert import InsertQueryBuilder

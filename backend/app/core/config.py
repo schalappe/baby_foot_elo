@@ -4,7 +4,7 @@ Module containing configuration class.
 """
 
 from os import environ
-from urllib.parse import quote_plus # For password quoting
+from urllib.parse import quote_plus  # For password quoting
 
 from dotenv import load_dotenv
 
@@ -61,7 +61,7 @@ class Config:
         """
         if self.database_url_env:
             return self.database_url_env
-        
+
         raise ValueError(
             "DATABASE_URL environment variable is not set. "
             "Please ensure it is configured in your .env file or environment."
