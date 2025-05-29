@@ -11,12 +11,12 @@
 
 import React from "react";
 import { Team } from "@/types/team.types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { TeamRankingTable } from "./TeamRankingTable";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "../ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { AlertCircle } from "lucide-react";
-import { PodiumGrid } from "@/components/common/PodiumGrid";
+import { PodiumGrid } from "../common/PodiumGrid";
 
 interface TeamRankingsDisplayProps {
   teams: Team[];

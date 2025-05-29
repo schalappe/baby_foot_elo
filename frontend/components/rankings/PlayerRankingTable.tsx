@@ -14,10 +14,10 @@
 import React from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "../ui/button";
 import { Player } from "@/types/player.types";
 import Link from "next/link";
-import { RankingTable } from "@/components/common/RankingTable";
+import { RankingTable } from "../common/RankingTable";
 
 // --- Column Definitions ---
 /**

@@ -15,9 +15,9 @@ import React from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Button } from "../ui/button";
 import { Team } from "@/types/team.types";
-import { RankingTable } from "@/components/common/RankingTable";
+import { RankingTable } from "../common/RankingTable";
 
 // --- Helper to get Team Name ---
 const getTeamName = (team: Team): string => {
