@@ -10,6 +10,9 @@
 // frontend/types/player.types.ts
 import { EntityStats } from "@/types/stats.types";
 
+/**
+ * Represents a player in the system with their basic information and ELO.
+ */
 export interface Player {
   player_id: number;
   name: string;
@@ -48,6 +51,9 @@ export interface PlayerStats extends EntityStats {
   };
 }
 
+/**
+ * Represents a summary of a match a player participated in.
+ */
 export interface PlayerMatches {
   match_id: number;
   played_at: string;
@@ -57,6 +63,9 @@ export interface PlayerMatches {
   notes: string;
 }
 
+/**
+ * Parameters for fetching a list of players, allowing for pagination and sorting.
+ */
 export interface GetPlayersParams {
   limit?: number;
   skip?: number;

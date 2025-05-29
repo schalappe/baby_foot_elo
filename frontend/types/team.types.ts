@@ -33,6 +33,10 @@ export interface Team {
   rank?: number | null;
 }
 
+/**
+ * Represents a match involving a team, including ELO change details.
+ * This is an alias for BackendMatchWithEloResponse, tailored for team context.
+ */
 export type TeamMatchWithElo = BackendMatchWithEloResponse;
 
 /**
