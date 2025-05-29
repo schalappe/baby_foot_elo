@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "npm install --save-dev eslint && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
