@@ -12,7 +12,7 @@
 
 import React, { useEffect, useState } from "react";
 import { PlayerStats } from "@/types/player.types";
-import { getPlayerStats, getPlayerMatches } from "@/services/playerService";
+import { getPlayerStats, getPlayerMatches } from "../../services/playerService";
 import { BackendMatchWithEloResponse } from "@/types/match.types";
 import PlayerStatsCards from "./PlayerStatsCards";
 import PlayerMatchesSection from "./PlayerMatchesSection";

@@ -16,10 +16,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+} from "../ui/table";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import {
   ArrowUpDown,
   ArrowDown,
@@ -28,8 +28,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { Player } from "@/types/player.types";
-import { getPlayers } from "@/services/playerService";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { getPlayers } from "../../services/playerService";
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import {
   Dialog,
   DialogContent,
@@ -37,7 +37,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "../ui/dialog";
 import { PlayerRegistrationForm } from "./PlayerRegistrationForm";
 
 type SortKey = keyof Pick<Player, "name" | "global_elo" | "matches_played">;

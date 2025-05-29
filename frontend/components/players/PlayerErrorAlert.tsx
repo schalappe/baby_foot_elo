@@ -8,7 +8,7 @@
  *   - PlayerErrorAlert: React.FC for player error display.
  */
 import React from "react";
-import EntityErrorAlert from "@/components/common/EntityErrorAlert";
+import EntityErrorAlert from "../common/EntityErrorAlert";
 
 /**
  * Props for PlayerErrorAlert component.

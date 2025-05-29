@@ -8,7 +8,7 @@
  *   - PlayerStatsCards: React.FC for player statistics display.
  */
 import React from "react";
-import EntityStatsCards from "@/components/common/EntityStatsCards";
+import EntityStatsCards from "../common/EntityStatsCards";
 import { PlayerStats } from "@/types/player.types";
 
 /**
