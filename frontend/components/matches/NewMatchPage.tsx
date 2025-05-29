@@ -16,9 +16,9 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { Player } from "@/types/player.types";
 import type { BackendMatchCreatePayload } from "@/types/match.types";
-import { getPlayers } from "@/services/playerService";
-import { findOrCreateTeam } from "@/services/teamService";
-import { createMatch } from "@/services/matchService";
+import { getPlayers } from "../../services/playerService";
+import { findOrCreateTeam } from "../../services/teamService";
+import { createMatch } from "../../services/matchService";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -27,15 +27,11 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { CalendarIcon, AlertCircle, Loader2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popoverDialog";
+import { Button } from "../ui/button";
+import { Calendar } from "../ui/calendar";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Label } from "../ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popoverDialog";
 import {
   Select,
   SelectContent,
@@ -44,13 +40,13 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
+} from "../ui/select";
+import { Textarea } from "../ui/textarea";
+import { Skeleton } from "../ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import { Checkbox } from "../ui/checkbox";
+import { Badge } from "../ui/badge";
 
 interface NewMatchPageProps {
   onMatchCreated?: () => void;

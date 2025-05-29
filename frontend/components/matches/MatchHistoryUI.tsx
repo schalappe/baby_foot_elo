@@ -11,17 +11,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "../ui/table";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
+} from "../ui/card";
+import { Skeleton } from "../ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
+import { Badge } from "../ui/badge";
 import {
   Select,
   SelectContent,
@@ -30,7 +30,7 @@ import {
   SelectLabel,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "../ui/select";
 import {
   AlertCircle,
   UserSearch,
@@ -39,10 +39,10 @@ import {
   MessageSquareText,
 } from "lucide-react";
 import { format, startOfDay, endOfDay } from "date-fns";
-import { NewMatchDialog } from "@/components/matches/NewMatchDialog";
+import { NewMatchDialog } from "./NewMatchDialog";
 
 import { DateRange } from "react-day-picker";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { DateRangePicker } from "../ui/date-range-picker";
 import {
   Pagination,
   PaginationContent,
@@ -50,7 +50,7 @@ import {
   PaginationLink,
   PaginationPrevious,
   PaginationNext,
-} from "@/components/ui/pagination";
+} from "../ui/pagination";
 
 /**
  * Props for the MatchHistoryUI component.
