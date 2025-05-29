@@ -3,13 +3,9 @@
 Schema definitions for the teams table.
 """
 
-CREATE_SEQ_TEAMS = """
-CREATE SEQUENCE IF NOT EXISTS seq_teams_id;
-"""
-
 CREATE_TEAMS_TABLE = """
 CREATE TABLE IF NOT EXISTS Teams (
-    team_id INTEGER PRIMARY KEY DEFAULT nextval('seq_teams_id'),
+    team_id SERIAL PRIMARY KEY,
     player1_id INTEGER NOT NULL,
     player2_id INTEGER NOT NULL,
     global_elo FLOAT NOT NULL DEFAULT 1000.0,

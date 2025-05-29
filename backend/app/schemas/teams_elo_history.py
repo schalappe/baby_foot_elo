@@ -3,13 +3,9 @@
 Schema definitions for the Teams ELO history table.
 """
 
-CREATE_SEQ_TEAMS_ELO_HISTORY = """
-CREATE SEQUENCE IF NOT EXISTS seq_teams_elo_history_id;
-"""
-
 CREATE_TEAMS_ELO_HISTORY_TABLE = """
 CREATE TABLE IF NOT EXISTS Teams_ELO_History (
-    history_id INTEGER PRIMARY KEY DEFAULT nextval('seq_teams_elo_history_id'),
+    history_id SERIAL PRIMARY KEY,
     team_id INTEGER NOT NULL,
     match_id INTEGER NOT NULL,
     old_elo INTEGER NOT NULL,

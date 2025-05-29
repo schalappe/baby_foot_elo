@@ -12,15 +12,6 @@ from app.core import config
 from app.db.database import DatabaseManager
 from app.schemas import matches, players, players_elo_history, teams, teams_elo_history
 
-# ##: Constants for database initialization.
-SEQUENCES = [
-    players.CREATE_SEQ_PLAYERS,
-    teams.CREATE_SEQ_TEAMS,
-    matches.CREATE_SEQ_MATCHES,
-    players_elo_history.CREATE_SEQ_PLAYERS_ELO_HISTORY,
-    teams_elo_history.CREATE_SEQ_TEAMS_ELO_HISTORY,
-]
-
 TABLES = [
     players.CREATE_PLAYERS_TABLE,
     teams.CREATE_TEAMS_TABLE,
@@ -44,29 +35,6 @@ INDEXES = [
     teams_elo_history.CREATE_INDEX_TEAMS_ELOHIST_MATCH_ID,
     teams_elo_history.CREATE_INDEX_TEAMS_ELOHIST_DATE,
 ]
-
-
-def create_sequences(db_manager: DatabaseManager):
-    """
-    Create all database sequences.
-
-    Parameters
-    ----------
-    db_manager : DatabaseManager
-        The database manager to use for executing the SQL statements.
-
-    Raises
-    ------
-    Exception
-        If an error occurs while executing the SQL statements.
-    """
-    for sql in SEQUENCES:
-        try:
-            db_manager.execute(sql)
-            logger.info(f"Executed sequence statement: {sql.splitlines()[0]}")
-        except Exception as exc:
-            logger.error(f"Error executing sequence statement: {exc}\nSQL: {sql}")
-            raise
 
 
 def create_tables(db_manager: DatabaseManager):
@@ -129,7 +97,7 @@ def initialize_database(db_manager: DatabaseManager):
     Exception
         If an error occurs while executing the SQL statements.
     """
-    create_sequences(db_manager)
+    # ##: Create tables.
     create_tables(db_manager)
 
     # ##: Create indexes for performance optimization.

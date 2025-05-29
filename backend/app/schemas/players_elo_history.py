@@ -3,13 +3,9 @@
 Schema definitions for the Players ELO history table.
 """
 
-CREATE_SEQ_PLAYERS_ELO_HISTORY = """
-CREATE SEQUENCE IF NOT EXISTS seq_players_elo_history_id;
-"""
-
 CREATE_PLAYERS_ELO_HISTORY_TABLE = """
 CREATE TABLE IF NOT EXISTS Players_ELO_History (
-    history_id INTEGER PRIMARY KEY DEFAULT nextval('seq_players_elo_history_id'),
+    history_id SERIAL PRIMARY KEY,
     player_id INTEGER NOT NULL,
     match_id INTEGER NOT NULL,
     old_elo INTEGER NOT NULL,
