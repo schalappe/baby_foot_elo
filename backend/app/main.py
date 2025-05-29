@@ -59,7 +59,7 @@ setup_rate_limiting(app, default_limit=100, default_window=60, endpoint_limits=e
 # ##: Allow CORS from frontend.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[config.get_frontend_url()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -58,5 +58,16 @@ class Config:
             return environ.get("DB_URL")
         raise ValueError("Invalid environment")
 
+    def get_frontend_url(self):
+        """
+        Return the URL of the frontend application.
+
+        Returns
+        -------
+        str
+            The URL of the frontend application.
+        """
+        return environ.get("FRONTEND_URL", "http://localhost:3000")
+
 
 config = Config()
