@@ -3,7 +3,6 @@
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -33,6 +32,9 @@ export function NewMatchDialog() {
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[700px]">
+        <DialogHeader>
+          <DialogTitle>Ajouter une Partie</DialogTitle>
+        </DialogHeader>
         <NewMatchPage onMatchCreated={handleMatchCreated} isDialog={true} />
       </DialogContent>
     </Dialog>
