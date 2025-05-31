@@ -46,7 +46,13 @@ class DatabaseManager:
         """
         if getattr(self, "_initialized", False):
             return
-        self.db_url = config.get_db_url()
+
+        self.db_user = config.db_user
+        self.db_password = config.db_password
+        self.db_host = config.db_host
+        self.db_port = config.db_port
+        self.db_name = config.db_name
+
         self.conn_params = conn_params
         self.connection = None
         self._initialized = True
@@ -55,10 +61,26 @@ class DatabaseManager:
     def connect(self):
         """
         Establish a connection to the PostgreSQL database.
+        Prioritizes individual connection parameters if available.
         """
         try:
-            self.connection = psycopg2.connect(dsn=self.db_url, **self.conn_params)
-            logger.info("Connected to PostgreSQL database.")
+            if self.db_user and self.db_password and self.db_host and self.db_port and self.db_name:
+                self.connection = psycopg2.connect(
+                    user=self.db_user,
+                    password=self.db_password,
+                    host=self.db_host,
+                    port=self.db_port,
+                    dbname=self.db_name,
+                    **self.conn_params,
+                )
+                logger.info("Connected to PostgreSQL using individual parameters.")
+            else:
+                error_msg = (
+                    "Database connection details are not sufficiently set. "
+                    "Ensure DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME are set in config."
+                )
+                logger.error(error_msg)
+                raise ValueError(error_msg)
         except psycopg2.Error as exc:
             logger.error("Failed to connect to PostgreSQL: %s", exc)
             raise

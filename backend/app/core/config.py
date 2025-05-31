@@ -4,7 +4,6 @@ Module containing configuration class.
 """
 
 from os import environ
-from urllib.parse import quote_plus  # For password quoting
 
 from dotenv import load_dotenv
 
@@ -24,57 +23,37 @@ class Config:
     env : str
         The current environment (either "dev" or "prod").
     database_url_env : str | None
-        Full database connection URL from the DATABASE_URL environment variable.
-
-    Methods
-    -------
-    get_db_url() -> str
-        Return the URL of the PostgreSQL database to use.
-    get_frontend_url() -> str
-        Return the URL of the frontend application.
+        Full database connection URL from the DATABASE_URL environment variable (can be derived).
+    db_user : str | None
+        Database user.
+    db_password : str | None
+        Database password.
+    db_host : str | None
+        Database host.
+    db_port : str | None
+        Database port.
+    db_name : str | None
+        Database name.
+    frontend_url : str
+        URL of the frontend application.
     """
 
     def __init__(self):
         """
         Initialize a new configuration object.
 
-        The environment variable ENV is used to select between the development and production environments.
-        If ENV is not set, the development environment is assumed.
         The database connection URL is loaded from the DATABASE_URL environment variable.
         """
-        self.env = environ.get("ENV", "dev")
-        self.database_url_env = environ.get("DATABASE_URL")
+        self.db_user = environ.get("DB_USER")
+        self.db_password = environ.get("DB_PASSWORD")
+        self.db_host = environ.get("DB_HOST")
+        self.db_port = environ.get("DB_PORT")
+        self.db_name = environ.get("DB_NAME")
 
-    def get_db_url(self) -> str:
+    @property
+    def frontend_url(self):
         """
-        Return the URL of the PostgreSQL database to use from the DATABASE_URL environment variable.
-
-        Returns
-        -------
-        str
-            The URL of the PostgreSQL database.
-
-        Raises
-        ------
-        ValueError
-            If the DATABASE_URL environment variable is not set.
-        """
-        if self.database_url_env:
-            return self.database_url_env
-
-        raise ValueError(
-            "DATABASE_URL environment variable is not set. "
-            "Please ensure it is configured in your .env file or environment."
-        )
-
-    def get_frontend_url(self):
-        """
-        Return the URL of the frontend application.
-
-        Returns
-        -------
-        str
-            The URL of the frontend application.
+        URL of the frontend application.
         """
         return environ.get("FRONTEND_URL", "http://localhost:3000")
 
