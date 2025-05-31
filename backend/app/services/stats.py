@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from loguru import logger
@@ -314,7 +314,7 @@ def get_active_team_rankings(limit: int = 100, days_since_last_match: Optional[i
         if days_since_last_match is not None:
             filtered_teams = []
 
-            last_match_at_threshold = datetime.now() - timedelta(days=days_since_last_match)
+            last_match_at_threshold = datetime.now(timezone.utc) - timedelta(days=days_since_last_match)
             for team in teams:
                 if team.last_match_at is None:
                     continue
@@ -362,7 +362,7 @@ def get_active_players_rankings(limit: int = 100, days_since_last_match: Optiona
         if days_since_last_match is not None:
             filtered_players = []
 
-            last_match_at_threshold = datetime.now() - timedelta(days=days_since_last_match)
+            last_match_at_threshold = datetime.now(timezone.utc) - timedelta(days=days_since_last_match)
             for player in players:
                 if player.matches_played == 0 or player.last_match_at <= last_match_at_threshold:
                     continue
