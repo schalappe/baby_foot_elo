@@ -56,6 +56,3 @@ class Config:
         URL of the frontend application.
         """
         return environ.get("FRONTEND_URL", "http://localhost:3000")
-
-
-config = Config()

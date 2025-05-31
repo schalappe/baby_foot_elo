@@ -32,4 +32,4 @@ def transaction():
         logger.error(f"Error within transaction context: {exc}", exc_info=True)
         raise
     finally:
-        db_manager.close()
+        logger.debug("Exiting transaction context. Pool remains active.")

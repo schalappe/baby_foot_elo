@@ -1,23 +1,22 @@
 # -*- coding: utf-8 -*-
 """
-Database Manager for DuckDB connections.
+Database Manager for PostgreSQL connections.
 """
 
 import threading
-from logging import getLogger
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import psycopg2
+from loguru import logger
+from psycopg2 import pool
 from psycopg2.extras import DictCursor
 
 from app.core.config import config
 
-logger = getLogger(__name__)
-
 
 class DatabaseManager:
     """
-    Manages PostgreSQL connections, query execution, and transactions.
+    Manages PostgreSQL connections using a connection pool, query execution, and transactions.
     Uses connection details from the global application configuration.
     """
 
@@ -35,12 +34,16 @@ class DatabaseManager:
                     cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self, **conn_params):
+    def __init__(self, min_conn=1, max_conn=10, **conn_params):
         """
-        Initialize the database manager.
+        Initialize the database manager and its connection pool.
 
         Parameters
         ----------
+        min_conn : int, optional
+            Minimum number of connections in the pool, by default 1.
+        max_conn : int, optional
+            Maximum number of connections in the pool, by default 10.
         conn_params : dict
             Additional connection parameters for psycopg2.connect().
         """
@@ -54,18 +57,33 @@ class DatabaseManager:
         self.db_name = config.db_name
 
         self.conn_params = conn_params
-        self.connection = None
+        self.pool = None
         self._initialized = True
-        self.connect()
+        self._initialize_pool(min_conn, max_conn)
 
-    def connect(self):
+    def _initialize_pool(self, min_conn: int, max_conn: int):
         """
-        Establish a connection to the PostgreSQL database.
-        Prioritizes individual connection parameters if available.
+        Initialize the PostgreSQL connection pool.
+
+        Parameters
+        ----------
+        min_conn : int
+            Minimum number of connections in the pool.
+        max_conn : int
+            Maximum number of connections in the pool.
+
+        Raises
+        -----
+        ValueError
+            If any of the required database connection parameters are not set.
+        psycopg2.Error
+            If an error occurs while initializing the connection pool.
         """
         try:
             if self.db_user and self.db_password and self.db_host and self.db_port and self.db_name:
-                self.connection = psycopg2.connect(
+                self.pool = pool.SimpleConnectionPool(
+                    min_conn,
+                    max_conn,
                     user=self.db_user,
                     password=self.db_password,
                     host=self.db_host,
@@ -73,36 +91,24 @@ class DatabaseManager:
                     dbname=self.db_name,
                     **self.conn_params,
                 )
-                logger.info("Connected to PostgreSQL using individual parameters.")
+
+                base = f"{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
+                logger.info(f"PostgreSQL connection pool initialized (min: {min_conn}, max: {max_conn}) for {base}.")
             else:
                 error_msg = (
-                    "Database connection details are not sufficiently set. "
+                    "Database connection details are not sufficiently set for pooling. "
                     "Ensure DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME are set in config."
                 )
                 logger.error(error_msg)
                 raise ValueError(error_msg)
-        except psycopg2.Error as exc:
-            logger.error("Failed to connect to PostgreSQL: %s", exc)
+        except (psycopg2.Error, pool.PoolError) as exc:
+            logger.error("Failed to initialize PostgreSQL connection pool: %s", exc)
             raise
 
-    # pylint: disable=no-self-argument
-    def _ensure_connection(method: Callable):
-        """
-        Decorator to ensure a connection exists before executing a method.
-        """
-
-        def wrapper(self, *args, **kwargs):
-            if self.connection is None or self.connection.closed:
-                self.connect()
-            return method(self, *args, **kwargs)
-
-        return wrapper
-
-    @_ensure_connection
     def execute(self, query: str, params: Optional[Union[List, Tuple, Dict]] = None) -> None:
         """
         Execute a SQL query (typically DDL or DML like INSERT, UPDATE, DELETE).
-        Commits the transaction.
+        Commits the transaction on the acquired connection.
 
         Parameters
         ----------
@@ -111,20 +117,25 @@ class DatabaseManager:
         params : Optional[Union[List, Tuple, Dict]], optional
             Parameters for the query, defaults to None.
         """
+        conn = None
         try:
-            with self.connection.cursor() as cur:
+            conn = self.pool.getconn()
+            with conn.cursor() as cur:
                 cur.execute(query, params)
-            self.connection.commit()
+            conn.commit()
             logger.debug("Executed query and committed: %s | Params: %s", query, params)
-        except psycopg2.Error as exc:
+        except (psycopg2.Error, pool.PoolError) as exc:
             logger.error("Query execution failed: %s\nQuery: %s\nParams: %s", exc, query, params)
-            self.connection.rollback()
+            if conn:
+                conn.rollback()
             raise
+        finally:
+            if conn:
+                self.pool.putconn(conn)
 
-    @_ensure_connection
     def fetchall(self, query: str, params: Optional[Union[List, Tuple, Dict]] = None) -> List[Tuple]:
         """
-        Fetch all rows from a SELECT query result.
+        Fetch all rows from a SELECT query result using a connection from the pool.
 
         Parameters
         ----------
@@ -138,20 +149,26 @@ class DatabaseManager:
         List[Tuple]
             List of tuples containing the query results.
         """
+        conn = None
         try:
-            with self.connection.cursor(cursor_factory=DictCursor) as cur:
+            conn = self.pool.getconn()
+            with conn.cursor(cursor_factory=DictCursor) as cur:
                 cur.execute(query, params)
                 result = cur.fetchall()
             logger.debug("Fetched all from query: %s | Params: %s", query, params)
             return result
-        except psycopg2.Error as exc:
+        except (psycopg2.Error, pool.PoolError) as exc:
             logger.error("Fetch all failed: %s\nQuery: %s\nParams: %s", exc, query, params)
+            if conn and not conn.closed and conn.status != psycopg2.extensions.STATUS_READY:
+                conn.rollback()
             raise
+        finally:
+            if conn:
+                self.pool.putconn(conn)
 
-    @_ensure_connection
     def fetchone(self, query: str, params: Optional[Union[List, Tuple, Dict]] = None) -> Optional[Tuple]:
         """
-        Fetch a single row from a SELECT query result.
+        Fetch a single row from a SELECT query result using a connection from the pool.
 
         Parameters
         ----------
@@ -165,27 +182,34 @@ class DatabaseManager:
         Optional[Tuple]
             Single tuple containing the query result, or None if no result.
         """
+        conn = None
         try:
-            with self.connection.cursor(cursor_factory=DictCursor) as cur:
+            conn = self.pool.getconn()
+            with conn.cursor(cursor_factory=DictCursor) as cur:
                 cur.execute(query, params)
                 result = cur.fetchone()
             logger.debug("Fetched one from query: %s | Params: %s", query, params)
             return result
-        except psycopg2.Error as exc:
+        except (psycopg2.Error, pool.PoolError) as exc:
             logger.error("Fetch one failed: %s\nQuery: %s\nParams: %s", exc, query, params)
+            if conn and not conn.closed and conn.status != psycopg2.extensions.STATUS_READY:
+                conn.rollback()
             raise
+        finally:
+            if conn:
+                self.pool.putconn(conn)
 
     def close(self):
         """
-        Close the database connection.
+        Close all connections in the pool.
         """
-        if self.connection and not self.connection.closed:
-            self.connection.close()
-            logger.info("PostgreSQL connection closed.")
-            self.connection = None
+        if self.pool:
+            self.pool.closeall()
+            logger.info("PostgreSQL connection pool closed.")
+            self.pool = None
 
     def __del__(self):
         """
-        Close the database connection when the object is destroyed.
+        Close the connection pool when the object is destroyed.
         """
         self.close()
