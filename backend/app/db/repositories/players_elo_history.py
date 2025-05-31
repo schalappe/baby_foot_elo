@@ -8,8 +8,6 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
-from app.db.builders.insert import InsertQueryBuilder
-from app.db.builders.select import SelectQueryBuilder
 from app.db.session import transaction, with_retry
 
 
@@ -47,19 +45,23 @@ def record_player_elo_update(
             date = datetime.now()
 
         difference = new_elo - old_elo
-        builder = InsertQueryBuilder("Players_ELO_History", returning_column="history_id").set(
-            player_id=player_id,
-            match_id=match_id,
-            old_elo=old_elo,
-            new_elo=new_elo,
-            difference=difference,
-            date=date,
-        )
-        history_id = builder.execute()
-
-        if history_id is not None:
-            return history_id
-            return None
+        elo_data = {
+            "player_id": player_id,
+            "match_id": match_id,
+            "old_elo": old_elo,
+            "new_elo": new_elo,
+            "difference": difference,
+            "date": date.isoformat() if isinstance(date, datetime) else date,
+        }
+        with transaction() as db_manager:
+            response = db_manager.client.table("Players_ELO_History").insert(elo_data).execute()
+            if response.data and len(response.data) > 0:
+                history_id = response.data[0].get("history_id")
+                if history_id is not None:
+                    logger.info(f"ELO update for player {player_id} recorded with ID: {history_id}")
+                    return history_id
+        logger.warning(f"ELO update recording for player {player_id} did not return an ID or failed.")
+        return None
     except Exception as exc:
         logger.error(f"Failed to record ELO update: {exc}")
         return None
@@ -89,25 +91,33 @@ def batch_record_player_elo_updates(elo_updates: List[Dict[str, Any]]) -> List[O
     if not elo_updates:
         return []
 
-    history_ids = []
+    updates_to_insert = []
+    for update in elo_updates:
+        date = update.get("date", datetime.now())
+        difference = update["new_elo"] - update["old_elo"]
+        updates_to_insert.append(
+            {
+                "player_id": update["player_id"],
+                "match_id": update["match_id"],
+                "old_elo": update["old_elo"],
+                "new_elo": update["new_elo"],
+                "difference": difference,
+                "date": date.isoformat() if isinstance(date, datetime) else date,
+            }
+        )
+
+    if not updates_to_insert:
+        return []
+
     try:
-        for update in elo_updates:
-            date = update.get("date", datetime.now())
-            difference = update["new_elo"] - update["old_elo"]
-
-            builder = InsertQueryBuilder("Players_ELO_History", returning_column="history_id").set(
-                player_id=update["player_id"],
-                match_id=update["match_id"],
-                old_elo=update["old_elo"],
-                new_elo=update["new_elo"],
-                difference=difference,
-                date=date,
-            )
-            history_id = builder.execute()
-            if history_id is not None:
-                history_ids.append(history_id)
-
-        return history_ids
+        with transaction() as db_manager:
+            response = db_manager.client.table("Players_ELO_History").insert(updates_to_insert).execute()
+            if response.data and len(response.data) > 0:
+                history_ids = [item.get("history_id") for item in response.data if item.get("history_id") is not None]
+                logger.info(f"Batch ELO updates recorded. IDs: {history_ids}")
+                return history_ids
+            logger.warning("Batch ELO update recording did not return IDs or failed.")
+            return []
     except Exception as exc:
         logger.error(f"Failed to batch record ELO updates: {exc}")
         return []
@@ -143,34 +153,23 @@ def get_player_elo_history_by_id(
         List of ELO history records
     """
     try:
-        builder = SelectQueryBuilder("Players_ELO_History").select("*").where("player_id = ?", player_id)
+        with transaction() as db_manager:
+            query = db_manager.client.table("Players_ELO_History").select("*").eq("player_id", player_id)
 
-        if start_date:
-            builder = builder.where("date >= ?", start_date)
+            if start_date:
+                query = query.gte("date", start_date.isoformat() if isinstance(start_date, datetime) else start_date)
+            if end_date:
+                query = query.lte("date", end_date.isoformat() if isinstance(end_date, datetime) else end_date)
 
-        if end_date:
-            builder = builder.where("date <= ?", end_date)
+            response = query.order("date", desc=True).limit(limit).offset(offset).execute()
 
-        results = builder.order_by_clause("date DESC").limit(limit).offset(offset).execute(fetch_all=True)
-
-        if not results:
-            return []
-
-        history_records = []
-        for record in results:
-            history_records.append(
-                {
-                    "history_id": record[0],
-                    "player_id": record[1],
-                    "match_id": record[2],
-                    "old_elo": record[3],
-                    "new_elo": record[4],
-                    "difference": record[5],
-                    "date": record[6],
-                }
-            )
-
-        return history_records
+            history_records = []
+            if response.data:
+                for record_data in response.data:
+                    if record_data.get("date") and isinstance(record_data["date"], str):
+                        record_data["date"] = datetime.fromisoformat(record_data["date"])
+                    history_records.append(record_data)
+            return history_records
     except Exception as exc:
         logger.error(f"Failed to get ELO history for player ID {player_id}: {exc}")
         return []
@@ -194,27 +193,20 @@ def get_player_elo_history_by_match_id(player_id: int, match_id: int) -> Optiona
         ELO history record for the player and match, or None if not found
     """
     try:
-        builder = (
-            SelectQueryBuilder("Players_ELO_History")
-            .select("*")
-            .where("player_id = ?", player_id)
-            .where("match_id = ?", match_id)
-        )
-        results = builder.execute(fetch_all=True)
-
-        if not results:
-            return None
-
-        history_record = {
-            "history_id": results[0][0],
-            "player_id": results[0][1],
-            "match_id": results[0][2],
-            "old_elo": results[0][3],
-            "new_elo": results[0][4],
-            "difference": results[0][5],
-            "date": results[0][6],
-        }
-        return history_record
+        with transaction() as db_manager:
+            response = (
+                db_manager.client.table("Players_ELO_History")
+                .select("*")
+                .eq("player_id", player_id)
+                .eq("match_id", match_id)
+                .maybe_single()
+                .execute()
+            )
+            if response.data:
+                if response.data.get("date") and isinstance(response.data["date"], str):
+                    response.data["date"] = datetime.fromisoformat(response.data["date"])
+                return response.data
+        return None
     except Exception as exc:
         logger.error(f"Failed to get ELO history for player {player_id} and match {match_id}: {exc}")
         return None
@@ -236,30 +228,21 @@ def get_players_elo_history_by_match_id(match_id: int) -> List[Dict[str, Any]]:
         List of ELO history records for the match
     """
     try:
-        results = (
-            SelectQueryBuilder("Players_ELO_History")
-            .select("*")
-            .where("match_id = ?", match_id)
-            .execute(fetch_all=True)
-        )
-
-        if not results:
-            return []
-
-        history_records = []
-        for record in results:
-            history_records.append(
-                {
-                    "history_id": record[0],
-                    "player_id": record[1],
-                    "match_id": record[2],
-                    "old_elo": record[3],
-                    "new_elo": record[4],
-                    "difference": record[5],
-                    "date": record[6],
-                }
+        with transaction() as db_manager:
+            response = (
+                db_manager.client.table("Players_ELO_History")
+                .select("*")
+                .eq("match_id", match_id)
+                .order("date", desc=True)
+                .execute()
             )
-        return history_records
+            history_records = []
+            if response.data:
+                for record_data in response.data:
+                    if record_data.get("date") and isinstance(record_data["date"], str):
+                        record_data["date"] = datetime.fromisoformat(record_data["date"])
+                    history_records.append(record_data)
+            return history_records
     except Exception as exc:
         logger.error(f"Failed to get ELO history for match {match_id}: {exc}")
         return []
