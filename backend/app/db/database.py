@@ -102,7 +102,7 @@ class DatabaseManager:
                 logger.error(error_msg)
                 raise ValueError(error_msg)
         except (psycopg2.Error, pool.PoolError) as exc:
-            logger.error("Failed to initialize PostgreSQL connection pool: %s", exc)
+            logger.error(f"Failed to initialize PostgreSQL connection pool: {exc}")
             raise
 
     def execute(self, query: str, params: Optional[Union[List, Tuple, Dict]] = None) -> None:
@@ -123,9 +123,9 @@ class DatabaseManager:
             with conn.cursor() as cur:
                 cur.execute(query, params)
             conn.commit()
-            logger.debug("Executed query and committed: %s | Params: %s", query, params)
+            logger.debug(f"Executed query and committed: {query} | Params: {params}")
         except (psycopg2.Error, pool.PoolError) as exc:
-            logger.error("Query execution failed: %s\nQuery: %s\nParams: %s", exc, query, params)
+            logger.error(f"Query execution failed: {exc}\nQuery: {query}\nParams: {params}")
             if conn:
                 conn.rollback()
             raise
@@ -155,10 +155,10 @@ class DatabaseManager:
             with conn.cursor(cursor_factory=DictCursor) as cur:
                 cur.execute(query, params)
                 result = cur.fetchall()
-            logger.debug("Fetched all from query: %s | Params: %s", query, params)
+            logger.debug(f"Fetched all from query: {query} | Params: {params}")
             return result
         except (psycopg2.Error, pool.PoolError) as exc:
-            logger.error("Fetch all failed: %s\nQuery: %s\nParams: %s", exc, query, params)
+            logger.error(f"Fetch all failed: {exc}\nQuery: {query}\nParams: {params}")
             if conn and not conn.closed and conn.status != psycopg2.extensions.STATUS_READY:
                 conn.rollback()
             raise
@@ -188,10 +188,10 @@ class DatabaseManager:
             with conn.cursor(cursor_factory=DictCursor) as cur:
                 cur.execute(query, params)
                 result = cur.fetchone()
-            logger.debug("Fetched one from query: %s | Params: %s", query, params)
+            logger.debug(f"Fetched one from query: {query} | Params: {params}")
             return result
         except (psycopg2.Error, pool.PoolError) as exc:
-            logger.error("Fetch one failed: %s\nQuery: %s\nParams: %s", exc, query, params)
+            logger.error(f"Fetch one failed: {exc}\nQuery: {query}\nParams: {params}")
             if conn and not conn.closed and conn.status != psycopg2.extensions.STATUS_READY:
                 conn.rollback()
             raise
