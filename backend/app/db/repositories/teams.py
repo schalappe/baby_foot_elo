@@ -53,7 +53,7 @@ def create_team_by_player_ids(
                 .execute()
             )
 
-            if existing_team_response.data:
+            if existing_team_response:
                 existing_team_id = existing_team_response.data.get("team_id")
                 logger.warning(
                     f"Attempted to create duplicate team for players {player1_id} ({p1}) and {player2_id} ({p2}). "
