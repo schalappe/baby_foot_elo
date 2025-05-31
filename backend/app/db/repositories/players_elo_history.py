@@ -53,8 +53,8 @@ def record_player_elo_update(
             "difference": difference,
             "date": date.isoformat() if isinstance(date, datetime) else date,
         }
-        with transaction() as db_manager:
-            response = db_manager.client.table("Players_ELO_History").insert(elo_data).execute()
+        with transaction() as db_client:
+            response = db_client.table("players_elo_history").insert(elo_data).execute()
             if response.data and len(response.data) > 0:
                 history_id = response.data[0].get("history_id")
                 if history_id is not None:
@@ -110,8 +110,8 @@ def batch_record_player_elo_updates(elo_updates: List[Dict[str, Any]]) -> List[O
         return []
 
     try:
-        with transaction() as db_manager:
-            response = db_manager.client.table("Players_ELO_History").insert(updates_to_insert).execute()
+        with transaction() as db_client:
+            response = db_client.table("players_elo_history").insert(updates_to_insert).execute()
             if response.data and len(response.data) > 0:
                 history_ids = [item.get("history_id") for item in response.data if item.get("history_id") is not None]
                 logger.info(f"Batch ELO updates recorded. IDs: {history_ids}")
@@ -153,8 +153,8 @@ def get_player_elo_history_by_id(
         List of ELO history records
     """
     try:
-        with transaction() as db_manager:
-            query = db_manager.client.table("Players_ELO_History").select("*").eq("player_id", player_id)
+        with transaction() as db_client:
+            query = db_client.table("players_elo_history").select("*").eq("player_id", player_id)
 
             if start_date:
                 query = query.gte("date", start_date.isoformat() if isinstance(start_date, datetime) else start_date)
@@ -193,16 +193,16 @@ def get_player_elo_history_by_match_id(player_id: int, match_id: int) -> Optiona
         ELO history record for the player and match, or None if not found
     """
     try:
-        with transaction() as db_manager:
+        with transaction() as db_client:
             response = (
-                db_manager.client.table("Players_ELO_History")
+                db_client.table("players_elo_history")
                 .select("*")
                 .eq("player_id", player_id)
                 .eq("match_id", match_id)
                 .maybe_single()
                 .execute()
             )
-            if response.data:
+            if response and response.data:
                 if response.data.get("date") and isinstance(response.data["date"], str):
                     response.data["date"] = datetime.fromisoformat(response.data["date"])
                 return response.data
@@ -228,9 +228,9 @@ def get_players_elo_history_by_match_id(match_id: int) -> List[Dict[str, Any]]:
         List of ELO history records for the match
     """
     try:
-        with transaction() as db_manager:
+        with transaction() as db_client:
             response = (
-                db_manager.client.table("Players_ELO_History")
+                db_client.table("players_elo_history")
                 .select("*")
                 .eq("match_id", match_id)
                 .order("date", desc=True)

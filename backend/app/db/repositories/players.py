@@ -31,7 +31,7 @@ def create_player_by_name(name: str, global_elo: int = 1000) -> Optional[int]:
     try:
         with transaction() as db_client:
             response = (
-                db_client.table("Players")
+                db_client.table("players")
                 .insert({"name": name, "global_elo": global_elo}, returning="representation")
                 .execute()
             )
@@ -75,7 +75,7 @@ def batch_insert_players_by_name(players: List[Dict[str, Any]]) -> List[Optional
             return []
 
         with transaction() as db_client:
-            response = db_client.table("Players").insert(players_to_insert, returning="representation").execute()
+            response = db_client.table("players").insert(players_to_insert, returning="representation").execute()
 
         if response.data:
             for record in response.data:
@@ -106,7 +106,7 @@ def get_all_players() -> List[Dict[str, Any]]:
     try:
         with transaction() as db_client:
             response = (
-                db_client.table("Players")
+                db_client.table("players")
                 .select("player_id, name, global_elo, created_at")
                 .order("global_elo", desc=True)
                 .execute()
@@ -149,7 +149,7 @@ def get_player_by_id_or_name(player_id: Optional[int] = None, name: Optional[str
 
     try:
         with transaction() as db_client:
-            query = db_client.table("Players").select("player_id, name, global_elo, created_at")
+            query = db_client.table("players").select("player_id, name, global_elo, created_at")
             if player_id is not None:
                 query = query.eq("player_id", player_id)
             if name is not None:
@@ -157,7 +157,7 @@ def get_player_by_id_or_name(player_id: Optional[int] = None, name: Optional[str
 
             response = query.maybe_single().execute()
 
-        if response.data:
+        if response and response.data:
             return response.data
         return None
     except Exception as exc:
@@ -200,7 +200,7 @@ def update_player_name_or_elo(
 
     try:
         with transaction() as db_client:
-            response = db_client.table("Players").update(update_fields).eq("player_id", player_id).execute()
+            response = db_client.table("players").update(update_fields).eq("player_id", player_id).execute()
 
         updated_successfully = False
         if response.data and len(response.data) > 0:
@@ -259,7 +259,7 @@ def batch_update_players_elo(players: List[Dict[str, Any]]) -> bool:
                     logger.warning(f"No fields to update for player_id {player_id} in batch.")
                     continue
 
-                response = db_client.table("Players").update(update_fields).eq("player_id", player_id).execute()
+                response = db_client.table("players").update(update_fields).eq("player_id", player_id).execute()
 
                 updated_this_player = False
                 if response.data and len(response.data) > 0:
@@ -301,7 +301,7 @@ def delete_player_by_id(player_id: int) -> bool:
     """
     try:
         with transaction() as db_client:
-            response = db_client.table("Players").delete().eq("player_id", player_id).execute()
+            response = db_client.table("players").delete().eq("player_id", player_id).execute()
 
         deleted_successfully = False
         if response.data and len(response.data) > 0:

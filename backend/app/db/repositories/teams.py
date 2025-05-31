@@ -45,7 +45,7 @@ def create_team_by_player_ids(
         with transaction() as db_client:
             # ##: Check if team with same players exists (order-insensitive).
             existing_team_response = (
-                db_client.table("Teams")
+                db_client.table("teams")
                 .select("team_id")
                 .eq("player1_id", p1)
                 .eq("player2_id", p2)
@@ -75,7 +75,7 @@ def create_team_by_player_ids(
                 if team_data["last_match_at"] is None and last_match_at is not None:
                     logger.warning(f"Could not parse last_match_at: {last_match_at}")
 
-            insert_response = db_client.table("Teams").insert(team_data, returning="representation").execute()
+            insert_response = db_client.table("teams").insert(team_data, returning="representation").execute()
 
             if insert_response.data and len(insert_response.data) > 0:
                 new_team_id = insert_response.data[0].get("team_id")
@@ -133,7 +133,7 @@ def batch_insert_teams_by_player_ids(teams: List[Dict[str, Any]]) -> List[Option
 
     try:
         with transaction() as db_client:
-            response = db_client.table("Teams").insert(teams_to_insert, returning="representation").execute()
+            response = db_client.table("teams").insert(teams_to_insert, returning="representation").execute()
 
         if response.data:
             inserted_map = {(d["player1_id"], d["player2_id"]): d["team_id"] for d in response.data}
@@ -172,7 +172,7 @@ def get_all_teams(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
     try:
         with transaction() as db_client:
             response = (
-                db_client.table("Teams")
+                db_client.table("teams")
                 .select("team_id, player1_id, player2_id, global_elo, created_at, last_match_at")
                 .order("global_elo", desc=True)
                 .limit(limit)
@@ -205,13 +205,13 @@ def get_team_by_id(team_id: int) -> Optional[Dict[str, Any]]:
     try:
         with transaction() as db_client:
             response = (
-                db_client.table("Teams")
+                db_client.table("teams")
                 .select("team_id, player1_id, player2_id, global_elo, created_at, last_match_at")
                 .eq("team_id", team_id)
                 .maybe_single()
                 .execute()
             )
-        if response.data:
+        if response and response.data:
             return response.data
         return None
     except Exception as exc:
@@ -237,7 +237,7 @@ def get_teams_by_player_id(player_id: int) -> List[Dict[str, Any]]:
     try:
         with transaction() as db_client:
             response = (
-                db_client.table("Teams")
+                db_client.table("teams")
                 .select("team_id, player1_id, player2_id, global_elo, created_at, last_match_at")
                 .or_(f"player1_id.eq.{player_id},player2_id.eq.{player_id}")
                 .order("last_match_at", desc=True, nulls_first=False)
@@ -290,7 +290,7 @@ def update_team_elo(
 
     try:
         with transaction() as db_client:
-            response = db_client.table("Teams").update(update_fields).eq("team_id", team_id).execute()
+            response = db_client.table("teams").update(update_fields).eq("team_id", team_id).execute()
 
         updated_successfully = bool(response.data and len(response.data) > 0) or getattr(response, "count", 0) > 0
 
@@ -356,7 +356,7 @@ def batch_update_teams_elo(teams: List[Dict[str, Any]]) -> List[bool]:
 
                 current_team_success = False
                 try:
-                    response = db_client.table("Teams").update(update_fields).eq("team_id", team_id).execute()
+                    response = db_client.table("teams").update(update_fields).eq("team_id", team_id).execute()
                     if (response.data and len(response.data) > 0) or getattr(response, "count", 0) > 0:
                         logger.info(f"Team ID {team_id} updated successfully in batch.")
                         current_team_success = True
@@ -399,7 +399,7 @@ def delete_team_by_id(team_id: int) -> bool:
     """
     try:
         with transaction() as db_client:
-            response = db_client.table("Teams").delete().eq("team_id", team_id).execute()
+            response = db_client.table("teams").delete().eq("team_id", team_id).execute()
 
         deleted_successfully = bool(response.data and len(response.data) > 0) or getattr(response, "count", 0) > 0
 

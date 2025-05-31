@@ -27,54 +27,23 @@ def get_player_match_stats(player_id: int) -> Dict[str, Any]:
     Dict[str, Any]
         Match statistics for the player
     """
-    with transaction() as db_manager:
-        # ##: Match Count.
-        mc_response = (
-            db_manager.client.table("Matches")
-            .select(
-                "match_id, winner_team:winner_team_id!inner(player1_id, player2_id), loser_team:loser_team_id!inner(player1_id, player2_id)",
-                count="exact",
-            )
-            .or_(
-                f"winner_team.player1_id.eq.{player_id},winner_team.player2_id.eq.{player_id},loser_team.player1_id.eq.{player_id},loser_team.player2_id.eq.{player_id}"
-            )
-            .execute()
-        )
-        match_count = mc_response.count if mc_response.count is not None else 0
+    with transaction() as db_client:
+        # ##: Match Count (using RPC).
+        rpc_params = {"p_player_id": player_id}
+        mc_rpc_response = db_client.rpc("get_player_total_matches", rpc_params).execute()
+        match_count = mc_rpc_response.data if mc_rpc_response.data is not None else 0
 
-        # ##: Win Count.
-        wc_response = (
-            db_manager.client.table("Matches")
-            .select("winner_team:winner_team_id!inner(player1_id, player2_id)", count="exact")
-            .or_(f"winner_team.player1_id.eq.{player_id},winner_team.player2_id.eq.{player_id}")
-            .execute()
-        )
-        win_count = wc_response.count if wc_response.count is not None else 0
+        # ##: Win Count (using RPC).
+        wc_rpc_response = db_client.rpc("get_player_win_count", rpc_params).execute()
+        win_count = wc_rpc_response.data if wc_rpc_response.data is not None else 0
 
-        # ##: Loss Count.
-        lc_response = (
-            db_manager.client.table("Matches")
-            .select("loser_team:loser_team_id!inner(player1_id, player2_id)", count="exact")
-            .or_(f"loser_team.player1_id.eq.{player_id},loser_team.player2_id.eq.{player_id}")
-            .execute()
-        )
-        loss_count = lc_response.count if lc_response.count is not None else 0
+        # ##: Loss Count (using RPC).
+        lc_rpc_response = db_client.rpc("get_player_loss_count", rpc_params).execute()
+        loss_count = lc_rpc_response.data if lc_rpc_response.data is not None else 0
 
-        # ##: Last Match Date.
-        last_match_response = (
-            db_manager.client.table("Matches")
-            .select(
-                "played_at, winner_team:winner_team_id!inner(player1_id, player2_id), loser_team:loser_team_id!inner(player1_id, player2_id)"
-            )
-            .or_(
-                f"winner_team.player1_id.eq.{player_id},winner_team.player2_id.eq.{player_id},loser_team.player1_id.eq.{player_id},loser_team.player2_id.eq.{player_id}"
-            )
-            .order("played_at", desc=True)
-            .limit(1)
-            .maybe_single()
-            .execute()
-        )
-        last_match_at = last_match_response.data.get("played_at") if last_match_response.data else None
+        # ##: Last Match Date (using RPC).
+        last_match_rpc_response = db_client.rpc("get_player_last_match_date", rpc_params).execute()
+        last_match_at = last_match_rpc_response.data if last_match_rpc_response.data is not None else None
 
     return {
         "matches_played": match_count,
@@ -98,10 +67,10 @@ def get_team_match_stats(team_id: int) -> Dict[str, Any]:
     Dict[str, Any]
         Match statistics for the team
     """
-    with transaction() as db_manager:
+    with transaction() as db_client:
         # ##: Match Count.
         mc_response = (
-            db_manager.client.table("Matches")
+            db_client.table("matches")
             .select("match_id", count="exact")
             .or_(f"winner_team_id.eq.{team_id},loser_team_id.eq.{team_id}")
             .execute()
@@ -110,22 +79,19 @@ def get_team_match_stats(team_id: int) -> Dict[str, Any]:
 
         # ##: Win Count.
         wc_response = (
-            db_manager.client.table("Matches")
-            .select("match_id", count="exact")
-            .eq("winner_team_id", team_id)
-            .execute()
+            db_client.table("matches").select("match_id", count="exact").eq("winner_team_id", team_id).execute()
         )
         win_count = wc_response.count if wc_response.count is not None else 0
 
         # ##: Loss Count.
         lc_response = (
-            db_manager.client.table("Matches").select("match_id", count="exact").eq("loser_team_id", team_id).execute()
+            db_client.table("matches").select("match_id", count="exact").eq("loser_team_id", team_id).execute()
         )
         loss_count = lc_response.count if lc_response.count is not None else 0
 
         # ##: Last Match Date.
         last_match_response = (
-            db_manager.client.table("Matches")
+            db_client.table("matches")
             .select("played_at")
             .or_(f"winner_team_id.eq.{team_id},loser_team_id.eq.{team_id}")
             .order("played_at", desc=True)
@@ -133,7 +99,7 @@ def get_team_match_stats(team_id: int) -> Dict[str, Any]:
             .maybe_single()
             .execute()
         )
-        last_match_at = last_match_response.data.get("played_at") if last_match_response.data else None
+        last_match_at = last_match_response.data.get("played_at") if last_match_response else None
 
     return {
         "matches_played": match_count,

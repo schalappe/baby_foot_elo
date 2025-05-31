@@ -50,7 +50,7 @@ def create_match_by_team_ids(
             logger.error("Winner and loser team IDs cannot be the same")
             return None
 
-        with transaction() as db_manager:
+        with transaction() as db_client:
             match_data = {
                 "winner_team_id": winner_team_id,
                 "loser_team_id": loser_team_id,
@@ -60,7 +60,7 @@ def create_match_by_team_ids(
             if notes is not None:
                 match_data["notes"] = notes
 
-            response = db_manager.client.table("Matches").insert(match_data).execute()
+            response = db_client.table("matches").insert(match_data).execute()
 
             if response.data and len(response.data) > 0:
                 new_match_id = response.data[0].get("match_id")
@@ -90,15 +90,15 @@ def get_match_by_id(match_id: int) -> Optional[Dict[str, Any]]:
     Optional[Dict[str, Any]]
         Match data as a dictionary, or None if not found
     """
-    with transaction() as db_manager:
+    with transaction() as db_client:
         response = (
-            db_manager.client.table("Matches")
+            db_client.table("matches")
             .select("match_id, winner_team_id, loser_team_id, is_fanny, played_at, notes")
             .eq("match_id", match_id)
             .maybe_single()
             .execute()
         )
-        if response.data:
+        if response and response.data:
             if response.data.get("played_at"):
                 response.data["played_at"] = datetime.fromisoformat(response.data["played_at"])
             return response.data
@@ -146,25 +146,25 @@ def get_matches_by_team_id(
         if end_date is not None:
             end_date = datetime.combine(end_date, datetime.max.time())
 
-        with transaction() as db_manager:
+        with transaction() as db_client:
             query = (
-                db_manager.client.table("Teams_ELO_History")
+                db_client.table("teams_elo_history")
                 .select(
                     "old_elo, new_elo, difference, "
-                    "match:Matches!inner(match_id, winner_team_id, loser_team_id, is_fanny, played_at, notes)"
+                    "match:matches!inner(match_id, winner_team_id, loser_team_id, is_fanny, played_at, notes)"
                 )
                 .eq("team_id", team_id)
             )
 
             if start_date is not None:
-                query = query.gte("Matches.played_at", start_date.isoformat())
+                query = query.gte("matches.played_at", start_date.isoformat())
             if end_date is not None:
-                query = query.lte("Matches.played_at", end_date.isoformat())
+                query = query.lte("matches.played_at", end_date.isoformat())
             if is_fanny:
-                query = query.eq("Matches.is_fanny", True)
+                query = query.eq("matches.is_fanny", True)
 
             response = (
-                query.order("played_at", desc=True, foreign_table="Matches").limit(limit).offset(offset).execute()
+                query.order("played_at", desc=True, foreign_table="matches").limit(limit).offset(offset).execute()
             )
 
             matches_data = []
@@ -236,15 +236,15 @@ def get_matches_by_player_id(
         if end_date is not None:
             end_date = datetime.combine(end_date, datetime.max.time())
 
-        with transaction() as db_manager:
+        with transaction() as db_client:
             query = (
-                db_manager.client.table("Players_ELO_History")
+                db_client.table("players_elo_history")
                 .select(
                     "team_id, old_elo, new_elo, difference, "
-                    "match:Matches!inner("
+                    "match:matches!inner("
                     "    match_id, winner_team_id, loser_team_id, is_fanny, played_at, notes,"
-                    "    winner_team:Teams!winner_team_id(name),"
-                    "    loser_team:Teams!loser_team_id(name)"
+                    "    winner_team:teams!winner_team_id(name),"
+                    "    loser_team:teams!loser_team_id(name)"
                     ")"
                 )
                 .eq("player_id", player_id)
@@ -313,9 +313,9 @@ def get_all_matches(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
         List of match dictionaries
     """
     try:
-        with transaction() as db_manager:
+        with transaction() as db_client:
             response = (
-                db_manager.client.table("Matches")
+                db_client.table("matches")
                 .select("match_id, winner_team_id, loser_team_id, is_fanny, played_at, notes")
                 .order("played_at", desc=True)
                 .limit(limit)
@@ -350,8 +350,8 @@ def delete_match_by_id(match_id: int) -> bool:
         True if the deletion was successful, False otherwise
     """
     try:
-        with transaction() as db_manager:
-            response = db_manager.client.table("Matches").delete(count="exact").eq("match_id", match_id).execute()
+        with transaction() as db_client:
+            response = db_client.table("matches").delete(count="exact").eq("match_id", match_id).execute()
             if response.count is not None and response.count > 0:
                 logger.info(f"Match with ID {match_id} deleted successfully.")
                 return True
