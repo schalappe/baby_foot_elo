@@ -11,7 +11,7 @@ from loguru import logger
 from psycopg2 import pool
 from psycopg2.extras import DictCursor
 
-from app.core.config import config
+from app.core import config
 
 
 class DatabaseManager:
