@@ -8,9 +8,6 @@ from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 
-from app.db.builders.delete import DeleteQueryBuilder
-from app.db.builders.insert import InsertQueryBuilder
-from app.db.builders.select import SelectQueryBuilder
 from app.db.session import transaction, with_retry
 
 
@@ -54,25 +51,24 @@ def create_match_by_team_ids(
             return None
 
         with transaction() as db_manager:
-            query_builder = InsertQueryBuilder("Matches", returning_column="match_id")
-            query_builder.set(
-                winner_team_id=winner_team_id,
-                loser_team_id=loser_team_id,
-                is_fanny=is_fanny,
-                played_at=played_at,
-            )
-
-            # ##: Add notes if provided
+            match_data = {
+                "winner_team_id": winner_team_id,
+                "loser_team_id": loser_team_id,
+                "is_fanny": is_fanny,
+                "played_at": played_at.isoformat() if isinstance(played_at, datetime) else played_at,
+            }
             if notes is not None:
-                query_builder.set(notes=notes)
+                match_data["notes"] = notes
 
-            new_match_id = query_builder.execute()
+            response = db_manager.client.table("Matches").insert(match_data).execute()
 
-            if new_match_id is not None:
-                logger.info(f"Match created successfully with ID: {new_match_id}")
-                return new_match_id
+            if response.data and len(response.data) > 0:
+                new_match_id = response.data[0].get("match_id")
+                if new_match_id is not None:
+                    logger.info(f"Match created successfully with ID: {new_match_id}")
+                    return new_match_id
 
-            logger.warning("Match creation did not return an ID.")
+            logger.warning("Match creation did not return an ID or failed.")
             return None
     except Exception as exc:
         logger.error(f"Failed to create match: {exc}")
@@ -94,21 +90,18 @@ def get_match_by_id(match_id: int) -> Optional[Dict[str, Any]]:
     Optional[Dict[str, Any]]
         Match data as a dictionary, or None if not found
     """
-    result = (
-        SelectQueryBuilder("Matches")
-        .select("match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "notes")
-        .where("match_id = ?", match_id)
-        .execute(fetch_all=False)
-    )
-    if result:
-        return {
-            "match_id": result[0],
-            "winner_team_id": result[1],
-            "loser_team_id": result[2],
-            "is_fanny": result[3],
-            "played_at": result[4],
-            "notes": result[5],
-        }
+    with transaction() as db_manager:
+        response = (
+            db_manager.client.table("Matches")
+            .select("match_id, winner_team_id, loser_team_id, is_fanny, played_at, notes")
+            .eq("match_id", match_id)
+            .maybe_single()
+            .execute()
+        )
+        if response.data:
+            if response.data.get("played_at"):
+                response.data["played_at"] = datetime.fromisoformat(response.data["played_at"])
+            return response.data
     return None
 
 
@@ -153,61 +146,50 @@ def get_matches_by_team_id(
         if end_date is not None:
             end_date = datetime.combine(end_date, datetime.max.time())
 
-        # ##: Build the query using SelectQueryBuilder.
-        query_builder = (
-            SelectQueryBuilder("Teams_ELO_History eh")
-            .select(
-                "m.match_id",
-                "m.winner_team_id",
-                "m.loser_team_id",
-                "m.is_fanny",
-                "m.played_at",
-                "m.notes",
-                "eh.old_elo",
-                "eh.new_elo",
-                "eh.difference as elo_change",
-            )
-            .join("Matches m", "eh.match_id = m.match_id")
-            .where("eh.team_id = ?", team_id)
-            .order_by_clause("m.played_at DESC")
-            .limit(limit)
-            .offset(offset)
-        )
-
-        # ##: Add date range filtering if provided.
-        if start_date is not None:
-            query_builder.where("m.played_at >= ?", start_date)
-        if end_date is not None:
-            query_builder.where("m.played_at <= ?", end_date)
-        if is_fanny:
-            query_builder.where("m.is_fanny = ?", True)
-
-        # ##: Execute the query and fetch results.
-        matches = []
         with transaction() as db_manager:
-            query, params = query_builder.build()
-            results = db_manager.fetchall(query, params)
-
-        for row in results:
-            matches.append(
-                {
-                    "match_id": row[0],
-                    "winner_team_id": row[1],
-                    "loser_team_id": row[2],
-                    "is_fanny": row[3],
-                    "played_at": row[4],
-                    "notes": row[5],
-                    "won": row[1] == team_id,
-                    "elo_changes": {
-                        team_id: {
-                            "old_elo": row[6],
-                            "new_elo": row[7],
-                            "difference": row[8],
-                        }
-                    },
-                }
+            query = (
+                db_manager.client.table("Teams_ELO_History")
+                .select(
+                    "old_elo, new_elo, difference, "
+                    "match:Matches!inner(match_id, winner_team_id, loser_team_id, is_fanny, played_at, notes)"
+                )
+                .eq("team_id", team_id)
             )
-        return matches
+
+            if start_date is not None:
+                query = query.gte("Matches.played_at", start_date.isoformat())
+            if end_date is not None:
+                query = query.lte("Matches.played_at", end_date.isoformat())
+            if is_fanny:
+                query = query.eq("Matches.is_fanny", True)
+
+            response = (
+                query.order("played_at", desc=True, foreign_table="Matches").limit(limit).offset(offset).execute()
+            )
+
+            matches_data = []
+            if response.data:
+                for row_item in response.data:
+                    match_info = row_item.get("match")
+                    if match_info:
+                        played_at_val = match_info.get("played_at")
+                        matches_data.append(
+                            {
+                                "match_id": match_info["match_id"],
+                                "winner_team_id": match_info["winner_team_id"],
+                                "loser_team_id": match_info["loser_team_id"],
+                                "is_fanny": match_info["is_fanny"],
+                                "played_at": datetime.fromisoformat(played_at_val) if played_at_val else None,
+                                "notes": match_info["notes"],
+                                "won": match_info["winner_team_id"] == team_id,
+                                "elo_changes": {
+                                    "old_elo": row_item["old_elo"],
+                                    "new_elo": row_item["new_elo"],
+                                    "elo_change": row_item["difference"],
+                                },
+                            }
+                        )
+            return matches_data
     except Exception as exc:
         logger.error(f"Failed to get matches for team ID {team_id}: {exc}")
         return []
@@ -254,61 +236,60 @@ def get_matches_by_player_id(
         if end_date is not None:
             end_date = datetime.combine(end_date, datetime.max.time())
 
-        # ##: Build the query using SelectQueryBuilder.
-        query_builder = (
-            SelectQueryBuilder("Players_ELO_History eh")
-            .select(
-                "m.match_id",
-                "m.winner_team_id",
-                "m.loser_team_id",
-                "m.is_fanny",
-                "m.played_at",
-                "m.notes",
-                "eh.old_elo",
-                "eh.new_elo",
-                "eh.difference as elo_change",
-            )
-            .join("Matches m", "eh.match_id = m.match_id")
-            .where("eh.player_id = ?", player_id)
-            .order_by_clause("m.played_at DESC")
-            .limit(limit)
-            .offset(offset)
-        )
-
-        # ##: Add date range filtering if provided.
-        if start_date is not None:
-            query_builder.where("m.played_at >= ?", start_date)
-        if end_date is not None:
-            query_builder.where("m.played_at <= ?", end_date)
-        if is_fanny:
-            query_builder.where("m.is_fanny = ?", True)
-
-        matches = []
         with transaction() as db_manager:
-            query, params = query_builder.build()
-            results = db_manager.fetchall(query, params)
-
-            for row in results:
-                matches.append(
-                    {
-                        "match_id": row[0],
-                        "winner_team_id": row[1],
-                        "loser_team_id": row[2],
-                        "is_fanny": row[3],
-                        "played_at": row[4],
-                        "notes": row[5],
-                        "elo_changes": {
-                            player_id: {
-                                "old_elo": row[6],
-                                "new_elo": row[7],
-                                "difference": row[8],
-                            }
-                        },
-                    }
+            query = (
+                db_manager.client.table("Players_ELO_History")
+                .select(
+                    "team_id, old_elo, new_elo, difference, "
+                    "match:Matches!inner("
+                    "    match_id, winner_team_id, loser_team_id, is_fanny, played_at, notes,"
+                    "    winner_team:Teams!winner_team_id(name),"
+                    "    loser_team:Teams!loser_team_id(name)"
+                    ")"
                 )
+                .eq("player_id", player_id)
+            )
 
-        return matches
+            if start_date is not None:
+                query = query.gte("match.played_at", start_date.isoformat())
+            if end_date is not None:
+                query = query.lte("match.played_at", end_date.isoformat())
+            if is_fanny:
+                query = query.eq("match.is_fanny", True)
 
+            response = query.order("played_at", desc=True, foreign_table="match").limit(limit).offset(offset).execute()
+
+            matches_details = []
+            if response.data:
+                for row_item in response.data:
+                    match_info = row_item.get("match")
+                    if not match_info:
+                        continue
+
+                    team_id_for_player_in_match = row_item["team_id"]
+                    winner_team_info = match_info.get("winner_team")
+                    loser_team_info = match_info.get("loser_team")
+                    played_at_val = match_info.get("played_at")
+
+                    matches_details.append(
+                        {
+                            "match_id": match_info["match_id"],
+                            "played_at": datetime.fromisoformat(played_at_val) if played_at_val else None,
+                            "is_fanny": match_info["is_fanny"],
+                            "notes": match_info["notes"],
+                            "winner_team_id": match_info["winner_team_id"],
+                            "winner_team_name": winner_team_info.get("name") if winner_team_info else "N/A",
+                            "loser_team_id": match_info["loser_team_id"],
+                            "loser_team_name": loser_team_info.get("name") if loser_team_info else "N/A",
+                            "won": team_id_for_player_in_match == match_info["winner_team_id"],
+                            "player_elo_change": {
+                                "old_elo": row_item["old_elo"],
+                                "new_elo": row_item["new_elo"],
+                                "change": row_item["difference"],
+                            },
+                        }
+                    )
+            return matches_details
     except Exception as exc:
         logger.error(f"Failed to get matches for player {player_id}: {exc}")
         return []
@@ -332,30 +313,22 @@ def get_all_matches(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
         List of match dictionaries
     """
     try:
-        rows = (
-            SelectQueryBuilder("Matches")
-            .select("match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "notes")
-            .order_by_clause("played_at DESC")
-            .limit(limit)
-            .offset(offset)
-            .execute()
-        )
-
-        return (
-            [
-                {
-                    "match_id": r[0],
-                    "winner_team_id": r[1],
-                    "loser_team_id": r[2],
-                    "is_fanny": r[3],
-                    "played_at": r[4],
-                    "notes": r[5],
-                }
-                for r in rows
-            ]
-            if rows
-            else []
-        )
+        with transaction() as db_manager:
+            response = (
+                db_manager.client.table("Matches")
+                .select("match_id, winner_team_id, loser_team_id, is_fanny, played_at, notes")
+                .order("played_at", desc=True)
+                .limit(limit)
+                .offset(offset)
+                .execute()
+            )
+            matches_list = []
+            if response.data:
+                for row_data in response.data:
+                    if row_data.get("played_at"):
+                        row_data["played_at"] = datetime.fromisoformat(row_data["played_at"])
+                    matches_list.append(row_data)
+            return matches_list
     except Exception as exc:
         logger.error(f"Failed to get all matches: {exc}")
         return []
@@ -378,15 +351,12 @@ def delete_match_by_id(match_id: int) -> bool:
     """
     try:
         with transaction() as db_manager:
-            query_builder = DeleteQueryBuilder("Matches")
-            query_builder.where("match_id = ?", match_id)
-            query, params = query_builder.build()
-
-            result = bool(db_manager.fetchone(query, params)[0])
-            if result:
-                logger.info(f"Match ID {match_id} deleted successfully.")
-            logger.warning(f"Attempted to delete non-existent Match ID {match_id}.")
-            return result
+            response = db_manager.client.table("Matches").delete(count="exact").eq("match_id", match_id).execute()
+            if response.count is not None and response.count > 0:
+                logger.info(f"Match with ID {match_id} deleted successfully.")
+                return True
+            logger.warning(f"Match with ID {match_id} not found or not deleted.")
+            return False
     except Exception as exc:
         logger.error(f"Failed to delete match ID {match_id}: {exc}")
         return False
