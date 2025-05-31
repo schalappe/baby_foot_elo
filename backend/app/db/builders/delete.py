@@ -24,12 +24,11 @@ class DeleteQueryBuilder(BaseQueryBuilder):
         """
         query = f"DELETE FROM {self.base_table}"
         params: List[Any] = []
-        current_param_idx = 1
 
         if self.where_clauses:
             raw_where_query_part = " AND ".join(self.where_clauses)
             formatted_where_clause_str, where_params_for_query, _ = self._format_query_with_indexed_placeholders(
-                raw_where_query_part, self.where_params, current_param_idx
+                raw_where_query_part, self.where_params
             )
 
             if formatted_where_clause_str:

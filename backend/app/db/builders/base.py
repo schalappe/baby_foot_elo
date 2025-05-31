@@ -30,12 +30,10 @@ class BaseQueryBuilder:
         self.where_clauses = []
         self.where_params = []
 
-    def _format_query_with_indexed_placeholders(
-        self, query_template: str, params: List[Any], start_index: int = 1
-    ) -> Tuple[str, List[Any], int]:
+    def _format_query_with_indexed_placeholders(self, query_template: str, params: List[Any]) -> Tuple[str, List[Any], int]:
         """
-        Replaces '?' placeholders in a query template with '$n' style placeholders
-        and reorders parameters accordingly.
+        Replaces '?' placeholders in a query template with '%s' style placeholders
+        suitable for psycopg2.
 
         Parameters
         ----------
@@ -43,33 +41,27 @@ class BaseQueryBuilder:
             The SQL query template with '?' placeholders.
         params : List[Any]
             A list of parameters corresponding to the '?' placeholders.
-        start_index : int, optional
-            The starting index for the '$n' placeholders (default is 1).
 
         Returns
         -------
         Tuple[str, List[Any], int]
             A tuple containing:
-            - The formatted query string with '$n' placeholders.
-            - The list of parameters (can be the same if order doesn't change, but returned for consistency).
-            - The next available parameter index.
+            - The formatted query string with '%s' placeholders.
+            - The original list of parameters (psycopg2 handles them in order).
+            - The count of parameters used (number of '%s' placeholders).
         """
         parts = query_template.split("?")
         if len(parts) - 1 != len(params):
             raise ValueError("Mismatch between '?' placeholders and number of parameters provided.")
 
         formatted_query = ""
-        current_param_idx = start_index
-        param_list_for_clause = []
 
         for i, part in enumerate(parts):
             formatted_query += part
             if i < len(params):
-                formatted_query += f"${current_param_idx}"
-                param_list_for_clause.append(params[i])
-                current_param_idx += 1
+                formatted_query += "%s"
 
-        return formatted_query, param_list_for_clause, current_param_idx
+        return formatted_query, params, len(params)
 
     def where(self, clause: str, *params) -> "BaseQueryBuilder":
         """
@@ -107,9 +99,7 @@ class BaseQueryBuilder:
         """
         raise NotImplementedError
 
-    def execute(
-        self, fetch_all: bool = True
-    ) -> Union[List[Tuple], Optional[Tuple], Any, int]:  # Added Any for returning_column case
+    def execute(self, fetch_all: bool = True) -> Union[List[Tuple], Optional[Tuple], Any, int]:
         """
         Build and execute the query.
 

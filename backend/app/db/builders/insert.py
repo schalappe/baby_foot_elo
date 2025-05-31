@@ -60,7 +60,7 @@ class InsertQueryBuilder(BaseQueryBuilder):
         if not self.fields:
             return "", []
 
-        placeholders = ", ".join([f"${i+1}" for i in range(len(self.fields))])
+        placeholders = ", ".join(["%s" for _ in self.fields])
         fields_str = ", ".join(self.fields)
         query = f"INSERT INTO {self.base_table} ({fields_str}) VALUES ({placeholders})"
 

@@ -33,14 +33,8 @@ def create_player_by_name(name: str, global_elo: int = 1000) -> Optional[int]:
         ID of the newly created player, or None on failure.
     """
     try:
-        result = InsertQueryBuilder("Players").set(name=name, global_elo=global_elo).build()
-
-        query, params = result
-        new_player_id: Optional[int] = None
-        with transaction() as db_manager:
-            res = db_manager.fetchone(f"{query} RETURNING player_id", params)
-            if res and res[0]:
-                new_player_id = res[0]
+        builder = InsertQueryBuilder("Players", returning_column="player_id").set(name=name, global_elo=global_elo)
+        new_player_id = builder.execute()
 
         if new_player_id is not None:
             logger.info(f"Player '{name}' created with ID: {new_player_id}.")
@@ -75,9 +69,9 @@ def batch_insert_players_by_name(players: List[Dict[str, Any]]) -> List[Optional
             for player in players:
                 name = player["name"]
                 global_elo = player.get("global_elo", 1000)
-                query, params = InsertQueryBuilder("Players").set(name=name, global_elo=global_elo).build()
-                result = db_manager.fetchone(f"{query} RETURNING player_id", params)
-                player_ids.append(result[0] if result else None)
+                builder = InsertQueryBuilder("Players", returning_column="player_id").set(name=name, global_elo=global_elo)
+                player_id = builder.execute()
+                player_ids.append(player_id if player_id is not None else None)
         return player_ids
     except Exception as exc:
         logger.error(f"Failed during batch insert: {exc}")

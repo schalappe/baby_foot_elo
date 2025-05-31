@@ -166,23 +166,19 @@ class SelectQueryBuilder(BaseQueryBuilder):
         """
         query = f"SELECT {', '.join(map(str, self.select_fields))} FROM {self.base_table}"
         params: List[Any] = []
-        current_param_idx = 1
 
         if self.joins:
             query += " " + " ".join(self.joins)
 
         if self.where_clauses:
             raw_where_query_part = " AND ".join(self.where_clauses)
-            formatted_where_clause_str, where_params_for_query, next_param_idx = (
-                self._format_query_with_indexed_placeholders(
-                    raw_where_query_part, self.where_params, current_param_idx
-                )
+            formatted_where_clause_str, where_params_for_query, _ = self._format_query_with_indexed_placeholders(
+                raw_where_query_part, self.where_params
             )
 
             if formatted_where_clause_str:
                 query += f" WHERE {formatted_where_clause_str}"
                 params.extend(where_params_for_query)
-                current_param_idx = next_param_idx
 
         if self.group_by:
             query += f" GROUP BY {self.group_by}"

@@ -59,7 +59,7 @@ def create_team_by_player_ids(
                 )
                 return existing_team[0]
 
-            builder = InsertQueryBuilder("Teams")
+            builder = InsertQueryBuilder("Teams", returning_column="team_id")
             builder.set(
                 player1_id=player1_id,
                 player2_id=player2_id,
@@ -71,12 +71,11 @@ def create_team_by_player_ids(
                 )
                 builder.set(last_match_at=last_match_at)
 
-            query, params = builder.build()
-            result = db_manager.fetchone(f"{query} RETURNING team_id", params)
+            new_team_id = builder.execute()
 
-            if result and result[0]:
-                logger.info(f"Created team with ID: {result[0]}")
-                return result[0]
+            if new_team_id is not None:
+                logger.info(f"Created team with ID: {new_team_id}")
+                return new_team_id
             logger.error("Failed to create team or retrieve its ID.")
             return None
     except IntegrityError as constraint_exc:
@@ -111,10 +110,19 @@ def batch_insert_teams_by_player_ids(teams: List[Dict[str, Any]]) -> List[Option
             if p1_id > p2_id:
                 p1_id, p2_id = p2_id, p1_id
 
-            query, params = InsertQueryBuilder("Teams").set(player1_id=p1_id, player2_id=p2_id).build()
-            query += " RETURNING team_id"
-            result = db_manager.fetchone(query, params)
-            team_ids.append(result[0] if result else None)
+            builder = InsertQueryBuilder("Teams", returning_column="team_id").set(player1_id=p1_id, player2_id=p2_id)
+            if "global_elo" in team:
+                builder.set(global_elo=team["global_elo"])
+            if "last_match_at" in team:
+                last_match_at_val = team["last_match_at"]
+                last_match_at_dt = (
+                    datetime.fromisoformat(last_match_at_val) if isinstance(last_match_at_val, str) else last_match_at_val
+                )
+                if last_match_at_dt:
+                     builder.set(last_match_at=last_match_at_dt)
+            
+            team_id = builder.execute()
+            team_ids.append(team_id if team_id is not None else None)
 
     return team_ids
 

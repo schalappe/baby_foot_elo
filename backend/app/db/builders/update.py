@@ -62,27 +62,26 @@ class UpdateQueryBuilder(BaseQueryBuilder):
         if not self.update_fields_values:
             raise ValueError("No fields provided for UPDATE operation.")
 
-        params: List[Any] = []
+        params_for_set_clause: List[Any] = []
         set_clause_parts: List[str] = []
-        current_param_idx = 1
 
         for field, value in self.update_fields_values:
-            set_clause_parts.append(f"{field} = ${current_param_idx}")
-            params.append(value)
-            current_param_idx += 1
+            set_clause_parts.append(f"{field} = %s")  # Use %s for psycopg2
+            params_for_set_clause.append(value)
 
         set_clause_str = ", ".join(set_clause_parts)
         query = f"UPDATE {self.base_table} SET {set_clause_str}"
 
+        final_params: List[Any] = list(params_for_set_clause)
+
         if self.where_clauses:
-            if self.where_clauses:
-                raw_where_query_part = " AND ".join(self.where_clauses)
-                formatted_where_clause_str, where_params_for_query, _ = self._format_query_with_indexed_placeholders(
-                    raw_where_query_part, self.where_params, current_param_idx
-                )
+            raw_where_query_part = " AND ".join(self.where_clauses)
+            formatted_where_clause_str, where_params_for_query, _ = self._format_query_with_indexed_placeholders(
+                raw_where_query_part, self.where_params
+            )
 
-                if formatted_where_clause_str:
-                    query += f" WHERE {formatted_where_clause_str}"
-                    params.extend(where_params_for_query)
+            if formatted_where_clause_str:
+                query += f" WHERE {formatted_where_clause_str}"
+                final_params.extend(where_params_for_query)
 
-        return query, params
+        return query, final_params

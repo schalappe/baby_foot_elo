@@ -48,24 +48,21 @@ def record_team_elo_update(
             date = datetime.now()
 
         difference = new_elo - old_elo
-        with transaction() as db:
-            query, params = (
-                InsertQueryBuilder("Teams_ELO_History")
-                .set(
-                    team_id=team_id,
-                    match_id=match_id,
-                    old_elo=old_elo,
-                    new_elo=new_elo,
-                    difference=difference,
-                    date=date,
-                )
-                .build()
+        builder = (
+            InsertQueryBuilder("Teams_ELO_History", returning_column="history_id")
+            .set(
+                team_id=team_id,
+                match_id=match_id,
+                old_elo=old_elo,
+                new_elo=new_elo,
+                difference=difference,
+                date=date,
             )
-
-            result = db.fetchone(f"{query} RETURNING history_id", params)
-            if result and result[0]:
-                logger.info(f"Recorded ELO update for team {team_id}: {old_elo} -> {new_elo} (diff: {difference:+d})")
-                return result[0]
+        )
+        history_id = builder.execute()
+        if history_id is not None:
+            logger.info(f"Recorded ELO update for team {team_id}: {old_elo} -> {new_elo} (diff: {difference:+d})")
+            return history_id
             return None
     except Exception as exc:
         logger.error(f"Failed to record team ELO update: {exc}")
@@ -94,33 +91,27 @@ def batch_record_team_elo_updates(elo_updates: List[Dict[str, Any]]) -> List[Opt
         List of IDs for the newly created ELO history records, or None for failures.
     """
     try:
-        with transaction() as db:
-            results = []
-            for update in elo_updates:
-                date = update.get("date", datetime.now())
-                difference = update["new_elo"] - update["old_elo"]
+        results = []
+        for update in elo_updates:
+            date = update.get("date", datetime.now())
+            difference = update["new_elo"] - update["old_elo"]
 
-                query, params = (
-                    InsertQueryBuilder("Teams_ELO_History")
-                    .set(
-                        team_id=update["team_id"],
-                        match_id=update["match_id"],
-                        old_elo=update["old_elo"],
-                        new_elo=update["new_elo"],
-                        difference=difference,
-                        date=date,
-                    )
-                    .build()
+            builder = (
+                InsertQueryBuilder("Teams_ELO_History", returning_column="history_id")
+                .set(
+                    team_id=update["team_id"],
+                    match_id=update["match_id"],
+                    old_elo=update["old_elo"],
+                    new_elo=update["new_elo"],
+                    difference=difference,
+                    date=date,
                 )
+            )
+            history_id = builder.execute()
+            results.append(history_id)
 
-                result = db.fetchone(f"{query} RETURNING history_id", params)
-                if result and result[0]:
-                    results.append(result[0])
-                else:
-                    results.append(None)
-
-            logger.info(f"Batch recorded {len(results)} team ELO updates")
-            return results
+        logger.info(f"Batch recorded {len(results)} team ELO updates, successful inserts: {sum(1 for r in results if r is not None)}")
+        return results
     except Exception as exc:
         logger.error(f"Failed to batch record team ELO updates: {exc}")
         return [None] * len(elo_updates)

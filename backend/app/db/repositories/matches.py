@@ -54,7 +54,7 @@ def create_match_by_team_ids(
             return None
 
         with transaction() as db_manager:
-            query_builder = InsertQueryBuilder("Matches")
+            query_builder = InsertQueryBuilder("Matches", returning_column="match_id")
             query_builder.set(
                 winner_team_id=winner_team_id,
                 loser_team_id=loser_team_id,
@@ -66,12 +66,11 @@ def create_match_by_team_ids(
             if notes is not None:
                 query_builder.set(notes=notes)
 
-            query, params = query_builder.build()
-            result = db_manager.fetchone(f"{query} RETURNING match_id", params)
+            new_match_id = query_builder.execute()
 
-            if result:
-                logger.info(f"Match created successfully with ID: {result[0]}")
-                return result[0]
+            if new_match_id is not None:
+                logger.info(f"Match created successfully with ID: {new_match_id}")
+                return new_match_id
 
             logger.warning("Match creation did not return an ID.")
             return None
