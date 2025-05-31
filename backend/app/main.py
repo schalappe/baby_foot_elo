@@ -16,7 +16,7 @@ from fastapi.openapi.utils import get_openapi
 
 from app.api import api_router
 from app.core import config
-from app.db import DatabaseManager, initialize_database
+from app.db import initialize_database, supabase
 from app.utils.error_handlers import setup_error_handlers
 from app.utils.rate_limiter import setup_rate_limiting
 from app.utils.validation import (
@@ -28,12 +28,8 @@ from app.utils.validation import (
 
 @asynccontextmanager
 async def lifespan(app):
-    db_manager = DatabaseManager()
-    initialize_database(db_manager)
-    try:
-        yield
-    finally:
-        db_manager.close()
+    initialize_database(supabase)
+    yield
 
 
 app = FastAPI(
