@@ -183,9 +183,11 @@ def get_matches_by_team_id(
                                 "notes": match_info["notes"],
                                 "won": match_info["winner_team_id"] == team_id,
                                 "elo_changes": {
-                                    "old_elo": row_item["old_elo"],
-                                    "new_elo": row_item["new_elo"],
-                                    "elo_change": row_item["difference"],
+                                    team_id: {
+                                        "old_elo": row_item["old_elo"],
+                                        "new_elo": row_item["new_elo"],
+                                        "difference": row_item["difference"],
+                                    }
                                 },
                             }
                         )
@@ -282,10 +284,12 @@ def get_matches_by_player_id(
                             "loser_team_id": match_info["loser_team_id"],
                             "loser_team_name": loser_team_info.get("name") if loser_team_info else "N/A",
                             "won": team_id_for_player_in_match == match_info["winner_team_id"],
-                            "player_elo_change": {
-                                "old_elo": row_item["old_elo"],
-                                "new_elo": row_item["new_elo"],
-                                "change": row_item["difference"],
+                            "elo_changes": {
+                                player_id: {
+                                    "old_elo": row_item["old_elo"],
+                                    "new_elo": row_item["new_elo"],
+                                    "difference": row_item["difference"],
+                                },
                             },
                         }
                     )
