@@ -1,18 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Operations related to the Teams table.
+Operations related to the Teams table using Supabase client.
 """
 
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
-from psycopg2 import IntegrityError
 
-from app.db.builders.delete import DeleteQueryBuilder
-from app.db.builders.insert import InsertQueryBuilder
-from app.db.builders.select import SelectQueryBuilder
-from app.db.builders.update import UpdateQueryBuilder
 from app.db.session.retry import with_retry
 from app.db.session.transaction import transaction
 
@@ -43,46 +38,55 @@ def create_team_by_player_ids(
     Optional[int]
         ID of the newly created team, or the existing team ID if a duplicate is found.
     """
+    # ##: Ensure player IDs are ordered to handle (p1, p2) and (p2, p1) as the same team.
+    p1, p2 = sorted((player1_id, player2_id))
+
     try:
-        with transaction() as db_manager:
+        with transaction() as db_client:
             # ##: Check if team with same players exists (order-insensitive).
-            existing_team = db_manager.fetchone(
-                """
-                SELECT team_id FROM Teams
-                WHERE (player1_id = ? AND player2_id = ?) OR (player1_id = ? AND player2_id = ?)
-                """,
-                [player1_id, player2_id, player2_id, player1_id],
+            existing_team_response = (
+                db_client.table("Teams")
+                .select("team_id")
+                .eq("player1_id", p1)
+                .eq("player2_id", p2)
+                .maybe_single()
+                .execute()
             )
-            if existing_team:
+
+            if existing_team_response.data:
+                existing_team_id = existing_team_response.data.get("team_id")
                 logger.warning(
-                    f"Attempted to create duplicate team for players {player1_id} and {player2_id}. Returning existing team ID: {existing_team[0]}"
+                    f"Attempted to create duplicate team for players {player1_id} ({p1}) and {player2_id} ({p2}). "
+                    f"Returning existing team ID: {existing_team_id}"
                 )
-                return existing_team[0]
+                return existing_team_id
 
-            builder = InsertQueryBuilder("Teams", returning_column="team_id")
-            builder.set(
-                player1_id=player1_id,
-                player2_id=player2_id,
-                global_elo=global_elo,
-            )
+            team_data: Dict[str, Any] = {
+                "player1_id": p1,
+                "player2_id": p2,
+                "global_elo": global_elo,
+            }
             if last_match_at is not None:
-                last_match_at = (
-                    datetime.fromisoformat(last_match_at) if isinstance(last_match_at, str) else last_match_at
+                team_data["last_match_at"] = (
+                    datetime.fromisoformat(last_match_at).isoformat()
+                    if isinstance(last_match_at, str)
+                    else last_match_at.isoformat() if isinstance(last_match_at, datetime) else None
                 )
-                builder.set(last_match_at=last_match_at)
+                if team_data["last_match_at"] is None and last_match_at is not None:
+                    logger.warning(f"Could not parse last_match_at: {last_match_at}")
 
-            new_team_id = builder.execute()
+            insert_response = db_client.table("Teams").insert(team_data, returning="representation").execute()
 
-            if new_team_id is not None:
-                logger.info(f"Created team with ID: {new_team_id}")
-                return new_team_id
-            logger.error("Failed to create team or retrieve its ID.")
+            if insert_response.data and len(insert_response.data) > 0:
+                new_team_id = insert_response.data[0].get("team_id")
+                if new_team_id is not None:
+                    logger.info(f"Created team with ID: {new_team_id} for players {p1}, {p2}")
+                    return new_team_id
+
+            logger.error(f"Failed to create team or retrieve its ID. Response: {insert_response}")
             return None
-    except IntegrityError as constraint_exc:
-        logger.error(f"Constraint error on create_team: {constraint_exc}")
-        return None
     except Exception as exc:
-        logger.error(f"Failed to create team: {exc}")
+        logger.error(f"Failed to create team for players {p1}, {p2}: {exc}. Type: {type(exc)}")
         return None
 
 
@@ -95,38 +99,57 @@ def batch_insert_teams_by_player_ids(teams: List[Dict[str, Any]]) -> List[Option
     ----------
     teams : List[Dict[str, Any]]
         List of team dictionaries, each with 'player1_id', 'player2_id' keys.
+        Optional: 'global_elo', 'last_match_at'.
 
     Returns
     -------
     List[Optional[int]]
-        List of IDs for the newly created teams, or None for failures.
+        List of IDs for the newly created teams, or None for failures/duplicates not inserted.
     """
-    team_ids = []
-    with transaction() as db_manager:
-        for team in teams:
-            # ##: Ensure players are ordered consistently.
-            p1_id = team["player1_id"]
-            p2_id = team["player2_id"]
-            if p1_id > p2_id:
-                p1_id, p2_id = p2_id, p1_id
+    team_ids: List[Optional[int]] = []
+    teams_to_insert: List[Dict[str, Any]] = []
 
-            builder = InsertQueryBuilder("Teams", returning_column="team_id").set(player1_id=p1_id, player2_id=p2_id)
-            if "global_elo" in team:
-                builder.set(global_elo=team["global_elo"])
-            if "last_match_at" in team:
-                last_match_at_val = team["last_match_at"]
-                last_match_at_dt = (
-                    datetime.fromisoformat(last_match_at_val)
-                    if isinstance(last_match_at_val, str)
-                    else last_match_at_val
-                )
-                if last_match_at_dt:
-                    builder.set(last_match_at=last_match_at_dt)
+    if not teams:
+        return []
 
-            team_id = builder.execute()
-            team_ids.append(team_id if team_id is not None else None)
+    for team_data_orig in teams:
+        p1_id = team_data_orig["player1_id"]
+        p2_id = team_data_orig["player2_id"]
+        p1, p2 = sorted((p1_id, p2_id))
 
-    return team_ids
+        current_team_data: Dict[str, Any] = {
+            "player1_id": p1,
+            "player2_id": p2,
+            "global_elo": team_data_orig.get("global_elo", 1000),
+        }
+        if "last_match_at" in team_data_orig and team_data_orig["last_match_at"] is not None:
+            last_match_at = team_data_orig["last_match_at"]
+            current_team_data["last_match_at"] = (
+                datetime.fromisoformat(last_match_at).isoformat()
+                if isinstance(last_match_at, str)
+                else last_match_at.isoformat() if isinstance(last_match_at, datetime) else None
+            )
+        teams_to_insert.append(current_team_data)
+
+    try:
+        with transaction() as db_client:
+            response = db_client.table("Teams").insert(teams_to_insert, returning="representation").execute()
+
+        if response.data:
+            inserted_map = {(d["player1_id"], d["player2_id"]): d["team_id"] for d in response.data}
+            for team_spec in teams_to_insert:
+                team_ids.append(inserted_map.get((team_spec["player1_id"], team_spec["player2_id"])))
+        else:
+            team_ids = [None] * len(teams_to_insert)
+            logger.warning(f"Batch insert of teams returned no data or failed. Response: {response}")
+
+        while len(team_ids) < len(teams):
+            team_ids.append(None)
+
+        return team_ids
+    except Exception as exc:
+        logger.error(f"Error during batch insert of teams: {exc}")
+        return [None] * len(teams)
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -147,37 +170,18 @@ def get_all_teams(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
         List of team dictionaries.
     """
     try:
-        rows = (
-            SelectQueryBuilder("Teams")
-            .select(
-                "team_id",
-                "player1_id",
-                "player2_id",
-                "global_elo",
-                "created_at",
-                "last_match_at",
+        with transaction() as db_client:
+            response = (
+                db_client.table("Teams")
+                .select("team_id, player1_id, player2_id, global_elo, created_at, last_match_at")
+                .order("global_elo", desc=True)
+                .limit(limit)
+                .offset(offset)
+                .execute()
             )
-            .order_by_clause("global_elo DESC")
-            .limit(limit)
-            .offset(offset)
-            .execute()
-        )
-        return (
-            [
-                {
-                    "team_id": row[0],
-                    "player1_id": row[1],
-                    "player2_id": row[2],
-                    "global_elo": row[3],
-                    "created_at": row[4],
-                    "last_match_at": row[5],
-                    "rank": idx + 1,
-                }
-                for idx, row in enumerate(rows)
-            ]
-            if rows
-            else []
-        )
+        if response.data:
+            return [{**row, "rank": idx + offset + 1} for idx, row in enumerate(response.data)]
+        return []
     except Exception as exc:
         logger.error(f"Failed to get all teams: {exc}")
         return []
@@ -199,28 +203,16 @@ def get_team_by_id(team_id: int) -> Optional[Dict[str, Any]]:
         Team data as a dictionary, or None if not found.
     """
     try:
-        result = (
-            SelectQueryBuilder("Teams")
-            .select(
-                "team_id",
-                "player1_id",
-                "player2_id",
-                "global_elo",
-                "created_at",
-                "last_match_at",
+        with transaction() as db_client:
+            response = (
+                db_client.table("Teams")
+                .select("team_id, player1_id, player2_id, global_elo, created_at, last_match_at")
+                .eq("team_id", team_id)
+                .maybe_single()
+                .execute()
             )
-            .where("team_id = ?", team_id)
-            .execute(fetch_all=False)
-        )
-        if result:
-            return {
-                "team_id": result[0],
-                "player1_id": result[1],
-                "player2_id": result[2],
-                "global_elo": result[3],
-                "created_at": result[4],
-                "last_match_at": result[5],
-            }
+        if response.data:
+            return response.data
         return None
     except Exception as exc:
         logger.error(f"Failed to get team by ID {team_id}: {exc}")
@@ -243,45 +235,21 @@ def get_teams_by_player_id(player_id: int) -> List[Dict[str, Any]]:
         List of team dictionaries, each containing team details.
     """
     try:
-        results = (
-            SelectQueryBuilder("Teams")
-            .select(
-                "team_id",
-                "player1_id",
-                "player2_id",
-                "global_elo",
-                "created_at",
-                "last_match_at",
+        with transaction() as db_client:
+            response = (
+                db_client.table("Teams")
+                .select("team_id, player1_id, player2_id, global_elo, created_at, last_match_at")
+                .or_(f"player1_id.eq.{player_id},player2_id.eq.{player_id}")
+                .order("last_match_at", desc=True, nulls_first=False)
+                .execute()
             )
-            .where("player1_id = ? OR player2_id = ?", player_id, player_id)
-            .order_by_clause("created_at DESC")
-            .execute()
-        )
-
-        if not results:
-            return []
-
-        teams = []
-        for result in results:
-            teams.append(
-                {
-                    "team_id": result[0],
-                    "player1_id": result[1],
-                    "player2_id": result[2],
-                    "global_elo": result[3],
-                    "created_at": result[4],
-                    "last_match_at": result[5],
-                    "is_player1": result[1] == player_id,
-                    "partner_id": result[2] if result[1] == player_id else result[1],
-                }
-            )
-
-        return teams
+        return response.data if response.data else []
     except Exception as exc:
         logger.error(f"Failed to get teams for player ID {player_id}: {exc}")
         return []
 
 
+@with_retry(max_retries=3, retry_delay=0.5)
 def update_team_elo(
     team_id: int,
     global_elo: Optional[int] = None,
@@ -294,7 +262,7 @@ def update_team_elo(
     ----------
     team_id : int
         ID of the team to update.
-    global_elo : Optional[float], optional
+    global_elo : Optional[int], optional
         New global ELO value.
     last_match_at : Optional[Union[str, datetime]], optional
         New last match timestamp.
@@ -304,23 +272,37 @@ def update_team_elo(
     bool
         True if update was successful, False otherwise.
     """
-    if global_elo is None and last_match_at is None:
-        logger.warning(f"No fields provided to update for team {team_id}")
+    update_fields: Dict[str, Any] = {}
+    if global_elo is not None:
+        update_fields["global_elo"] = global_elo
+    if last_match_at is not None:
+        update_fields["last_match_at"] = (
+            datetime.fromisoformat(last_match_at).isoformat()
+            if isinstance(last_match_at, str)
+            else last_match_at.isoformat() if isinstance(last_match_at, datetime) else None
+        )
+        if update_fields["last_match_at"] is None:
+            del update_fields["last_match_at"]
+
+    if not update_fields:
+        logger.warning(f"No fields to update for team ID {team_id}.")
         return False
 
-    builder = UpdateQueryBuilder("Teams")
-    if global_elo is not None:
-        builder.set(global_elo=global_elo)
-    if last_match_at is not None:
-        last_match_at = datetime.fromisoformat(last_match_at) if isinstance(last_match_at, str) else last_match_at
-        builder.set(last_match_at=last_match_at)
+    try:
+        with transaction() as db_client:
+            response = db_client.table("Teams").update(update_fields).eq("team_id", team_id).execute()
 
-    builder.where("team_id = ?", team_id)
-    query, params = builder.build()
+        updated_successfully = bool(response.data and len(response.data) > 0) or getattr(response, "count", 0) > 0
 
-    with transaction() as db_manager:
-        result = db_manager.fetchone(query, params)
-        return bool(result[0])
+        if updated_successfully:
+            logger.info(f"Team ID {team_id} updated successfully.")
+            return True
+
+        logger.warning(f"Team ID {team_id} not found or no changes made. Response: {response}")
+        return False
+    except Exception as exc:
+        logger.error(f"Failed to update team ID {team_id}: {exc}")
+        return False
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -340,48 +322,64 @@ def batch_update_teams_elo(teams: List[Dict[str, Any]]) -> List[bool]:
         A list of booleans indicating the success of each individual team update.
     """
     results: List[bool] = []
-    queries_and_params: List[tuple[str, tuple]] = []
+    if not teams:
+        return results
 
-    for team_data in teams:
-        team_id = team_data.get("team_id")
-        if team_id is None:
-            logger.warning("Skipping team data without 'team_id' in batch update.")
+    try:
+        with transaction() as db_client:
+            for team_data in teams:
+                team_id = team_data.get("team_id")
+                if not team_id:
+                    logger.warning(f"Skipping team update due to missing team_id in data: {team_data}")
+                    results.append(False)
+                    continue
+
+                update_fields: Dict[str, Any] = {}
+                if "global_elo" in team_data:
+                    update_fields["global_elo"] = team_data["global_elo"]
+                if "last_match_at" in team_data and team_data["last_match_at"] is not None:
+                    last_match_at = team_data["last_match_at"]
+                    update_fields["last_match_at"] = (
+                        datetime.fromisoformat(last_match_at).isoformat()
+                        if isinstance(last_match_at, str)
+                        else last_match_at.isoformat() if isinstance(last_match_at, datetime) else None
+                    )
+                    if update_fields["last_match_at"] is None:
+                        del update_fields["last_match_at"]
+
+                if not update_fields:
+                    logger.info(
+                        f"No valid fields to update for team ID {team_id}. Assuming success as no change needed."
+                    )
+                    results.append(True)
+                    continue
+
+                current_team_success = False
+                try:
+                    response = db_client.table("Teams").update(update_fields).eq("team_id", team_id).execute()
+                    if (response.data and len(response.data) > 0) or getattr(response, "count", 0) > 0:
+                        logger.info(f"Team ID {team_id} updated successfully in batch.")
+                        current_team_success = True
+                    else:
+                        logger.warning(
+                            f"Team ID {team_id} not found or no changes made in batch. Response: {response}"
+                        )
+                except Exception as single_update_exc:
+                    logger.error(f"Failed to update team ID {team_id} in batch: {single_update_exc}")
+
+                results.append(current_team_success)
+
+        if all(results):
+            logger.info("Batch update of teams completed, all successful.")
+        else:
+            logger.warning("Batch update of teams completed with one or more failures.")
+        return results
+
+    except Exception as outer_exc:
+        logger.error(f"Outer error during batch update of teams: {outer_exc}")
+        while len(results) < len(teams):
             results.append(False)
-            continue
-
-        update_builder = UpdateQueryBuilder("Teams")
-        updated_fields = False
-        if "global_elo" in team_data:
-            update_builder.set(global_elo=team_data["global_elo"])
-            updated_fields = True
-        if "last_match_at" in team_data:
-            last_match_at = team_data["last_match_at"]
-            if isinstance(last_match_at, str):
-                last_match_at = datetime.fromisoformat(last_match_at)
-            update_builder.set(last_match_at=last_match_at)
-            updated_fields = True
-
-        if not updated_fields:
-            logger.warning(f"No fields to update for team ID {team_id}.")
-            results.append(False)
-            continue
-
-        update_builder.where("team_id = ?", team_id)
-        query, params = update_builder.build()
-        queries_and_params.append((query, params))
-
-    if not queries_and_params:
-        return []
-
-    with transaction() as db_manager:
-        for query, params in queries_and_params:
-            try:
-                result = db_manager.fetchone(query, params)
-                results.append(bool(result[0]) if result else False)
-            except Exception as exc:
-                logger.error(f"Error updating team in batch: {exc}")
-                results.append(False)
-    return results
+        return results
 
 
 @with_retry(max_retries=3, retry_delay=0.5)
@@ -399,7 +397,18 @@ def delete_team_by_id(team_id: int) -> bool:
     bool
         True if the deletion was successful, False otherwise.
     """
-    query, params = DeleteQueryBuilder("Teams").where("team_id = ?", team_id).build()
-    with transaction() as db_manager:
-        result = db_manager.fetchone(query, params)
-        return bool(result[0])
+    try:
+        with transaction() as db_client:
+            response = db_client.table("Teams").delete().eq("team_id", team_id).execute()
+
+        deleted_successfully = bool(response.data and len(response.data) > 0) or getattr(response, "count", 0) > 0
+
+        if deleted_successfully:
+            logger.info(f"Team ID {team_id} deleted successfully.")
+            return True
+
+        logger.warning(f"Team ID {team_id} not found for deletion. Response: {response}")
+        return False
+    except Exception as exc:
+        logger.error(f"Failed to delete team ID {team_id}: {exc}")
+        return False
