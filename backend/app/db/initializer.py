@@ -10,7 +10,13 @@ from loguru import logger
 
 from app.core import config
 from app.db.database import DatabaseManager
-from app.schemas import matches, players, players_elo_history, teams, teams_elo_history
+from app.db.schemas import (
+    matches,
+    players,
+    players_elo_history,
+    teams,
+    teams_elo_history,
+)
 
 TABLES = [
     players.CREATE_PLAYERS_TABLE,

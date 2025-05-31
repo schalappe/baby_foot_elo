@@ -69,7 +69,9 @@ def batch_insert_players_by_name(players: List[Dict[str, Any]]) -> List[Optional
             for player in players:
                 name = player["name"]
                 global_elo = player.get("global_elo", 1000)
-                builder = InsertQueryBuilder("Players", returning_column="player_id").set(name=name, global_elo=global_elo)
+                builder = InsertQueryBuilder("Players", returning_column="player_id").set(
+                    name=name, global_elo=global_elo
+                )
                 player_id = builder.execute()
                 player_ids.append(player_id if player_id is not None else None)
         return player_ids

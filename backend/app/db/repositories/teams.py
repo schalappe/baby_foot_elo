@@ -116,11 +116,13 @@ def batch_insert_teams_by_player_ids(teams: List[Dict[str, Any]]) -> List[Option
             if "last_match_at" in team:
                 last_match_at_val = team["last_match_at"]
                 last_match_at_dt = (
-                    datetime.fromisoformat(last_match_at_val) if isinstance(last_match_at_val, str) else last_match_at_val
+                    datetime.fromisoformat(last_match_at_val)
+                    if isinstance(last_match_at_val, str)
+                    else last_match_at_val
                 )
                 if last_match_at_dt:
-                     builder.set(last_match_at=last_match_at_dt)
-            
+                    builder.set(last_match_at=last_match_at_dt)
+
             team_id = builder.execute()
             team_ids.append(team_id if team_id is not None else None)
 

@@ -30,7 +30,9 @@ class BaseQueryBuilder:
         self.where_clauses = []
         self.where_params = []
 
-    def _format_query_with_indexed_placeholders(self, query_template: str, params: List[Any]) -> Tuple[str, List[Any], int]:
+    def _format_query_with_indexed_placeholders(
+        self, query_template: str, params: List[Any]
+    ) -> Tuple[str, List[Any], int]:
         """
         Replaces '?' placeholders in a query template with '%s' style placeholders
         suitable for psycopg2.

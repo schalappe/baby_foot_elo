@@ -47,16 +47,13 @@ def record_player_elo_update(
             date = datetime.now()
 
         difference = new_elo - old_elo
-        builder = (
-            InsertQueryBuilder("Players_ELO_History", returning_column="history_id")
-            .set(
-                player_id=player_id,
-                match_id=match_id,
-                old_elo=old_elo,
-                new_elo=new_elo,
-                difference=difference,
-                date=date,
-            )
+        builder = InsertQueryBuilder("Players_ELO_History", returning_column="history_id").set(
+            player_id=player_id,
+            match_id=match_id,
+            old_elo=old_elo,
+            new_elo=new_elo,
+            difference=difference,
+            date=date,
         )
         history_id = builder.execute()
 
@@ -98,16 +95,13 @@ def batch_record_player_elo_updates(elo_updates: List[Dict[str, Any]]) -> List[O
             date = update.get("date", datetime.now())
             difference = update["new_elo"] - update["old_elo"]
 
-            builder = (
-                InsertQueryBuilder("Players_ELO_History", returning_column="history_id")
-                .set(
-                    player_id=update["player_id"],
-                    match_id=update["match_id"],
-                    old_elo=update["old_elo"],
-                    new_elo=update["new_elo"],
-                    difference=difference,
-                    date=date,
-                )
+            builder = InsertQueryBuilder("Players_ELO_History", returning_column="history_id").set(
+                player_id=update["player_id"],
+                match_id=update["match_id"],
+                old_elo=update["old_elo"],
+                new_elo=update["new_elo"],
+                difference=difference,
+                date=date,
             )
             history_id = builder.execute()
             if history_id is not None:

@@ -48,16 +48,13 @@ def record_team_elo_update(
             date = datetime.now()
 
         difference = new_elo - old_elo
-        builder = (
-            InsertQueryBuilder("Teams_ELO_History", returning_column="history_id")
-            .set(
-                team_id=team_id,
-                match_id=match_id,
-                old_elo=old_elo,
-                new_elo=new_elo,
-                difference=difference,
-                date=date,
-            )
+        builder = InsertQueryBuilder("Teams_ELO_History", returning_column="history_id").set(
+            team_id=team_id,
+            match_id=match_id,
+            old_elo=old_elo,
+            new_elo=new_elo,
+            difference=difference,
+            date=date,
         )
         history_id = builder.execute()
         if history_id is not None:
@@ -96,21 +93,20 @@ def batch_record_team_elo_updates(elo_updates: List[Dict[str, Any]]) -> List[Opt
             date = update.get("date", datetime.now())
             difference = update["new_elo"] - update["old_elo"]
 
-            builder = (
-                InsertQueryBuilder("Teams_ELO_History", returning_column="history_id")
-                .set(
-                    team_id=update["team_id"],
-                    match_id=update["match_id"],
-                    old_elo=update["old_elo"],
-                    new_elo=update["new_elo"],
-                    difference=difference,
-                    date=date,
-                )
+            builder = InsertQueryBuilder("Teams_ELO_History", returning_column="history_id").set(
+                team_id=update["team_id"],
+                match_id=update["match_id"],
+                old_elo=update["old_elo"],
+                new_elo=update["new_elo"],
+                difference=difference,
+                date=date,
             )
             history_id = builder.execute()
             results.append(history_id)
 
-        logger.info(f"Batch recorded {len(results)} team ELO updates, successful inserts: {sum(1 for r in results if r is not None)}")
+        logger.info(
+            f"Batch recorded {len(results)} team ELO updates, successful inserts: {sum(1 for r in results if r is not None)}"
+        )
         return results
     except Exception as exc:
         logger.error(f"Failed to batch record team ELO updates: {exc}")
