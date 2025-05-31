@@ -68,38 +68,23 @@ def get_team_match_stats(team_id: int) -> Dict[str, Any]:
         Match statistics for the team
     """
     with transaction() as db_client:
-        # ##: Match Count.
-        mc_response = (
-            db_client.table("matches")
-            .select("match_id", count="exact")
-            .or_(f"winner_team_id.eq.{team_id},loser_team_id.eq.{team_id}")
-            .execute()
-        )
-        match_count = mc_response.count if mc_response.count is not None else 0
+        rpc_params = {"p_team_id": team_id}
 
-        # ##: Win Count.
-        wc_response = (
-            db_client.table("matches").select("match_id", count="exact").eq("winner_team_id", team_id).execute()
-        )
-        win_count = wc_response.count if wc_response.count is not None else 0
+        # ##: Match Count (using RPC).
+        mc_rpc_response = db_client.rpc("get_team_total_matches", rpc_params).execute()
+        match_count = mc_rpc_response.data if mc_rpc_response.data is not None else 0
 
-        # ##: Loss Count.
-        lc_response = (
-            db_client.table("matches").select("match_id", count="exact").eq("loser_team_id", team_id).execute()
-        )
-        loss_count = lc_response.count if lc_response.count is not None else 0
+        # ##: Win Count (using RPC).
+        wc_rpc_response = db_client.rpc("get_team_win_count", rpc_params).execute()
+        win_count = wc_rpc_response.data if wc_rpc_response.data is not None else 0
 
-        # ##: Last Match Date.
-        last_match_response = (
-            db_client.table("matches")
-            .select("played_at")
-            .or_(f"winner_team_id.eq.{team_id},loser_team_id.eq.{team_id}")
-            .order("played_at", desc=True)
-            .limit(1)
-            .maybe_single()
-            .execute()
-        )
-        last_match_at = last_match_response.data.get("played_at") if last_match_response else None
+        # ##: Loss Count (using RPC).
+        lc_rpc_response = db_client.rpc("get_team_loss_count", rpc_params).execute()
+        loss_count = lc_rpc_response.data if lc_rpc_response.data is not None else 0
+
+        # ##: Last Match Date (using RPC).
+        last_match_rpc_response = db_client.rpc("get_team_last_match_date", rpc_params).execute()
+        last_match_at = last_match_rpc_response.data if last_match_rpc_response.data is not None else None
 
     return {
         "matches_played": match_count,
