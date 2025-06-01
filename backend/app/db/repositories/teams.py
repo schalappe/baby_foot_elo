@@ -171,16 +171,10 @@ def get_all_teams(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
     """
     try:
         with transaction() as db_client:
-            response = (
-                db_client.table("teams")
-                .select("team_id, player1_id, player2_id, global_elo, created_at, last_match_at")
-                .order("global_elo", desc=True)
-                .limit(limit)
-                .offset(offset)
-                .execute()
-            )
+            response = db_client.rpc("get_all_teams_with_stats", {"p_skip": offset, "p_limit": limit}).execute()
+        
         if response.data:
-            return [{**row, "rank": idx + offset + 1} for idx, row in enumerate(response.data)]
+            return response.data
         return []
     except Exception as exc:
         logger.error(f"Failed to get all teams: {exc}")

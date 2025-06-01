@@ -287,43 +287,7 @@ def get_all_teams_with_stats(skip: int = 0, limit: int = 100) -> List[TeamRespon
     """
     try:
         teams = get_all_teams(limit=limit, offset=skip)
-        if not teams:
-            return []
-
-        # ##: Batch fetch all players.
-        player_dict = {p["player_id"]: p for p in get_all_players()}
-
-        responses = []
-        for team in teams:
-            stats = get_team_stats(team["team_id"])
-            if not stats:
-                logger.error(f"Stats missing for team {team['team_id']}")
-                continue
-
-            player1 = player_dict.get(team["player1_id"])
-            player2 = player_dict.get(team["player2_id"])
-            if not player1 or not player2:
-                logger.error(f"One or both players not found for team {team['team_id']}")
-                continue
-
-            responses.append(
-                TeamResponse(
-                    team_id=stats["team_id"],
-                    global_elo=stats["global_elo"],
-                    created_at=stats["created_at"],
-                    last_match_at=stats["last_match_at"],
-                    matches_played=stats["matches_played"],
-                    wins=stats["wins"],
-                    losses=stats["losses"],
-                    win_rate=stats["win_rate"],
-                    player1_id=stats["player1_id"],
-                    player2_id=stats["player2_id"],
-                    player1=player1,
-                    player2=player2,
-                    rank=team.get("rank"),
-                )
-            )
-        return responses
+        return [TeamResponse(**team) for team in teams]
     except Exception as exc:
         logger.error(f"Error retrieving teams: {exc}")
         raise TeamOperationError("Failed to retrieve teams") from exc
