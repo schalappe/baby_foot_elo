@@ -239,48 +239,25 @@ def get_matches_by_player_id(
             end_date = datetime.combine(end_date, datetime.max.time())
 
         with transaction() as db_client:
-            query = (
-                db_client.table("players_elo_history")
-                .select(
-                    "player_id, old_elo, new_elo, difference, "
-                    "match:matches!inner(match_id, winner_team_id, loser_team_id, is_fanny, played_at, notes)"
+            response = db_client.rpc(
+                "get_player_matches_json",
+                {
+                    "p_end_date": end_date,
+                    "p_is_fanny": is_fanny,
+                    "p_limit": limit,
+                    "p_offset": offset,
+                    "p_player_id": player_id,
+                    "p_start_date": start_date,
+                },
+            ).execute()
+
+        matches_details = []
+        if response.data:
+            for row_item in response.data:
+                row_item["played_at"] = (
+                    datetime.fromisoformat(row_item["played_at"]) if row_item["played_at"] else None
                 )
-                .eq("player_id", player_id)
-            )
-
-            if start_date is not None:
-                query = query.gte("match.played_at", start_date.isoformat())
-            if end_date is not None:
-                query = query.lte("match.played_at", end_date.isoformat())
-            if is_fanny:
-                query = query.eq("match.is_fanny", True)
-
-            response = query.order("played_at", desc=True, foreign_table="match").limit(limit).offset(offset).execute()
-
-            matches_details = []
-            if response.data:
-                for row_item in response.data:
-                    match_info = row_item.get("match")
-                    if not match_info:
-                        continue
-
-                    matches_details.append(
-                        {
-                            "match_id": match_info["match_id"],
-                            "played_at": datetime.fromisoformat(match_info["played_at"]) if match_info["played_at"] else None,
-                            "is_fanny": match_info["is_fanny"],
-                            "notes": match_info["notes"],
-                            "winner_team_id": match_info["winner_team_id"],
-                            "loser_team_id": match_info["loser_team_id"],
-                            "elo_changes": {
-                                player_id: {
-                                    "old_elo": row_item["old_elo"],
-                                    "new_elo": row_item["new_elo"],
-                                    "difference": row_item["difference"],
-                                },
-                            },
-                        }
-                    )
+                matches_details.append(row_item)
             return matches_details
     except Exception as exc:
         logger.error(f"Failed to get matches for player {player_id}: {exc}")
