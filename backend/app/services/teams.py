@@ -8,7 +8,6 @@ from typing import List
 
 from loguru import logger
 
-from app.db.repositories.players import get_all_players, get_player_by_id_or_name
 from app.db.repositories.stats import get_team_stats
 from app.db.repositories.teams import (
     create_team_by_player_ids,
@@ -25,7 +24,6 @@ from app.exceptions.teams import (
     TeamOperationError,
 )
 from app.models.team import TeamCreate, TeamResponse, TeamUpdate
-from app.services import players as players_service
 
 
 def get_team(team_id: int) -> TeamResponse:
@@ -56,30 +54,7 @@ def get_team(team_id: int) -> TeamResponse:
         team = get_team_stats(team_id)
         if not team:
             raise TeamNotFoundError(f"ID: {team_id}")
-
-        # ##: Get player details for both team members.
-        player1 = players_service.get_player(team["player1_id"])
-        player2 = players_service.get_player(team["player2_id"])
-
-        if not player1 or not player2:
-            logger.error(f"One or both players not found for team {team_id}")
-            raise TeamOperationError("Could not retrieve player details for the team.")
-
-        response = TeamResponse(
-            team_id=team_id,
-            global_elo=team["global_elo"],
-            created_at=team["created_at"],
-            last_match_at=team["last_match_at"],
-            matches_played=team["matches_played"],
-            wins=team["wins"],
-            losses=team["losses"],
-            win_rate=team["win_rate"],
-            player1_id=team["player1_id"],
-            player2_id=team["player2_id"],
-            player1=player1,
-            player2=player2,
-        )
-        return response
+        return TeamResponse(**team)
 
     except (TeamNotFoundError, TeamOperationError):
         raise
