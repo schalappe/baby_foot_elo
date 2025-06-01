@@ -96,7 +96,7 @@ def batch_insert_players_by_name(players: List[Dict[str, Any]]) -> List[Optional
 @with_retry(max_retries=3, retry_delay=0.5)
 def get_all_players() -> List[Dict[str, Any]]:
     """
-    Get all players from the database.
+    Get all players from the database using a Supabase RPC function.
 
     Returns
     -------
@@ -105,18 +105,13 @@ def get_all_players() -> List[Dict[str, Any]]:
     """
     try:
         with transaction() as db_client:
-            response = (
-                db_client.table("players")
-                .select("player_id, name, global_elo, created_at")
-                .order("global_elo", desc=True)
-                .execute()
-            )
+            response = db_client.rpc('get_all_players_with_rank', {}).execute()
 
         if response.data:
-            return [{**row, "rank": idx + 1} for idx, row in enumerate(response.data)]
+            return response.data
         return []
     except Exception as exc:
-        logger.error(f"Failed to get all players: {exc}")
+        logger.error(f"Failed to get all players using RPC: {exc}")
         return []
 
 
