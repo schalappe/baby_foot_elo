@@ -8,6 +8,7 @@ from typing import List
 
 from loguru import logger
 
+from app.db.repositories.players import get_player_by_id_or_name
 from app.db.repositories.stats import get_team_stats
 from app.db.repositories.teams import (
     create_team_by_player_ids,
