@@ -105,7 +105,12 @@ def get_all_players() -> List[Dict[str, Any]]:
     """
     try:
         with transaction() as db_client:
-            response = db_client.rpc('get_all_players_with_rank', {}).execute()
+            response = (
+                db_client.table("players")
+                .select("player_id", "name", "global_elo", "created_at")
+                .order("global_elo", desc=True)
+                .execute()
+            )
 
         if response.data:
             return response.data
