@@ -172,7 +172,7 @@ def get_all_teams(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
     try:
         with transaction() as db_client:
             response = db_client.rpc("get_all_teams_with_stats", {"p_skip": offset, "p_limit": limit}).execute()
-        
+
         if response.data:
             return response.data
         return []
