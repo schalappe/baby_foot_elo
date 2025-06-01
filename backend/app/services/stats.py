@@ -66,29 +66,8 @@ def get_team_matches(team_id: int, limit: int = 100, offset: int = 0) -> List[Ma
         A list of matches the team participated in.
     """
     try:
-        # ##: Get matches from repository
         matches = get_matches_by_team_id(team_id, limit=limit, offset=offset)
-
-        # ##: Convert to MatchWithEloResponse models
-        result = []
-        for match in matches:
-            try:
-                # ##: Get teams.
-                winner_team = get_team(match["winner_team_id"])
-                loser_team = get_team(match["loser_team_id"])
-
-                # ##: Create match response.
-                match_response = MatchWithEloResponse(
-                    **match,
-                    winner_team=winner_team,
-                    loser_team=loser_team,
-                )
-                result.append(match_response)
-            except Exception as e:
-                logger.warning(f"Skipping match {match.get('match_id')} due to error: {e}")
-                continue
-
-        return result
+        return [MatchWithEloResponse(**match) for match in matches]
 
     except Exception as exc:
         logger.error(f"Error retrieving matches for team {team_id}: {exc}")

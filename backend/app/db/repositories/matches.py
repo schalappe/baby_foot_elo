@@ -147,51 +147,26 @@ def get_matches_by_team_id(
             end_date = datetime.combine(end_date, datetime.max.time())
 
         with transaction() as db_client:
-            query = (
-                db_client.table("teams_elo_history")
-                .select(
-                    "old_elo, new_elo, difference, "
-                    "match:matches!inner(match_id, winner_team_id, loser_team_id, is_fanny, played_at, notes)"
+            response = db_client.rpc(
+                "get_team_match_history",
+                {
+                    "p_team_id": team_id,
+                    "p_limit": limit,
+                    "p_offset": offset,
+                    "p_is_fanny": is_fanny,
+                    "p_start_date": start_date,
+                    "p_end_date": end_date,
+                },
+            ).execute()
+
+        matches_data = []
+        if response.data:
+            for row_item in response.data:
+                row_item["played_at"] = (
+                    datetime.fromisoformat(row_item["played_at"]) if row_item["played_at"] else None
                 )
-                .eq("team_id", team_id)
-            )
-
-            if start_date is not None:
-                query = query.gte("matches.played_at", start_date.isoformat())
-            if end_date is not None:
-                query = query.lte("matches.played_at", end_date.isoformat())
-            if is_fanny:
-                query = query.eq("matches.is_fanny", True)
-
-            response = (
-                query.order("played_at", desc=True, foreign_table="matches").limit(limit).offset(offset).execute()
-            )
-
-            matches_data = []
-            if response.data:
-                for row_item in response.data:
-                    match_info = row_item.get("match")
-                    if match_info:
-                        played_at_val = match_info.get("played_at")
-                        matches_data.append(
-                            {
-                                "match_id": match_info["match_id"],
-                                "winner_team_id": match_info["winner_team_id"],
-                                "loser_team_id": match_info["loser_team_id"],
-                                "is_fanny": match_info["is_fanny"],
-                                "played_at": datetime.fromisoformat(played_at_val) if played_at_val else None,
-                                "notes": match_info["notes"],
-                                "won": match_info["winner_team_id"] == team_id,
-                                "elo_changes": {
-                                    team_id: {
-                                        "old_elo": row_item["old_elo"],
-                                        "new_elo": row_item["new_elo"],
-                                        "difference": row_item["difference"],
-                                    }
-                                },
-                            }
-                        )
-            return matches_data
+                matches_data.append(row_item)
+        return matches_data
     except Exception as exc:
         logger.error(f"Failed to get matches for team ID {team_id}: {exc}")
         return []
