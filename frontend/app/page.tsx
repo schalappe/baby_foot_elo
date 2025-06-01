@@ -35,7 +35,7 @@ export default function Home() {
     data: players,
     error: playersError,
     isLoading: playersLoading,
-  } = useSWR<Player[]>(PLAYERS_API_ENDPOINT, getPlayerRankings, {
+  } = useSWR<Player[]>([180], ([days]: [number | undefined]) => getPlayerRankings(days), {
     revalidateOnFocus: true,
     revalidateOnMount: true,
     refreshInterval: 5000, // Refresh every 5 seconds

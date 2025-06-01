@@ -111,11 +111,14 @@ export const createPlayer = async (name: string): Promise<Player | null> => {
 /**
  * Fetches a list of players ordered by their global ELO ranking.
  *
+ * @param daysSinceLastMatch - Optional parameter to filter players by days since last match.
  * @returns A promise that resolves to an array of Player objects, sorted by rank.
  * @throws {Error} If the API request fails.
  */
-export const getPlayerRankings = async (): Promise<Player[]> => {
-  let { data: playersData, error: playersError } = await supabase.from('players').select('player_id').limit(100).order('global_elo', { ascending: false });
+export const getPlayerRankings = async (daysSinceLastMatch?: number): Promise<Player[]> => {
+  let query = supabase.from('players').select('player_id').limit(100).order('global_elo', { ascending: false });
+
+  const { data: playersData, error: playersError } = await query;
 
   if (playersError) {
     console.error("Échec de la récupération des joueurs:", playersError);
@@ -140,7 +143,21 @@ export const getPlayerRankings = async (): Promise<Player[]> => {
     return fullStats;
   });
 
-  return await Promise.all(fullPlayersPromises);
+  let rankedPlayers = await Promise.all(fullPlayersPromises);
+
+  if (daysSinceLastMatch !== undefined && daysSinceLastMatch !== null) {
+    const thresholdDate = new Date();
+    thresholdDate.setDate(thresholdDate.getDate() - daysSinceLastMatch);
+
+    rankedPlayers = rankedPlayers.filter(player => {
+      if (player.last_match_at === null || player.matches_played === 0) {
+        return false;
+      }
+      const playerLastMatchDate = new Date(player.last_match_at);
+      return playerLastMatchDate > thresholdDate;
+    });
+  }
+  return rankedPlayers;
 };
 
 /**
