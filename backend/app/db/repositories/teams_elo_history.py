@@ -159,16 +159,12 @@ def get_team_elo_history_by_id(
         List of ELO history records.
     """
     try:
-        with transaction() as db:
-            query_builder = SelectQueryBuilder("Teams_ELO_History").select("*").where("team_id = %s", team_id)
         with transaction() as db_client:
             query = db_client.table("teams_elo_history").select("*").eq("team_id", team_id)
 
             if start_date:
-                query_builder.where("date >= %s", start_date)
                 query = query.gte("date", start_date.isoformat() if isinstance(start_date, datetime) else start_date)
             if end_date:
-                query_builder.where("date <= %s", end_date)
                 query = query.lte("date", end_date.isoformat() if isinstance(end_date, datetime) else end_date)
 
             response = query.order("date", desc=True).limit(limit).offset(offset).execute()
@@ -242,9 +238,6 @@ def get_teams_elo_history_by_match_id(match_id: int) -> List[Dict[str, Any]]:
             response = (
                 db_client.table("teams_elo_history")
                 .select("*")
-                .where("match_id = %s", match_id)
-                .order_by_clause("history_id ASC")
-                .build()
                 .eq("match_id", match_id)
                 .order("date", desc=True)
                 .execute()

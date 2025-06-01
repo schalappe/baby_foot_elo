@@ -28,12 +28,6 @@ from app.utils.validation import (
 
 @asynccontextmanager
 async def lifespan(app):
-    db_manager = DatabaseManager(db_path=config.db_url)
-    initialize_database(db_manager)
-    try:
-        yield
-    finally:
-        db_manager.close()
     initialize_database(supabase)
     yield
 

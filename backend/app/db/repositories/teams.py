@@ -7,7 +7,6 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
-from psycopg2 import IntegrityError
 
 from app.db.session.retry import with_retry
 from app.db.session.transaction import transaction
