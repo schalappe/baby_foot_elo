@@ -3,12 +3,11 @@
 Database module.
 
 Expose the core database functionalities:
-- DatabaseManager
-- Transaction management
-- Retry logic
+- Supabase client
+- Database initialization
 """
 
-from app.db.database import DatabaseManager
+from app.db.database import supabase
 from app.db.initializer import initialize_database
 
-__all__ = ["DatabaseManager", "initialize_database"]
+__all__ = ["supabase", "initialize_database"]

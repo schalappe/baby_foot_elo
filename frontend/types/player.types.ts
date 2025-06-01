@@ -22,6 +22,7 @@ export interface Player {
   losses: number;
   win_rate: number;
   creation_date: string;
+  last_match_at: string;
 }
 
 /**
@@ -71,4 +72,5 @@ export interface GetPlayersParams {
   skip?: number;
   sort_by?: string;
   order?: "asc" | "desc";
+  daysSinceLastMatch?: number;
 }

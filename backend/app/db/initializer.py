@@ -4,8 +4,11 @@ Database initialization logic extracted from DatabaseManager.
 """
 
 from loguru import logger
+from postgrest.exceptions import APIError
+from supabase import Client
 
-from app.db.database import DatabaseManager
+from app.core import config
+from app.db.database import supabase
 from app.db.schemas import (
     matches,
     players,
@@ -13,9 +16,7 @@ from app.db.schemas import (
     teams,
     teams_elo_history,
 )
-from app.db.session import transaction
 
-# ##: Constants for database initialization.
 TABLES = [
     players.CREATE_PLAYERS_TABLE,
     teams.CREATE_TEAMS_TABLE,
@@ -41,82 +42,101 @@ INDEXES = [
 ]
 
 
-def create_tables(db_manager: DatabaseManager):
+def create_tables(client: Client):
     """
-    Create all database tables.
+    Create all database tables using Supabase RPC.
 
     Parameters
     ----------
-    db_manager : DatabaseManager
-        The database manager to use for executing the SQL statements.
+    client : Client
+        The Supabase client instance.
 
     Raises
     ------
     Exception
-        If an error occurs while executing the SQL statements.
+        If an error occurs while executing the SQL statements via RPC.
     """
-    for sql in TABLES:
+    for sql_statement in TABLES:
         try:
-            db_manager.execute(sql)
-            logger.info(f"Executed table statement: {sql.splitlines()[0]}")
+            client.rpc("execute_ddl_statement", {"sql_query": sql_statement}).execute()
+            logger.info(f"Executed table statement via RPC: {sql_statement.splitlines()[0]}")
+        except APIError as api_exc:
+            logger.error(
+                f"Error executing table statement via RPC (APIError): {api_exc.message}\nSQL: {sql_statement}"
+            )
+            raise Exception(f"RPC APIError for SQL: {sql_statement.splitlines()[0]} - {api_exc.message}") from api_exc
         except Exception as exc:
-            logger.error(f"Error executing table statement: {exc}\nSQL: {sql}")
+            logger.error(f"Error executing table statement via RPC (General Exception): {exc}\nSQL: {sql_statement}")
             raise
 
 
-def create_indexes_for_optimization(db_manager: DatabaseManager):
+def create_indexes_for_optimization(client: Client):
     """
-    Create all indexes needed for optimal query performance.
+    Create all indexes needed for optimal query performance using Supabase RPC.
 
     Parameters
     ----------
-    db_manager : DatabaseManager
-        The database manager to use for executing the SQL statements.
+    client : Client
+        The Supabase client instance.
 
     Raises
     ------
     Exception
-        If an error occurs while executing the SQL statements.
+        If an error occurs while executing the SQL statements via RPC.
     """
-    for idx_sql in INDEXES:
+    for idx_sql_statement in INDEXES:
         try:
-            db_manager.execute(idx_sql)
-            logger.info(f"Executed index statement: {idx_sql.splitlines()[0]}")
+            client.rpc("execute_ddl_statement", {"sql_query": idx_sql_statement}).execute()
+            logger.info(f"Executed index statement via RPC: {idx_sql_statement.splitlines()[0]}")
+        except APIError as api_exc:
+            logger.error(
+                f"Error executing index statement via RPC (APIError): {api_exc.message}\nSQL: {idx_sql_statement}"
+            )
+            raise Exception(
+                f"RPC APIError for SQL: {idx_sql_statement.splitlines()[0]} - {api_exc.message}"
+            ) from api_exc
         except Exception as exc:
-            logger.error(f"Error executing index statement: {exc}\nSQL: {idx_sql}")
+            logger.error(
+                f"Error executing index statement via RPC (General Exception): {exc}\nSQL: {idx_sql_statement}"
+            )
             raise
 
 
-def initialize_database(db_manager: DatabaseManager):
+def initialize_database(client: Client):
     """
-    Initialize the database: create tables if they do not exist.
+    Initialize the database: create tables and indexes if they do not exist using Supabase RPC.
 
     Parameters
     ----------
-    db_manager : DatabaseManager
-        The database manager to use for executing the SQL statements.
+    client : Client
+        The Supabase client instance.
 
     Raises
     ------
     Exception
-        If an error occurs while executing the SQL statements.
+        If an error occurs while executing the SQL statements via RPC.
     """
-    create_tables(db_manager)
+    # ##: Create tables.
+    create_tables(client)
 
     # ##: Create indexes for performance optimization.
-    create_indexes_for_optimization(db_manager)
-    logger.info("Database initialization complete. All tables and indexes ensured.")
+    create_indexes_for_optimization(client)
+    logger.info("Database initialization complete via RPC. All tables and indexes ensured.")
 
 
 def main():
-    """Main function to initialize the database."""
+    """Main function to initialize the database using Supabase client and RPC."""
+    logger.info(f"Attempting to initialize database using Supabase client from app.db.database")
+    logger.info(f"Supabase URL: {config.supabase_url}")
 
-    logger.info(f"Using database URL from config: {config.db_url}")
+    try:
+        logger.info("Using global Supabase client for initialization.")
 
-    with transaction() as db_manager:
-        initialize_database(db_manager)
-
-    logger.info("Database initialization process completed successfully.")
+        initialize_database(supabase)
+        logger.info("Database schema initialization process via RPC completed successfully.")
+    except Exception:
+        logger.exception("An error occurred during Supabase database schema initialization via RPC")
+        raise
 
 
 if __name__ == "__main__":

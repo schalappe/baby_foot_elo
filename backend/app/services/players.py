@@ -239,7 +239,7 @@ def get_all_players_with_stats() -> List[PlayerResponse]:
     """
     try:
         players = get_all_players()
-        responses = [get_player(player["player_id"]) for player in players]
+        responses = [PlayerResponse(**player) for player in players]
         return responses
     except Exception as exc:
         logger.error(f"Error retrieving all players with stats: {exc}")

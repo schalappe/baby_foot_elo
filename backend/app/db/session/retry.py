@@ -3,14 +3,13 @@
 Retry logic for database operations.
 """
 
-from logging import getLogger
 from time import sleep
 from typing import Callable, TypeVar
 
+from loguru import logger
+
 # ##: Type variable for generic return types.
 T = TypeVar("T")
-
-logger = getLogger(__name__)
 
 
 def with_retry(max_retries: int, retry_delay: float):
@@ -41,17 +40,11 @@ def with_retry(max_retries: int, retry_delay: float):
                     return func(*args, **kwargs)
                 except Exception as exc:
                     last_exception = exc
-                    logger.warning(
-                        "Attempt %d/%d failed: %s. Retrying in %fs...",
-                        attempt + 1,
-                        max_retries,
-                        exc,
-                        retry_delay,
-                    )
+                    logger.warning(f"Attempt {attempt + 1}/{max_retries} failed: {exc}. Retrying in {retry_delay}s...")
                     if attempt < max_retries - 1:
                         sleep(retry_delay)
 
-            logger.error("All %d attempts failed. Last error: %s", max_retries, last_exception)
+            logger.error(f"All {max_retries} attempts failed. Last error: {last_exception}")
             raise last_exception
 
         return wrapper

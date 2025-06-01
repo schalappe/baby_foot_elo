@@ -15,7 +15,7 @@ import React, { useState } from "react";
 import { Match } from "@/types/match.types";
 import { Player } from "@/types/player.types";
 import { getMatches } from "../../services/matchService";
-import { getPlayers as getPlayerList } from "../../services/playerService";
+import { getPlayers } from "../../services/playerService";
 import { DateRange } from "react-day-picker";
 import useSWR from "swr";
 import MatchHistoryUI from "../../components/matches/MatchHistoryUI";
@@ -46,7 +46,7 @@ const MatchHistoryPage = () => {
     data: allPlayers,
     error: playersError,
     isLoading: playersLoading,
-  } = useSWR<Player[]>("/api/v1/players", getPlayerList, {
+  } = useSWR<Player[]>("/api/v1/players", getPlayers, {
     revalidateOnFocus: true,
     revalidateOnMount: true,
     refreshInterval: 5000, // Refresh every 5 seconds

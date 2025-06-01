@@ -15,45 +15,30 @@ class Config:
     Configuration class for the application.
 
     The configuration object is responsible for storing information about the environment in which
-    the application is running. It uses the environment variable ENV to select between the development
-    and production environments. If ENV is not set, the development environment is assumed.
+    the application is running.
 
     Attributes
     ----------
-    db_url : str
-        The URL of the PostgreSQL database to use.
+    supabase_url : str | None
+        URL of the Supabase project.
+    supabase_key : str | None
+        Supabase API key (typically the anon key or service role key).
     frontend_url : str
-        The URL of the frontend application.
+        URL of the frontend application.
     """
 
-    @property
-    def db_url(self):
+    def __init__(self):
         """
-        The URL of the PostgreSQL database to use.
+        Initialize a new configuration object.
 
-        Returns
-        -------
-        str
-            The URL of the PostgreSQL database to use.
-
-        Raises
-        ------
-        ValueError
-            If the database URL is not set.
+        Supabase connection details are loaded from environment variables.
         """
-        db_url = environ.get("DATABASE_URL")
-        if not db_url:
-            raise ValueError("DATABASE_URL environment variable must be set.")
-        return db_url
+        self.supabase_url = environ.get("SUPABASE_URL")
+        self.supabase_key = environ.get("SUPABASE_KEY")
 
     @property
     def frontend_url(self):
         """
-        The URL of the frontend application.
-
-        Returns
-        -------
-        str
-            The URL of the frontend application.
+        URL of the frontend application.
         """
         return environ.get("FRONTEND_URL", "http://localhost:3000")

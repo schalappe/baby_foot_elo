@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Core database utilities like transaction management and retry logic.
+Core database utilities like transaction management.
 """
 
-import uuid
 from contextlib import contextmanager
 
 from loguru import logger
@@ -73,36 +72,29 @@ class TransactionHandler:
         db.execute("ROLLBACK;")
         logger.warning("Transaction rolled back.")
         logger.warning(f"Transaction {transaction_id} rolled back.")
+from app.db.database import supabase
 
 
 @contextmanager
 def transaction():
     """
-    Context manager for transaction management.
-    Automatically handles begin, commit, and rollback operations.
-
-    This context manager is used to manage database transactions. It ensures that a transaction
-    is started before the block of code is executed, and that the transaction is committed if
-    no exceptions are raised, or rolled back if an exception is raised.
+    Context manager to provide a Supabase instance for a block of operations.
+    Logs the conceptual start and end of a transaction block.
 
     Example
     -------
     ```python
     with transaction() as db_manager:
         db.execute("INSERT INTO Players (name) VALUES (?)", ["John Doe"])
+    with transaction() as supabase:
+        supabase.table("Players").insert({"name": "John Doe", "global_elo": 1000}).execute()
     ```
     """
-    # ##: Get the singleton instance of DatabaseManager.
-    db = DatabaseManager(config.db_url)
-    handler = TransactionHandler()
-    transaction_id = uuid.uuid4()
-    logger.debug(f"Starting transaction {transaction_id}.")
+    logger.debug("Entering transaction context.")
     try:
-        handler.begin(db, transaction_id)
-        yield db
-        handler.commit(db, transaction_id)
-        logger.info(f"Transaction {transaction_id} committed successfully.")
+        yield supabase
     except Exception as exc:
-        handler.rollback(db, transaction_id)
-        logger.error(f"Transaction {transaction_id} failed and rolled back. Error: {exc}", exc_info=True)
+        logger.error(f"Error within transaction context: {exc}", exc_info=True)
         raise
+    finally:
+        logger.debug("Exiting transaction context.")

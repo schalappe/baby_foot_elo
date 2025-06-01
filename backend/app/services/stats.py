@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from loguru import logger
@@ -40,22 +40,7 @@ def get_player_matches(player_id: int, limit: int = 10, offset: int = 0, **filte
     """
     try:
         matches = get_matches_by_player_id(player_id, limit, offset, **filters)
-
-        # ##: Convert to response model.
-        response = []
-        for match in matches:
-            # ##: Get teams.
-            winner_team = get_team(match["winner_team_id"])
-            loser_team = get_team(match["loser_team_id"])
-
-            # ##: Create match response.
-            match_response = MatchWithEloResponse(
-                **match,
-                winner_team=winner_team,
-                loser_team=loser_team,
-            )
-            response.append(match_response)
-
+        response = [MatchWithEloResponse(**match) for match in matches]
         return response
     except Exception as e:
         logger.error(f"Error retrieving matches for player {player_id}: {e}")
@@ -81,29 +66,8 @@ def get_team_matches(team_id: int, limit: int = 100, offset: int = 0) -> List[Ma
         A list of matches the team participated in.
     """
     try:
-        # ##: Get matches from repository
         matches = get_matches_by_team_id(team_id, limit=limit, offset=offset)
-
-        # ##: Convert to MatchWithEloResponse models
-        result = []
-        for match in matches:
-            try:
-                # ##: Get teams.
-                winner_team = get_team(match["winner_team_id"])
-                loser_team = get_team(match["loser_team_id"])
-
-                # ##: Create match response.
-                match_response = MatchWithEloResponse(
-                    **match,
-                    winner_team=winner_team,
-                    loser_team=loser_team,
-                )
-                result.append(match_response)
-            except Exception as e:
-                logger.warning(f"Skipping match {match.get('match_id')} due to error: {e}")
-                continue
-
-        return result
+        return [MatchWithEloResponse(**match) for match in matches]
 
     except Exception as exc:
         logger.error(f"Error retrieving matches for team {team_id}: {exc}")
@@ -314,7 +278,7 @@ def get_active_team_rankings(limit: int = 100, days_since_last_match: Optional[i
         if days_since_last_match is not None:
             filtered_teams = []
 
-            last_match_at_threshold = datetime.now() - timedelta(days=days_since_last_match)
+            last_match_at_threshold = datetime.now(timezone.utc) - timedelta(days=days_since_last_match)
             for team in teams:
                 if team.last_match_at is None:
                     continue
@@ -362,7 +326,7 @@ def get_active_players_rankings(limit: int = 100, days_since_last_match: Optiona
         if days_since_last_match is not None:
             filtered_players = []
 
-            last_match_at_threshold = datetime.now() - timedelta(days=days_since_last_match)
+            last_match_at_threshold = datetime.now(timezone.utc) - timedelta(days=days_since_last_match)
             for player in players:
                 if player.matches_played == 0 or player.last_match_at <= last_match_at_threshold:
                     continue
