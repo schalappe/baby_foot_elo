@@ -40,22 +40,7 @@ def get_player_matches(player_id: int, limit: int = 10, offset: int = 0, **filte
     """
     try:
         matches = get_matches_by_player_id(player_id, limit, offset, **filters)
-
-        # ##: Convert to response model.
-        response = []
-        for match in matches:
-            # ##: Get teams.
-            winner_team = get_team(match["winner_team_id"])
-            loser_team = get_team(match["loser_team_id"])
-
-            # ##: Create match response.
-            match_response = MatchWithEloResponse(
-                **match,
-                winner_team=winner_team,
-                loser_team=loser_team,
-            )
-            response.append(match_response)
-
+        response = [MatchWithEloResponse(**match) for match in matches]
         return response
     except Exception as e:
         logger.error(f"Error retrieving matches for player {player_id}: {e}")
