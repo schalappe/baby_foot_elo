@@ -15,7 +15,10 @@
 // frontend/services/playerService.ts
 import axios from "axios";
 import { Player, PlayerStats, GetPlayersParams } from "../types/index";
-import {BackendMatchWithEloResponse, GetPlayerMatchesParams} from "../types/match.types";
+import {
+  BackendMatchWithEloResponse,
+  GetPlayerMatchesParams,
+} from "../types/match.types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -116,7 +119,7 @@ export const getPlayerStats = async (
   try {
     const response = await axios.get<PlayerStats>(
       `${API_URL}/players/${playerId}/statistics`,
-      );
+    );
     return response.data;
   } catch (error) {
     console.error(
