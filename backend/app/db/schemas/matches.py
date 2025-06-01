@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS Matches (
     winner_team_id INTEGER NOT NULL,
     loser_team_id INTEGER NOT NULL,
     is_fanny BOOLEAN NOT NULL DEFAULT FALSE,
-    played_at TIMESTAMP NOT NULL,
+    played_at TIMESTAMPTZ NOT NULL,
     notes TEXT,
     FOREIGN KEY (winner_team_id) REFERENCES Teams(team_id),
     FOREIGN KEY (loser_team_id) REFERENCES Teams(team_id),

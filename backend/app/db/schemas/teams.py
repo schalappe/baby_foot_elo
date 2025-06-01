@@ -9,8 +9,8 @@ CREATE TABLE IF NOT EXISTS Teams (
     player1_id INTEGER NOT NULL,
     player2_id INTEGER NOT NULL,
     global_elo INTEGER NOT NULL DEFAULT 1000,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_match_at TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_match_at TIMESTAMPTZ,
     FOREIGN KEY (player1_id) REFERENCES Players(player_id),
     FOREIGN KEY (player2_id) REFERENCES Players(player_id),
     CHECK (player1_id <> player2_id)
