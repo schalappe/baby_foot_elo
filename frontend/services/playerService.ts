@@ -96,16 +96,14 @@ export const getPlayerById = async (playerId: number): Promise<Player> => {
  * @returns A promise that resolves to the newly created Player object.
  * @throws {Error} If the player creation fails.
  */
-export const createPlayer = async (name: string): Promise<Player | null> => {
-  const { data, error } = await supabase
-    .from('players')
-    .insert([{ name: name }])
-    .select();
-  if (error) {
-    console.error("Failed to create player:", error);
+export const createPlayer = async (name: string): Promise<Player> => {
+  try {
+    const response = await axios.post(`${API_URL}/players`, { name });
+    return response.data;
+  } catch (error) {
+    console.error("Échec de la création du joueur:", error);
     throw error;
   }
-  return data ? data[0] : null;
 };
 
 /**
