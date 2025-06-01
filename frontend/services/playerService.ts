@@ -15,10 +15,7 @@
 // frontend/services/playerService.ts
 import axios from "axios";
 import { Player, PlayerStats, GetPlayersParams } from "../types/index";
-import {
-  BackendMatchWithEloResponse,
-  GetPlayerMatchesParams,
-} from "../types/match.types";
+import {BackendMatchWithEloResponse, GetPlayerMatchesParams} from "../types/match.types";
 import { supabase} from "./supabaseClient"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -30,24 +27,48 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
  * @returns A promise that resolves to an array of Player objects.
  * @throws {Error} If the API request fails.
  */
-export const getPlayers = async (
-  params?: GetPlayersParams,
-): Promise<Player[]> => {
-  try {
-    let url = `${API_URL}/players`;
+export const getPlayers = async (params?: GetPlayersParams,): Promise<Player[]> => {
+  let query = supabase.from('players').select('player_id');
 
-    if (params && Object.keys(params).length > 0) {
-      const queryParams = new URLSearchParams(
-        params as Record<string, string>,
-      ).toString();
-      url += `?${queryParams}`;
-    }
-
-    const response = await axios.get(url);
-    return response.data;
-  } catch (error) {
-    throw error;
+  if (params?.limit) {
+    query = query.limit(params.limit);
   }
+  if (params?.skip) {
+    query = query.range(params.skip, params.skip + (params.limit || 100) - 1);
+  }
+
+  const sortBy = params?.sort_by || 'global_elo';
+  const orderBy = params?.order || 'desc';
+
+  query = query.order(sortBy, { ascending: orderBy === 'asc' });
+
+  const { data: playersData, error: playersError } = await query;
+
+  if (playersError) {
+    console.error("Échec de la récupération des joueurs:", playersError);
+    throw playersError;
+  }
+
+  if (!playersData || playersData.length === 0) {
+    return [];
+  }
+
+  // Fetch full stats for each player using the RPC function.
+  const fullPlayersPromises = playersData.map(async (player: { player_id: number }) => {
+    const { data: fullStats, error: statsError } = await supabase
+      .rpc('get_player_full_stats', {
+        p_player_id: player.player_id
+      });
+
+    if (statsError) {
+      console.error(`Échec de la récupération des statistiques du joueur ${player.player_id}:`, statsError);
+      throw statsError;
+    }
+    // The RPC function returns an array, even for a single result. Take the first element.
+    return fullStats;
+  });
+
+  return await Promise.all(fullPlayersPromises);
 };
 
 /**
