@@ -85,22 +85,13 @@ def get_player_stats(player_id: int) -> Optional[Dict[str, Any]]:
         Player statistics, or None if player not found
     """
     try:
-        # ##: Get player details.
-        player = get_player_by_id_or_name(player_id=player_id)
-        if not player:
-            return None
-        match_stats = get_player_match_stats(player_id)
-
-        # ##: Calculate win rate.
-        win_rate = (
-            (match_stats["wins"] / match_stats["matches_played"] * 100) if match_stats["matches_played"] > 0 else 0
-        )
-
-        return {
-            **player,
-            **match_stats,
-            "win_rate": win_rate,
-        }
+        with transaction() as db_client:
+            rpc_params = {"p_player_id": player_id}
+            response = db_client.rpc("get_player_full_stats", rpc_params).execute()
+        
+        if response.data:
+            return response.data
+        return None
     except Exception as e:
         logger.error("Failed to get player stats for ID %d: %s", player_id, e)
         return None
