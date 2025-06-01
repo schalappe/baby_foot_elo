@@ -30,14 +30,15 @@ def get_player_match_stats(player_id: int) -> Dict[str, Any]:
     with transaction() as db_client:
         rpc_params = {"p_player_id": player_id}
         response = db_client.rpc("get_player_comprehensive_stats", rpc_params).execute()
-        if response.data:
-            return response.data
-        return {
-            "matches_played": 0,
-            "wins": 0,
-            "losses": 0,
-            "last_match_at": None,
-        }
+    
+    if response.data:
+        return response.data
+    return {
+        "matches_played": 0,
+        "wins": 0,
+        "losses": 0,
+        "last_match_at": None,
+    }
 
 
 def get_team_match_stats(team_id: int) -> Dict[str, Any]:
@@ -56,28 +57,15 @@ def get_team_match_stats(team_id: int) -> Dict[str, Any]:
     """
     with transaction() as db_client:
         rpc_params = {"p_team_id": team_id}
-
-        # ##: Match Count (using RPC).
-        mc_rpc_response = db_client.rpc("get_team_total_matches", rpc_params).execute()
-        match_count = mc_rpc_response.data if mc_rpc_response.data is not None else 0
-
-        # ##: Win Count (using RPC).
-        wc_rpc_response = db_client.rpc("get_team_win_count", rpc_params).execute()
-        win_count = wc_rpc_response.data if wc_rpc_response.data is not None else 0
-
-        # ##: Loss Count (using RPC).
-        lc_rpc_response = db_client.rpc("get_team_loss_count", rpc_params).execute()
-        loss_count = lc_rpc_response.data if lc_rpc_response.data is not None else 0
-
-        # ##: Last Match Date (using RPC).
-        last_match_rpc_response = db_client.rpc("get_team_last_match_date", rpc_params).execute()
-        last_match_at = last_match_rpc_response.data if last_match_rpc_response.data is not None else None
-
+        response = db_client.rpc("get_team_comprehensive_stats", rpc_params).execute()
+    
+    if response.data:
+        return response.data
     return {
-        "matches_played": match_count,
-        "wins": win_count,
-        "losses": loss_count,
-        "last_match_at": last_match_at,
+        "matches_played": 0,
+        "wins": 0,
+        "losses": 0,
+        "last_match_at": None,
     }
 
 
