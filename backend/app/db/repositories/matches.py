@@ -242,12 +242,8 @@ def get_matches_by_player_id(
             query = (
                 db_client.table("players_elo_history")
                 .select(
-                    "team_id, old_elo, new_elo, difference, "
-                    "match:matches!inner("
-                    "    match_id, winner_team_id, loser_team_id, is_fanny, played_at, notes,"
-                    "    winner_team:teams!winner_team_id(name),"
-                    "    loser_team:teams!loser_team_id(name)"
-                    ")"
+                    "player_id, old_elo, new_elo, difference, "
+                    "match:matches!inner(match_id, winner_team_id, loser_team_id, is_fanny, played_at, notes)"
                 )
                 .eq("player_id", player_id)
             )
@@ -268,22 +264,14 @@ def get_matches_by_player_id(
                     if not match_info:
                         continue
 
-                    team_id_for_player_in_match = row_item["team_id"]
-                    winner_team_info = match_info.get("winner_team")
-                    loser_team_info = match_info.get("loser_team")
-                    played_at_val = match_info.get("played_at")
-
                     matches_details.append(
                         {
                             "match_id": match_info["match_id"],
-                            "played_at": datetime.fromisoformat(played_at_val) if played_at_val else None,
+                            "played_at": datetime.fromisoformat(match_info["played_at"]) if match_info["played_at"] else None,
                             "is_fanny": match_info["is_fanny"],
                             "notes": match_info["notes"],
                             "winner_team_id": match_info["winner_team_id"],
-                            "winner_team_name": winner_team_info.get("name") if winner_team_info else "N/A",
                             "loser_team_id": match_info["loser_team_id"],
-                            "loser_team_name": loser_team_info.get("name") if loser_team_info else "N/A",
-                            "won": team_id_for_player_in_match == match_info["winner_team_id"],
                             "elo_changes": {
                                 player_id: {
                                     "old_elo": row_item["old_elo"],
