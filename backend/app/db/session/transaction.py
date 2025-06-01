@@ -19,8 +19,6 @@ def transaction():
     Example
     -------
     ```python
-    with transaction() as db_manager:
-        db.execute("INSERT INTO Players (name) VALUES (?)", ["John Doe"])
     with transaction() as supabase:
         supabase.table("Players").insert({"name": "John Doe", "global_elo": 1000}).execute()
     ```
