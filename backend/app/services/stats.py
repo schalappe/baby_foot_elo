@@ -280,7 +280,7 @@ def get_active_team_rankings(limit: int = 100, days_since_last_match: Optional[i
 
             last_match_at_threshold = datetime.now(timezone.utc) - timedelta(days=days_since_last_match)
             for team in teams:
-                if team.last_match_at is None:
+                if team.last_match_at is None or team.matches_played <= 5:
                     continue
 
                 if team.last_match_at <= last_match_at_threshold:
@@ -328,7 +328,7 @@ def get_active_players_rankings(limit: int = 100, days_since_last_match: Optiona
 
             last_match_at_threshold = datetime.now(timezone.utc) - timedelta(days=days_since_last_match)
             for player in players:
-                if player.matches_played == 0 or player.last_match_at <= last_match_at_threshold:
+                if player.matches_played <= 10 or player.last_match_at <= last_match_at_threshold:
                     continue
                 filtered_players.append(player)
 
