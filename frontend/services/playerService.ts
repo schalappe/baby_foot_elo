@@ -64,7 +64,6 @@ export const getPlayers = async (params?: GetPlayersParams,): Promise<Player[]> 
       console.error(`Échec de la récupération des statistiques du joueur ${player.player_id}:`, statsError);
       throw statsError;
     }
-    // The RPC function returns an array, even for a single result. Take the first element.
     return fullStats;
   });
 
@@ -116,17 +115,32 @@ export const createPlayer = async (name: string): Promise<Player | null> => {
  * @throws {Error} If the API request fails.
  */
 export const getPlayerRankings = async (): Promise<Player[]> => {
-  try {
-    const response = await axios.get<Player[]>(`${API_URL}/players/rankings`, {
-      params: {
-        limit: 100,
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Échec de la récupération des joueurs:", error);
-    throw error;
+  let { data: playersData, error: playersError } = await supabase.from('players').select('player_id').limit(100).order('global_elo', { ascending: false });
+
+  if (playersError) {
+    console.error("Échec de la récupération des joueurs:", playersError);
+    throw playersError;
   }
+
+  if (!playersData || playersData.length === 0) {
+    return [];
+  }
+
+  // Fetch full stats for each player using the RPC function.
+  const fullPlayersPromises = playersData.map(async (player: { player_id: number }) => {
+    const { data: fullStats, error: statsError } = await supabase
+      .rpc('get_player_full_stats', {
+        p_player_id: player.player_id
+      });
+
+    if (statsError) {
+      console.error(`Échec de la récupération des statistiques du joueur ${player.player_id}:`, statsError);
+      throw statsError;
+    }
+    return fullStats;
+  });
+
+  return await Promise.all(fullPlayersPromises);
 };
 
 /**
