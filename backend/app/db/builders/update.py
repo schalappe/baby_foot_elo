@@ -43,7 +43,7 @@ class UpdateQueryBuilder(BaseQueryBuilder):
             Self for method chaining.
         """
         for k, v in field_values.items():
-            self.set_clauses.append(f"{k} = ?")
+            self.set_clauses.append(f"{k} = %s")
             self.set_params.append(v)
         return self
 

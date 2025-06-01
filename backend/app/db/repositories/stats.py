@@ -35,7 +35,7 @@ def get_player_match_stats(player_id: int) -> Dict[str, Any]:
         .join("Teams tw", "m.winner_team_id = tw.team_id")
         .join("Teams tl", "m.loser_team_id = tl.team_id")
         .where(
-            "tw.player1_id = ? OR tw.player2_id = ? OR tl.player1_id = ? OR tl.player2_id = ?",
+            "tw.player1_id = %s OR tw.player2_id = %s OR tl.player1_id = %s OR tl.player2_id = %s",
             player_id,
             player_id,
             player_id,
@@ -50,7 +50,7 @@ def get_player_match_stats(player_id: int) -> Dict[str, Any]:
         SelectQueryBuilder("Matches m")
         .select("COUNT(*)")
         .join("Teams t", "m.winner_team_id = t.team_id")
-        .where("t.player1_id = ? OR t.player2_id = ?", player_id, player_id)
+        .where("t.player1_id = %s OR t.player2_id = %s", player_id, player_id)
         .execute(fetch_all=False)
     )
     win_count = wc_result[0] if wc_result else 0
@@ -60,7 +60,7 @@ def get_player_match_stats(player_id: int) -> Dict[str, Any]:
         SelectQueryBuilder("Matches m")
         .select("COUNT(*)")
         .join("Teams t", "m.loser_team_id = t.team_id")
-        .where("t.player1_id = ? OR t.player2_id = ?", player_id, player_id)
+        .where("t.player1_id = %s OR t.player2_id = %s", player_id, player_id)
         .execute(fetch_all=False)
     )
     loss_count = lc_result[0] if lc_result else 0
@@ -72,7 +72,7 @@ def get_player_match_stats(player_id: int) -> Dict[str, Any]:
         .join("Teams tw", "m.winner_team_id = tw.team_id")
         .join("Teams tl", "m.loser_team_id = tl.team_id")
         .where(
-            "tw.player1_id = ? OR tw.player2_id = ? OR tl.player1_id = ? OR tl.player2_id = ?",
+            "tw.player1_id = %s OR tw.player2_id = %s OR tl.player1_id = %s OR tl.player2_id = %s",
             player_id,
             player_id,
             player_id,
@@ -109,7 +109,7 @@ def get_team_match_stats(team_id: int) -> Dict[str, Any]:
         .select("COUNT(DISTINCT m.match_id)")
         .join("Teams tw", "m.winner_team_id = tw.team_id")
         .join("Teams tl", "m.loser_team_id = tl.team_id")
-        .where("tw.team_id = ? OR tl.team_id = ?", team_id, team_id)
+        .where("tw.team_id = %s OR tl.team_id = %s", team_id, team_id)
         .execute(fetch_all=False)
     )
     match_count = mc_result[0] if mc_result else 0
@@ -119,7 +119,7 @@ def get_team_match_stats(team_id: int) -> Dict[str, Any]:
         SelectQueryBuilder("Matches m")
         .select("COUNT(*)")
         .join("Teams t", "m.winner_team_id = t.team_id")
-        .where("t.team_id = ?", team_id)
+        .where("t.team_id = %s", team_id)
         .execute(fetch_all=False)
     )
     win_count = wc_result[0] if wc_result else 0
@@ -129,7 +129,7 @@ def get_team_match_stats(team_id: int) -> Dict[str, Any]:
         SelectQueryBuilder("Matches m")
         .select("COUNT(*)")
         .join("Teams t", "m.loser_team_id = t.team_id")
-        .where("t.team_id = ?", team_id)
+        .where("t.team_id = %s", team_id)
         .execute(fetch_all=False)
     )
     loss_count = lc_result[0] if lc_result else 0
@@ -140,7 +140,7 @@ def get_team_match_stats(team_id: int) -> Dict[str, Any]:
         .select("MAX(m.played_at)")
         .join("Teams tw", "m.winner_team_id = tw.team_id")
         .join("Teams tl", "m.loser_team_id = tl.team_id")
-        .where("tw.team_id = ? OR tl.team_id = ?", team_id, team_id)
+        .where("tw.team_id = %s OR tl.team_id = %s", team_id, team_id)
         .execute(fetch_all=False)
     )
 

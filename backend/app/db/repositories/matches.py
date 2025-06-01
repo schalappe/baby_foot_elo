@@ -98,7 +98,7 @@ def get_match_by_id(match_id: int) -> Optional[Dict[str, Any]]:
     result = (
         SelectQueryBuilder("Matches")
         .select("match_id", "winner_team_id", "loser_team_id", "is_fanny", "played_at", "notes")
-        .where("match_id = ?", match_id)
+        .where("match_id = %s", match_id)
         .execute(fetch_all=False)
     )
     if result:
@@ -169,7 +169,7 @@ def get_matches_by_team_id(
                 "eh.difference as elo_change",
             )
             .join("Matches m", "eh.match_id = m.match_id")
-            .where("eh.team_id = ?", team_id)
+            .where("eh.team_id = %s", team_id)
             .order_by_clause("m.played_at DESC")
             .limit(limit)
             .offset(offset)
@@ -177,11 +177,11 @@ def get_matches_by_team_id(
 
         # ##: Add date range filtering if provided.
         if start_date is not None:
-            query_builder.where("m.played_at >= ?", start_date)
+            query_builder.where("m.played_at >= %s", start_date)
         if end_date is not None:
-            query_builder.where("m.played_at <= ?", end_date)
+            query_builder.where("m.played_at <= %s", end_date)
         if is_fanny:
-            query_builder.where("m.is_fanny = ?", True)
+            query_builder.where("m.is_fanny = %s", True)
 
         # ##: Execute the query and fetch results.
         matches = []
@@ -270,7 +270,7 @@ def get_matches_by_player_id(
                 "eh.difference as elo_change",
             )
             .join("Matches m", "eh.match_id = m.match_id")
-            .where("eh.player_id = ?", player_id)
+            .where("eh.player_id = %s", player_id)
             .order_by_clause("m.played_at DESC")
             .limit(limit)
             .offset(offset)
@@ -278,11 +278,11 @@ def get_matches_by_player_id(
 
         # ##: Add date range filtering if provided.
         if start_date is not None:
-            query_builder.where("m.played_at >= ?", start_date)
+            query_builder.where("m.played_at >= %s", start_date)
         if end_date is not None:
-            query_builder.where("m.played_at <= ?", end_date)
+            query_builder.where("m.played_at <= %s", end_date)
         if is_fanny:
-            query_builder.where("m.is_fanny = ?", True)
+            query_builder.where("m.is_fanny = %s", True)
 
         matches = []
         with transaction() as db_manager:
@@ -380,7 +380,7 @@ def delete_match_by_id(match_id: int) -> bool:
     try:
         with transaction() as db_manager:
             query_builder = DeleteQueryBuilder("Matches")
-            query_builder.where("match_id = ?", match_id)
+            query_builder.where("match_id = %s", match_id)
             query, params = query_builder.build()
 
             result = bool(db_manager.fetchone(query, params)[0])

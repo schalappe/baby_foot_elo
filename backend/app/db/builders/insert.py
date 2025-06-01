@@ -56,7 +56,7 @@ class InsertQueryBuilder(BaseQueryBuilder):
         Tuple[str, List[Any]]
             SQL query string and list of parameters.
         """
-        placeholders = ", ".join(["?" for _ in self.fields])
+        placeholders = ", ".join(["%s" for _ in self.fields])
         fields = ", ".join(self.fields)
         query = f"INSERT INTO {self.base_table} ({fields}) VALUES ({placeholders})"
         return query, self.values

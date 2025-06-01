@@ -151,9 +151,9 @@ def get_player_by_id_or_name(player_id: Optional[int] = None, name: Optional[str
     try:
         query_builder = SelectQueryBuilder("Players").select("player_id", "name", "global_elo", "created_at")
         if player_id is not None:
-            query_builder.where("player_id = ?", player_id)
+            query_builder.where("player_id = %s", player_id)
         if name is not None:
-            query_builder.where("name = ?", name)
+            query_builder.where("name = %s", name)
 
         result = query_builder.execute(fetch_all=False)
         if result:
@@ -205,7 +205,7 @@ def update_player_name_or_elo(
         return False
 
     try:
-        query, params = UpdateQueryBuilder("Players").set(**update_fields).where("player_id = ?", player_id).build()
+        query, params = UpdateQueryBuilder("Players").set(**update_fields).where("player_id = %s", player_id).build()
         with transaction() as db_manager:
             db_manager.execute(query, params)
         logger.info(f"Player ID {player_id} updated successfully.")
@@ -245,7 +245,7 @@ def batch_update_players_elo(players: List[Dict[str, Any]]) -> bool:
                     continue
 
                 query, params = (
-                    UpdateQueryBuilder("Players").set(**update_fields).where("player_id = ?", player_id).build()
+                    UpdateQueryBuilder("Players").set(**update_fields).where("player_id = %s", player_id).build()
                 )
                 db_manager.execute(query, params)
         logger.info("Batch update of players completed successfully.")
@@ -271,7 +271,7 @@ def delete_player_by_id(player_id: int) -> bool:
         True if the player was deleted successfully, False otherwise.
     """
     try:
-        query, params = DeleteQueryBuilder("Players").where("player_id = ?", player_id).build()
+        query, params = DeleteQueryBuilder("Players").where("player_id = %s", player_id).build()
         with transaction() as db_manager:
             result = db_manager.fetchone(query, params)
             return bool(result[0])

@@ -49,7 +49,7 @@ def create_team_by_player_ids(
             existing_team = db_manager.fetchone(
                 """
                 SELECT team_id FROM Teams
-                WHERE (player1_id = ? AND player2_id = ?) OR (player1_id = ? AND player2_id = ?)
+                WHERE (player1_id = %s AND player2_id = %s) OR (player1_id = %s AND player2_id = %s)
                 """,
                 [player1_id, player2_id, player2_id, player1_id],
             )
@@ -199,7 +199,7 @@ def get_team_by_id(team_id: int) -> Optional[Dict[str, Any]]:
                 "created_at",
                 "last_match_at",
             )
-            .where("team_id = ?", team_id)
+            .where("team_id = %s", team_id)
             .execute(fetch_all=False)
         )
         if result:
@@ -243,7 +243,7 @@ def get_teams_by_player_id(player_id: int) -> List[Dict[str, Any]]:
                 "created_at",
                 "last_match_at",
             )
-            .where("player1_id = ? OR player2_id = ?", player_id, player_id)
+            .where("player1_id = %s OR player2_id = %s", player_id, player_id)
             .order_by_clause("created_at DESC")
             .execute()
         )
@@ -305,7 +305,7 @@ def update_team_elo(
         last_match_at = datetime.fromisoformat(last_match_at) if isinstance(last_match_at, str) else last_match_at
         builder.set(last_match_at=last_match_at)
 
-    builder.where("team_id = ?", team_id)
+    builder.where("team_id = %s", team_id)
     query, params = builder.build()
 
     with transaction() as db_manager:
@@ -356,7 +356,7 @@ def batch_update_teams_elo(teams: List[Dict[str, Any]]) -> List[bool]:
             results.append(False)
             continue
 
-        update_builder.where("team_id = ?", team_id)
+        update_builder.where("team_id = %s", team_id)
         query, params = update_builder.build()
         queries_and_params.append((query, params))
 
@@ -389,7 +389,7 @@ def delete_team_by_id(team_id: int) -> bool:
     bool
         True if the deletion was successful, False otherwise.
     """
-    query, params = DeleteQueryBuilder("Teams").where("team_id = ?", team_id).build()
+    query, params = DeleteQueryBuilder("Teams").where("team_id = %s", team_id).build()
     with transaction() as db_manager:
         result = db_manager.fetchone(query, params)
         return bool(result[0])

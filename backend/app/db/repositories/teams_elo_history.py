@@ -157,12 +157,12 @@ def get_team_elo_history_by_id(
     """
     try:
         with transaction() as db:
-            query_builder = SelectQueryBuilder("Teams_ELO_History").select("*").where("team_id = ?", team_id)
+            query_builder = SelectQueryBuilder("Teams_ELO_History").select("*").where("team_id = %s", team_id)
 
             if start_date:
-                query_builder.where("date >= ?", start_date)
+                query_builder.where("date >= %s", start_date)
             if end_date:
-                query_builder.where("date <= ?", end_date)
+                query_builder.where("date <= %s", end_date)
 
             query_builder.order_by_clause("date DESC").limit(limit).offset(offset)
 
@@ -208,8 +208,8 @@ def get_team_elo_history_by_match_id(team_id: int, match_id: int) -> Optional[Di
             query, params = (
                 SelectQueryBuilder("Teams_ELO_History")
                 .select("*")
-                .where("team_id = ?", team_id)
-                .where("match_id = ?", match_id)
+                .where("team_id = %s", team_id)
+                .where("match_id = %s", match_id)
                 .build()
             )
 
@@ -250,7 +250,7 @@ def get_teams_elo_history_by_match_id(match_id: int) -> List[Dict[str, Any]]:
             query, params = (
                 SelectQueryBuilder("Teams_ELO_History")
                 .select("*")
-                .where("match_id = ?", match_id)
+                .where("match_id = %s", match_id)
                 .order_by_clause("history_id ASC")
                 .build()
             )

@@ -156,13 +156,13 @@ def get_player_elo_history_by_id(
         List of ELO history records
     """
     try:
-        builder = SelectQueryBuilder("Players_ELO_History").select("*").where("player_id = ?", player_id)
+        builder = SelectQueryBuilder("Players_ELO_History").select("*").where("player_id = %s", player_id)
 
         if start_date:
-            builder = builder.where("date >= ?", start_date)
+            builder = builder.where("date >= %s", start_date)
 
         if end_date:
-            builder = builder.where("date <= ?", end_date)
+            builder = builder.where("date <= %s", end_date)
 
         results = builder.order_by_clause("date DESC").limit(limit).offset(offset).execute(fetch_all=True)
 
@@ -210,8 +210,8 @@ def get_player_elo_history_by_match_id(player_id: int, match_id: int) -> Optiona
         builder = (
             SelectQueryBuilder("Players_ELO_History")
             .select("*")
-            .where("player_id = ?", player_id)
-            .where("match_id = ?", match_id)
+            .where("player_id = %s", player_id)
+            .where("match_id = %s", match_id)
         )
         results = builder.execute(fetch_all=True)
 
@@ -252,7 +252,7 @@ def get_players_elo_history_by_match_id(match_id: int) -> List[Dict[str, Any]]:
         results = (
             SelectQueryBuilder("Players_ELO_History")
             .select("*")
-            .where("match_id = ?", match_id)
+            .where("match_id = %s", match_id)
             .execute(fetch_all=True)
         )
 
