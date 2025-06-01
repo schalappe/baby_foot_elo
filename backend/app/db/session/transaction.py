@@ -8,6 +8,7 @@ from contextlib import contextmanager
 
 from loguru import logger
 
+from app.core import config
 from app.db.database import DatabaseManager
 
 
@@ -87,12 +88,12 @@ def transaction():
     Example
     -------
     ```python
-    with transaction() as db:
+    with transaction() as db_manager:
         db.execute("INSERT INTO Players (name) VALUES (?)", ["John Doe"])
     ```
     """
     # ##: Get the singleton instance of DatabaseManager.
-    db = DatabaseManager()
+    db = DatabaseManager(config.db_url)
     handler = TransactionHandler()
     transaction_id = uuid.uuid4()
     logger.debug(f"Starting transaction {transaction_id}.")

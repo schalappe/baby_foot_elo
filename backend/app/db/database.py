@@ -19,7 +19,7 @@ class DatabaseManager:
     _instance = None
     _lock = threading.Lock()
 
-    def __new__(cls):
+    def __new__(cls, db_path: str):
         """
         Singleton pattern for connection pooling if desired
         """
@@ -81,7 +81,6 @@ class DatabaseManager:
         if self.connection and not self.connection.closed:
             self.connection.close()
 
-    @_ensure_connection
     def execute(self, query: str, params: Optional[Union[List, Tuple, Dict]] = None) -> Any:
         """
         Execute a SQL query.
@@ -103,13 +102,12 @@ class DatabaseManager:
                 result = self.cursor.execute(query, params)
             else:
                 result = self.cursor.execute(query)
-            logger.debug("Executed query: %s | Params: %s", query, params)
+            logger.debug(f"Executed query: {query} | Params: {params}")
             return result
         except Exception as exc:
-            logger.error("Query execution failed: %s\nQuery: %s\nParams: %s", exc, query, params)
+            logger.error(f"Query execution failed: {exc}\nQuery: {query}\nParams: {params}")
             raise
 
-    @_ensure_connection
     def fetchall(self, query: str, params: Optional[Union[List, Tuple, Dict]] = None) -> List[Tuple]:
         """
         Fetch all rows from a query result.
@@ -128,7 +126,6 @@ class DatabaseManager:
         """
         return self.execute(query, params).fetchall()
 
-    @_ensure_connection
     def fetchone(self, query: str, params: Optional[Union[List, Tuple, Dict]] = None) -> Optional[Tuple]:
         """
         Fetch a single row from a query result.

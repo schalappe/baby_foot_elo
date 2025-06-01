@@ -6,8 +6,8 @@ Operations related to the Teams table.
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-from duckdb import ConstraintException
 from loguru import logger
+from psycopg2 import IntegrityError
 
 from app.db.builders.delete import DeleteQueryBuilder
 from app.db.builders.insert import InsertQueryBuilder
@@ -79,8 +79,8 @@ def create_team_by_player_ids(
                 return result[0]
             logger.error("Failed to create team or retrieve its ID.")
             return None
-    except ConstraintException as constraint_exc:
-        logger.error(f"Constraint error on create_team: {constraint_exc}")
+    except IntegrityError as integrity_exc:
+        logger.error(f"Integrity error on create_team: {integrity_exc}")
         return None
     except Exception as exc:
         logger.error(f"Failed to create team: {exc}")
