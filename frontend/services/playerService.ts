@@ -19,6 +19,7 @@ import {
   BackendMatchWithEloResponse,
   GetPlayerMatchesParams,
 } from "../types/match.types";
+import { supabase} from "./supabaseClient"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -57,16 +58,15 @@ export const getPlayers = async (
  * @throws {Error} If the player is not found or the API request fails.
  */
 export const getPlayerById = async (playerId: number): Promise<Player> => {
-  try {
-    const response = await axios.get(`${API_URL}/players/${playerId}`);
-    return response.data;
-  } catch (error) {
-    console.error(
-      `Échec de la récupération du joueur avec l'ID ${playerId}:`,
-      error,
-    );
+  let { data, error } = await supabase
+    .rpc('get_player_full_stats', {
+      p_player_id: playerId
+    });
+  if (error) {
+    console.error(`Échec de la récupération du joueur avec l'ID ${playerId}:`, error);
     throw error;
   }
+  return Array.isArray(data) ? data[0] : data;
 };
 
 /**
