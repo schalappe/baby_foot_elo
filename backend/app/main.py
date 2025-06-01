@@ -28,7 +28,7 @@ from app.utils.validation import (
 
 @asynccontextmanager
 async def lifespan(app):
-    db_manager = DatabaseManager(db_path=config.get_db_url())
+    db_manager = DatabaseManager(db_path=config.db_url)
     initialize_database(db_manager)
     try:
         yield
@@ -62,7 +62,7 @@ setup_rate_limiting(app, default_limit=100, default_window=60, endpoint_limits=e
 # ##: Allow CORS from frontend.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[config.get_frontend_url()],
+    allow_origins=[config.frontend_url],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

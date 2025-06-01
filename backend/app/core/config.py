@@ -20,47 +20,36 @@ class Config:
 
     Attributes
     ----------
-    env : str
-        The current environment (either "dev" or "prod").
-
-    Methods
-    -------
-    get_db_url() -> str
-        Return the URL of the DuckDB database to use.
+    db_url : str
+        The URL of the PostgreSQL database to use.
+    frontend_url : str
+        The URL of the frontend application.
     """
 
-    def __init__(self):
+    @property
+    def db_url(self):
         """
-        Initialize a new configuration object.
-
-        The environment variable ENV is used to select between the development and production environments.
-        If ENV is not set, the development environment is assumed.
-        """
-        self.env = environ.get("ENV", "dev")
-
-    def get_db_url(self):
-        """
-        Return the URL of the DuckDB database to use.
+        The URL of the PostgreSQL database to use.
 
         Returns
         -------
         str
-            The URL of the DuckDB database to use.
+            The URL of the PostgreSQL database to use.
 
         Raises
         ------
         ValueError
-            If the environment is invalid.
+            If the database URL is not set.
         """
-        if self.env == "dev":
-            return "duckdb://:memory:"
-        if self.env == "prod":
-            return environ.get("DB_URL")
-        raise ValueError("Invalid environment")
+        db_url = environ.get("DATABASE_URL")
+        if not db_url:
+            raise ValueError("DATABASE_URL environment variable must be set.")
+        return db_url
 
-    def get_frontend_url(self):
+    @property
+    def frontend_url(self):
         """
-        Return the URL of the frontend application.
+        The URL of the frontend application.
 
         Returns
         -------
@@ -68,6 +57,3 @@ class Config:
             The URL of the frontend application.
         """
         return environ.get("FRONTEND_URL", "http://localhost:3000")
-
-
-config = Config()

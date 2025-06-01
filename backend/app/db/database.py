@@ -1,27 +1,25 @@
 # -*- coding: utf-8 -*-
 """
-Database Manager for DuckDB connections.
+Database Manager for PostgreSQL connections.
 """
 
 import threading
-from logging import getLogger
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-import duckdb
-
-logger = getLogger(__name__)
+import psycopg2
+from loguru import logger
+from psycopg2.extras import RealDictCursor
 
 
 class DatabaseManager:
     """
-    Manages DuckDB connections, query execution, and transactions.
-    Supports configuration for file path and connection parameters.
+    Manages a singleton PostgreSQL connection using psycopg2.
     """
 
     _instance = None
     _lock = threading.Lock()
 
-    def __new__(cls, db_path: str = ":memory:", **conn_params):
+    def __new__(cls):
         """
         Singleton pattern for connection pooling if desired
         """
@@ -32,48 +30,56 @@ class DatabaseManager:
                     cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self, db_path: str = ":memory:", **conn_params):
+    def __init__(self, db_path: str):
         """
         Initialize a new database connection.
 
         Parameters
         ----------
         db_path : str
-            Path to the DuckDB database file.
-        conn_params : dict
-            Connection parameters for DuckDB.
+            Path to the database file.
         """
         if getattr(self, "_initialized", False):
             return
-        self.db_path = db_path
-        self.conn_params = conn_params
-        self.connection = None
+        self.connect(db_path)
         self._initialized = True
-        self.connect()
+        logger.info("Connected to PostgreSQL at %s", db_path)
 
-    def connect(self):
+    def connect(self, db_path: str):
         """
-        Establish a connection to the DuckDB database.
+        Connect to the database.
+
+        Parameters
+        ----------
+        db_path : str
+            Path to the database file.
         """
         try:
-            self.connection = duckdb.connect(self.db_path, **self.conn_params)
-            logger.info("Connected to DuckDB at %s", self.db_path)
+            self.connection = psycopg2.connect(db_path, cursor_factory=RealDictCursor)
         except Exception as exc:
-            logger.error("Failed to connect to DuckDB: %s", exc)
+            logger.error("Failed to connect to PostgreSQL: %s", exc)
             raise
 
-    # pylint: disable=no-self-argument
-    def _ensure_connection(method: Callable):
+    @property
+    def cursor(self):
         """
-        Decorator to ensure a connection exists before executing a method.
+        Get the cursor for the database connection.
+
+        Returns
+        -------
+        cursor
+            The cursor for the database connection.
         """
+        if self.connection is None or self.connection.closed:
+            self.connect()
+        return self.connection.cursor()
 
-        def wrapper(self, *args, **kwargs):
-            if self.connection is None:
-                self.connect()
-            return method(self, *args, **kwargs)
-
-        return wrapper
+    def close(self):
+        """
+        Close the database connection.
+        """
+        if self.connection and not self.connection.closed:
+            self.connection.close()
 
     @_ensure_connection
     def execute(self, query: str, params: Optional[Union[List, Tuple, Dict]] = None) -> Any:
@@ -94,9 +100,9 @@ class DatabaseManager:
         """
         try:
             if params:
-                result = self.connection.execute(query, params)
+                result = self.cursor.execute(query, params)
             else:
-                result = self.connection.execute(query)
+                result = self.cursor.execute(query)
             logger.debug("Executed query: %s | Params: %s", query, params)
             return result
         except Exception as exc:
@@ -120,8 +126,7 @@ class DatabaseManager:
         List[Tuple]
             List of tuples containing the query results.
         """
-        cur = self.execute(query, params)
-        return cur.fetchall()
+        return self.execute(query, params).fetchall()
 
     @_ensure_connection
     def fetchone(self, query: str, params: Optional[Union[List, Tuple, Dict]] = None) -> Optional[Tuple]:
@@ -140,8 +145,7 @@ class DatabaseManager:
         Optional[Tuple]
             Single tuple containing the query result, or None if no result.
         """
-        cur = self.execute(query, params)
-        return cur.fetchone()
+        return self.execute(query, params).fetchone()
 
     def close(self):
         """
@@ -149,7 +153,7 @@ class DatabaseManager:
         """
         if self.connection:
             self.connection.close()
-            logger.info("DuckDB connection closed.")
+            logger.info("PostgreSQL connection closed.")
             self.connection = None
 
     def __del__(self):
