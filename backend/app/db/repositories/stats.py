@@ -30,7 +30,7 @@ def get_player_match_stats(player_id: int) -> Dict[str, Any]:
     with transaction() as db_client:
         rpc_params = {"p_player_id": player_id}
         response = db_client.rpc("get_player_comprehensive_stats", rpc_params).execute()
-    
+
     if response.data:
         return response.data
     return {
@@ -58,7 +58,7 @@ def get_team_match_stats(team_id: int) -> Dict[str, Any]:
     with transaction() as db_client:
         rpc_params = {"p_team_id": team_id}
         response = db_client.rpc("get_team_comprehensive_stats", rpc_params).execute()
-    
+
     if response.data:
         return response.data
     return {
@@ -88,7 +88,7 @@ def get_player_stats(player_id: int) -> Optional[Dict[str, Any]]:
         with transaction() as db_client:
             rpc_params = {"p_player_id": player_id}
             response = db_client.rpc("get_player_full_stats", rpc_params).execute()
-        
+
         if response.data:
             return response.data
         return None
@@ -112,22 +112,13 @@ def get_team_stats(team_id: int) -> Optional[Dict[str, Any]]:
         Team statistics, or None if team not found
     """
     try:
-        # ##: Get team details.
-        team = get_team_by_id(team_id)
-        if not team:
-            return None
-        match_stats = get_team_match_stats(team_id)
+        with transaction() as db_client:
+            rpc_params = {"p_team_id": team_id}
+            response = db_client.rpc("get_team_full_stats", rpc_params).execute()
 
-        # ##: Calculate win rate.
-        win_rate = (
-            (match_stats["wins"] / match_stats["matches_played"] * 100) if match_stats["matches_played"] > 0 else 0
-        )
-
-        return {
-            **team,
-            **match_stats,
-            "win_rate": win_rate,
-        }
+        if response.data:
+            return response.data
+        return None
     except Exception as e:
         logger.error("Failed to get team stats for ID %d: %s", team_id, e)
         return None
