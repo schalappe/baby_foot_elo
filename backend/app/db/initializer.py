@@ -19,14 +19,6 @@ from app.db.schemas import (
 )
 
 # ##: Constants for database initialization.
-SEQUENCES = [
-    players.CREATE_SEQ_PLAYERS,
-    teams.CREATE_SEQ_TEAMS,
-    matches.CREATE_SEQ_MATCHES,
-    players_elo_history.CREATE_SEQ_PLAYERS_ELO_HISTORY,
-    teams_elo_history.CREATE_SEQ_TEAMS_ELO_HISTORY,
-]
-
 TABLES = [
     players.CREATE_PLAYERS_TABLE,
     teams.CREATE_TEAMS_TABLE,

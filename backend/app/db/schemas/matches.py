@@ -3,13 +3,9 @@
 Schema definitions for the matches table.
 """
 
-CREATE_SEQ_MATCHES = """
-CREATE SEQUENCE IF NOT EXISTS seq_matches_id;
-"""
-
 CREATE_MATCHES_TABLE = """
 CREATE TABLE IF NOT EXISTS Matches (
-    match_id INTEGER PRIMARY KEY DEFAULT nextval('seq_matches_id'),
+    match_id SERIAL PRIMARY KEY,
     winner_team_id INTEGER NOT NULL,
     loser_team_id INTEGER NOT NULL,
     is_fanny BOOLEAN NOT NULL DEFAULT FALSE,
