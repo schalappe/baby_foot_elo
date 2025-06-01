@@ -122,24 +122,7 @@ def get_matches(
             matches_data = get_all_matches(limit=limit, offset=skip)
 
         # ##: Convert to response models.
-        matches = []
-        for match_data in matches_data:
-            try:
-                match = MatchResponse(
-                    match_id=match_data["match_id"],
-                    winner_team=get_team(match_data["winner_team_id"]),
-                    loser_team=get_team(match_data["loser_team_id"]),
-                    winner_team_id=match_data["winner_team_id"],
-                    loser_team_id=match_data["loser_team_id"],
-                    is_fanny=match_data["is_fanny"],
-                    played_at=match_data["played_at"],
-                    notes=match_data.get("notes"),
-                )
-                matches.append(match)
-            except Exception as exc:
-                logger.error(f"Error processing match {match_data.get('match_id')}: {str(exc)}")
-                continue
-
+        matches = [MatchResponse(**match_data) for match_data in matches_data]
         return matches
 
     except Exception as exc:

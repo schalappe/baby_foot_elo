@@ -258,21 +258,14 @@ def get_all_matches(limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
     """
     try:
         with transaction() as db_client:
-            response = (
-                db_client.table("matches")
-                .select("match_id, winner_team_id, loser_team_id, is_fanny, played_at, notes")
-                .order("played_at", desc=True)
-                .limit(limit)
-                .offset(offset)
-                .execute()
-            )
+            response = db_client.rpc("get_all_matches_with_details", {"p_limit": limit, "p_offset": offset}).execute()
             matches_list = []
-            if response.data:
-                for row_data in response.data:
-                    if row_data.get("played_at"):
-                        row_data["played_at"] = datetime.fromisoformat(row_data["played_at"])
-                    matches_list.append(row_data)
-            return matches_list
+
+        if response.data:
+            for row_data in response.data:
+                row_data["played_at"] = datetime.fromisoformat(row_data["played_at"])
+                matches_list.append(row_data)
+        return matches_list
     except Exception as exc:
         logger.error(f"Failed to get all matches: {exc}")
         return []
