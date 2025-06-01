@@ -10,34 +10,6 @@ from loguru import logger
 from app.db.session import transaction, with_retry
 
 
-def get_team_match_stats(team_id: int) -> Dict[str, Any]:
-    """
-    Get the match statistics for a team.
-
-    Parameters
-    ----------
-    team_id : int
-        ID of the team
-
-    Returns
-    -------
-    Dict[str, Any]
-        Match statistics for the team
-    """
-    with transaction() as db_client:
-        rpc_params = {"p_team_id": team_id}
-        response = db_client.rpc("get_team_comprehensive_stats", rpc_params).execute()
-
-    if response.data:
-        return response.data
-    return {
-        "matches_played": 0,
-        "wins": 0,
-        "losses": 0,
-        "last_match_at": None,
-    }
-
-
 @with_retry(max_retries=3, retry_delay=0.5)
 def get_player_stats(player_id: int) -> Optional[Dict[str, Any]]:
     """
