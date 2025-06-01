@@ -86,53 +86,21 @@ export const createPlayer = async (name: string): Promise<Player> => {
 /**
  * Fetches a list of players ordered by their global ELO ranking.
  *
- * @param daysSinceLastMatch - Optional parameter to filter players by days since last match.
  * @returns A promise that resolves to an array of Player objects, sorted by rank.
  * @throws {Error} If the API request fails.
  */
-export const getPlayerRankings = async (daysSinceLastMatch?: number): Promise<Player[]> => {
-  let query = supabase.from('players').select('player_id').limit(100).order('global_elo', { ascending: false });
-
-  const { data: playersData, error: playersError } = await query;
-
-  if (playersError) {
-    console.error("Échec de la récupération des joueurs:", playersError);
-    throw playersError;
-  }
-
-  if (!playersData || playersData.length === 0) {
-    return [];
-  }
-
-  // Fetch full stats for each player using the RPC function.
-  const fullPlayersPromises = playersData.map(async (player: { player_id: number }) => {
-    const { data: fullStats, error: statsError } = await supabase
-      .rpc('get_player_full_stats', {
-        p_player_id: player.player_id
-      });
-
-    if (statsError) {
-      console.error(`Échec de la récupération des statistiques du joueur ${player.player_id}:`, statsError);
-      throw statsError;
-    }
-    return fullStats;
-  });
-
-  let rankedPlayers = await Promise.all(fullPlayersPromises);
-
-  if (daysSinceLastMatch !== undefined && daysSinceLastMatch !== null) {
-    const thresholdDate = new Date();
-    thresholdDate.setDate(thresholdDate.getDate() - daysSinceLastMatch);
-
-    rankedPlayers = rankedPlayers.filter(player => {
-      if (player.last_match_at === null || player.matches_played === 0) {
-        return false;
-      }
-      const playerLastMatchDate = new Date(player.last_match_at);
-      return playerLastMatchDate > thresholdDate;
+export const getPlayerRankings = async (): Promise<Player[]> => {
+  try {
+    const response = await axios.get<Player[]>(`${API_URL}/players/rankings`, {
+      params: {
+        limit: 100,
+      },
     });
+    return response.data;
+  } catch (error) {
+    console.error("Échec de la récupération des joueurs:", error);
+    throw error;
   }
-  return rankedPlayers;
 };
 
 /**
