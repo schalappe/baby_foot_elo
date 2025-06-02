@@ -91,44 +91,38 @@ const TeamDetail: React.FC<TeamDetailProps> = ({ teamId }) => {
 
   // Fetch team matches (paginated)
   useEffect(() => {
-    let isMounted = true;
-    setMatchesLoading(true);
-    setError(null);
-    getTeamMatches(teamId, {
-      skip: (currentPage - 1) * ITEMS_PER_PAGE,
-      limit: ITEMS_PER_PAGE,
-    })
-      .then((data) => {
-        if (!isMounted) return;
-        setMatches(data);
-        setTotalMatches(
-          data.length < ITEMS_PER_PAGE && currentPage === 1
-            ? data.length
-            : ITEMS_PER_PAGE * currentPage,
-        ); // Approximate
-        setTotalPages(
-          Math.max(
-            1,
-            Math.ceil(
-              (data.length < ITEMS_PER_PAGE && currentPage === 1
-                ? data.length
-                : ITEMS_PER_PAGE * currentPage) / ITEMS_PER_PAGE,
-            ),
-          ),
-        );
-      })
-      .catch(() => {
-        if (!isMounted) return;
-        setError("Failed to fetch team matches.");
-      })
-      .finally(() => {
-        if (!isMounted) return;
-        setMatchesLoading(false);
-      });
-    return () => {
-      isMounted = false;
-    };
-  }, [teamId, currentPage]);
+    if (teamId) {
+      const fetchTeamMatches = async () => {
+        try {
+          setMatchesLoading(true);
+          setError(null); // Reset error state at the beginning of fetch
+          const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+          const matchesData = await getTeamMatches(teamId, {
+            limit: ITEMS_PER_PAGE,
+            skip: offset, // Use 'skip' as per teamService.ts
+          });
+
+          setMatches(matchesData);
+          setTotalMatches((prev) => {
+            const calculatedTotal =
+              matchesData.length === ITEMS_PER_PAGE
+                ? currentPage * ITEMS_PER_PAGE + 1
+                : (currentPage - 1) * ITEMS_PER_PAGE + matchesData.length;
+            return Math.max(prev, calculatedTotal);
+          });
+          // totalMatches in the next line will be the state value from *before* this effect's setTotalMatches call.
+          // This is why totalMatches is in the dependency array, to re-run and correct totalPages.
+          setTotalPages(Math.ceil(totalMatches / ITEMS_PER_PAGE) || 1);
+        } catch (err) {
+          console.error("Failed to fetch team matches:", err);
+          setError("Failed to fetch team matches."); // Set error state
+        } finally {
+          setMatchesLoading(false);
+        }
+      };
+      fetchTeamMatches();
+    }
+  }, [teamId, currentPage, totalMatches]); // Added totalMatches to dependency array
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
