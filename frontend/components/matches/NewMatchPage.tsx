@@ -190,6 +190,13 @@ const NewMatchPage: React.FC<NewMatchPageProps> = ({
     }
   }, [selectedPlayerIds, trigger]);
 
+  // Auto-validate winningTeam field when it changes
+  useEffect(() => {
+    if (watchedValues.winningTeam) {
+      trigger("winningTeam");
+    }
+  }, [watchedValues.winningTeam, trigger]);
+
   const onSubmit = async (data: MatchFormValues) => {
     setIsSubmitting(true);
     setSubmissionStatus(null);
