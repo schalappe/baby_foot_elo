@@ -117,7 +117,9 @@ export const columns: ColumnDef<Player>[] = [
       </Button>
     ),
     cell: ({ row }) => (
-      <div className="text-center">{Math.round(row.getValue("win_rate"))}%</div>
+      <div className="text-center">
+        {Math.round((row.getValue("win_rate") as number) * 100)}%
+      </div>
     ),
   },
 ];
