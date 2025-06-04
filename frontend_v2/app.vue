@@ -7,6 +7,7 @@
   import { useTheme } from 'vuetify';
   import '@mdi/font/css/materialdesignicons.css'
 
+
   const { read } = useApi();
   const { data: players, pending: playersPending, error: playersError } = read<PlayerModel[]>('/players');
   const { data: teams, pending: teamsPending, error: teamsError } = read<TeamModel[]>('/teams');
@@ -17,6 +18,7 @@
 
   const value = ref(0);
   const theme = useTheme();
+  const isDarkMode = ref(theme.global.current.value.dark);
   function toggleTheme ()  {
     theme.global.name.value = theme.global.current.value.dark ? 'light' : 'dark';
   };  
@@ -60,11 +62,18 @@
           <v-btn class="custom-btn-width" value="matches" :to="'/matches'">
             <span>Matches</span>
           </v-btn>
-          <v-btn class="theme-toggle-btn" variant="outlined" @click="toggleTheme">
-            <v-icon>{{ theme.global.current.value.dark ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
+          <v-btn class="theme-toggle-btn" color="secondary" :icon="theme.global.current.value.dark ? 'mdi-weather-sunny' : 'mdi-weather-night'" @click="toggleTheme">
           </v-btn>
+          <v-switch class="theme-toggle-btn"
+              v-model="isDarkMode"
+              :icon="isDarkMode ? 'mdi-weather-sunny' : 'mdi-weather-night'"
+              :label="isDarkMode ? 'Dark' : 'Light'"
+              @change="toggleTheme"
+              color="secondary"
+          ></v-switch>
         </v-bottom-navigation>
       </v-app-bar>
+
       <v-main>
         <v-container>
             <div class="color-container" style="margin-top: 60px;">
@@ -80,6 +89,11 @@
             <NuxtPage style="margin-top: 0px;" />
         </v-container>
       </v-main>
+      <v-footer class="text-center">
+        <v-col>
+          <span>© 2023 - All rights reserved</span>
+        </v-col>
+      </v-footer>
     </v-app>
   </NuxtLayout>
 </template>
@@ -88,9 +102,11 @@
 <style scoped>
 
   .theme-toggle-btn {
-    width: 12px !important;
-    vertical-align: center !important;
-    border-radius: 50% !important;
+    width: 180px !important;
+    height: auto !important;
+    justify-content: center !important;
+    align-items: center !important;
+    color: "secondary" !important;
   }
 
   .custom-btn-width {
@@ -99,7 +115,6 @@
     text-transform: uppercase !important;
     font-weight: bold !important;
     font-size: 16px !important;
-    color: 'secondary' !important;
   }
 
   .color-container {
