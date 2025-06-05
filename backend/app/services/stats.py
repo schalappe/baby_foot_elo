@@ -39,7 +39,7 @@ def get_player_matches(player_id: int, limit: int = 10, offset: int = 0, **filte
         A list of matches the player participated in.
     """
     try:
-        matches = get_matches_by_player_id(player_id, limit, offset, **filters)
+        matches = get_matches_by_player_id(player_id=player_id, limit=limit, offset=offset, **filters)
         response = [MatchWithEloResponse(**match) for match in matches]
         return response
     except Exception as e:
