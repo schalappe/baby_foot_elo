@@ -32,24 +32,12 @@
 
 
 <template>
-  <NuxtLayout >
-    <NuxtLoadingIndicator />
-    <div v-if="playersPending || teamsPending || matchesPending" class="loading-indicator">
-      Chargement des données...
-    </div>
-    <div v-if="playersError || teamsError || matchesError" class="error-indicator">
-      Une erreur est survenue lors du chargement des données initiales.
-      <p v-if="playersError">Joueurs: {{ playersError?.message }}</p>
-      <p v-if="teamsError">Équipes: {{ teamsError?.message }}</p>
-      <p v-if="matchesError">Matchs: {{ matchesError?.message }}</p>
-    </div>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <NuxtLayout>
     <v-app>
-      <v-app-bar class="d-flex align-center">
-        <v-bottom-navigation       
-          v-model="value"
-          style="height: 64px;"
-          active
-        >
+      <v-app-bar app class="d-flex items-center">
+        <!-- Menu pour les grands écrans -->
+        <v-bottom-navigation class="d-none d-md-flex w-full" v-model="value" style="height: 64px;" active>
           <v-btn class="custom-btn-width" value="ranking" :to="'/'">
             <span>Ranking</span>
           </v-btn>
@@ -64,39 +52,75 @@
           </v-btn>
           <v-btn class="theme-toggle-btn" color="secondary" :icon="theme.global.current.value.dark ? 'mdi-weather-sunny' : 'mdi-weather-night'" @click="toggleTheme">
           </v-btn>
-          <v-switch class="theme-toggle-btn"
-              v-model="isDarkMode"
-              :icon="isDarkMode ? 'mdi-weather-sunny' : 'mdi-weather-night'"
-              :label="isDarkMode ? 'Dark' : 'Light'"
-              @change="toggleTheme"
-              color="secondary"
-          ></v-switch>
         </v-bottom-navigation>
+        
+        <!-- Menu pour les petits écrans -->
+        <div class="d-flex d-md-none">
+          <v-menu>
+            <template v-slot:activator="{ props }">
+              <v-btn v-bind="props" icon="mdi-menu"></v-btn>
+            </template>
+            <v-list>
+              <v-list-item :to="'/'">
+                <v-list-item-title>Ranking</v-list-item-title>
+              </v-list-item>
+              <v-list-item :to="'/players'">
+                <v-list-item-title>Players</v-list-item-title>
+              </v-list-item>
+              <v-list-item :to="'/teams'">
+                <v-list-item-title>Teams</v-list-item-title>
+              </v-list-item>
+              <v-list-item :to="'/matches'">
+                <v-list-item-title>Matches</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+        </div>
+
+        <v-btn class="theme-toggle-btn" color="secondary" :icon="theme.global.current.value.dark ? 'mdi-weather-sunny' : 'mdi-weather-night'" @click="toggleTheme">
+        </v-btn>
       </v-app-bar>
 
       <v-main>
         <v-container>
-            <div class="color-container" style="margin-top: 60px;">
-                <v-btn class="theme-title" color="purple">Thème Clair & Sombre</v-btn>
-                <v-btn class="color-box" color="primary">primary</v-btn>
-                <v-btn class="color-box" color="secondary">secondary</v-btn>
-                <v-btn class="color-box" color="accent">accent</v-btn>
-                <v-btn class="color-box" color="error">error</v-btn>
-                <v-btn class="color-box" color="info">info</v-btn>
-                <v-btn class="color-box" color="success">success</v-btn>
-                <v-btn class="color-box" color="warning">warning</v-btn>
-            </div>
-            <NuxtPage style="margin-top: 0px;" />
+          <NuxtLoadingIndicator />
+          <div v-if="allPending" class="loading-indicator">
+            Chargement des données...
+          </div>
+          <div class="color-container" style="margin-top: 60px;">
+            <v-btn class="theme-title" color="purple">Thème Clair & Sombre</v-btn>
+            <v-btn class="color-box" color="primary">primary</v-btn>
+            <v-btn class="color-box" color="secondary">secondary</v-btn>
+            <v-btn class="color-box" color="accent">accent</v-btn>
+            <v-btn class="color-box" color="error">error</v-btn>
+            <v-btn class="color-box" color="info">info</v-btn>
+            <v-btn class="color-box" color="success">success</v-btn>
+            <v-btn class="color-box" color="warning">warning</v-btn>
+          </div>
+          <NuxtPage style="margin-top: 0px;" />
         </v-container>
       </v-main>
+
       <v-footer class="text-center">
-        <v-col>
-          <span>© 2023 - All rights reserved</span>
-        </v-col>
+        <v-container>
+          <v-row v-if="anyError" class="error-indicator">
+            <div class="theme-title">
+              Une erreur est survenue lors du chargement des données initiales
+              <br>
+              <p v-if="playersError">Joueurs: {{ playersError?.message }}</p>
+              <p v-if="teamsError">Équipes: {{ teamsError?.message }}</p>
+              <p v-if="matchesError">Matchs: {{ matchesError?.message }}</p>
+            </div>
+          </v-row>
+          <v-row>
+            <span>© 2023 - All rights reserved</span>
+          </v-row>
+        </v-container>
       </v-footer>
     </v-app>
   </NuxtLayout>
 </template>
+
 
 
 <style scoped>
