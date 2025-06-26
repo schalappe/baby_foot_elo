@@ -28,12 +28,12 @@ export default defineNuxtConfig({
           light: {
             dark: false,
           colors: {
-            primary: '#F5F5F5', // Blanc cassé base claire
-            secondary: '#FF7F50', // Corail contraste punchy
-            accent: '#4CAF50', // Vert touche vibrante
+            primary: '#556B2F', // Vert olive
+            secondary: '#6B4423', // Marron Terre de Sienne
+            accent: '#F5F5F5', // Blanc cassé base claire
             error: '#FF5252', // Rouge erreurs
             info: '#2196F3', // Bleu informations
-            success: '#8BC34A', // Vert succès
+            success: '#4CAF50', // Vert succès
             warning: '#FFC107', // Jaune avertissements
           },
           },
@@ -41,8 +41,8 @@ export default defineNuxtConfig({
             dark: true,
             colors: {
               primary: '#0A1A2F', // Bleu nuit
-              secondary: '#556B2F', // Vert olive
-              accent: '#E2725B', // Terracotta
+              secondary: '#FF7F50', // Corail contraste punchy
+              accent: '#F5F5F5', // Blanc cassé base claire
               error: '#FF5252', // Rouge erreurs
               info: '#2196F3', // Bleu informations
               success: '#4CAF50', // Vert succès
