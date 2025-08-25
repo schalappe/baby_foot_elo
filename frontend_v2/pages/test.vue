@@ -1,8 +1,8 @@
 <template>
-  <div>
-    <h1>Test API</h1>
-    <p v-if="response">Réponse : {{ response }}</p>
-    <p v-if="error" class="text-red-500">Erreur : {{ error }}</p>
+  <div class="bg-accent p-4 opacity-90 rounded-lg shadow-md">
+    <h1 class="text-h4 p-4 text-info text-uppercase text-center">TEST INFO API</h1>
+    <p v-if="response" class="text-success text-h7 p-4 text-center"> Réponse : {{ response }}</p>
+    <p v-if="error" class="text-error text-h7 p-4 text-center">Erreur : {{ error }}</p>
   </div>
 </template>
 

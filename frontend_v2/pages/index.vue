@@ -19,12 +19,11 @@
           <p class="text-gray-600">EloScore: {{ player.global_elo }}</p>
           <p class="text-gray-600">Victoires {{ player.wins }}</p>
           <p class="text-gray-600">Défaites: {{ player.losses }}</p>
-          <!-- Ajoutez d'autres détails du joueur ici si nécessaire -->
         </div>
       </div>
     </div>
     <div>
-      <h1 class="text-2xl font-bold mb-4">Liste des équipes</h1>
+      <h1 class="text-2xl font-bold mt-9 mb-4">Liste des équipes</h1>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div v-for="team in teams" :key="String(team.team_id)" class="bg-white p-4 rounded shadow">
           <h2 class="text-xl font-semibold">{{ team.rank }}</h2>  
@@ -36,7 +35,7 @@
       </div>
     </div>
     <div>
-      <h1 class="text-2xl font-bold mb-4">Liste des matches</h1>
+      <h1 class="text-2xl font-bold mt-9 mb-4">Liste des matches</h1>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div v-for="match in matches" :key="String(match.match_id)" class="bg-white p-4 rounded shadow">
           <h2 class="text-xl font-semibold">Winner: {{ match.winner_team }}</h2>

@@ -2,6 +2,7 @@
   import type { PlayerModel } from '@/models/PlayerModel';
   import { useApi } from '@/composable/useApi';
   import { inject, ref, type Ref} from 'vue';
+  import { VCard } from 'vuetify/components';
 
   const players =  inject<Ref<PlayerModel[] | null>>('players');
   const createError = ref<Error | null>(null);
@@ -19,11 +20,11 @@
       const newPlayer = await create<PlayerModel>('/players', { name: playerName.value });
       if (players?.value) {
         players.value.push(newPlayer);
-        console.log('Nouveau joueur ajouté:', newPlayer);
+        console.log('Nouveau joueur ajouté :', newPlayer);
         playerName.value = '';
       }
     } catch (err) {
-      console.error('Erreur lors de l\'ajout du joueur:', err);
+      console.error('Erreur lors de l\'ajout du joueur :', err);
       createError.value = err as Error;
     }
   };
@@ -36,42 +37,59 @@
         players.value = players.value.filter((player) => player.player_id !== id);
       }
     } catch (err) {
-      console.error('Erreur lors de la suppression du joueur:', err);
-      // Gérer l'erreur de suppression, par exemple afficher un toast spécifique
+      console.error('Erreur lors de la suppression du joueur :', err);
+      createError.value = err as Error;
     }
 };
 </script>
 
 <template>
-    <div>
-      <h1 class="text-2xl font-bold mb-4">Liste des joueurs</h1>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div v-for="player in players" :key="String(player.player_id)" class="bg-white p-4 rounded shadow">
-              <h2 class="text-xl font-semibold">{{ player.name }}</h2>
-              <p class="text-gray-600">ID: {{ player.player_id }}</p>
-              <p class="text-gray-600">EloScore: {{ player.global_elo }}</p>
-              <p class="text-gray-600">Victoires {{ player.wins }}</p>
-              <p class="text-gray-600">Défaites: {{ player.losses }}</p>
-              <!-- Ajoutez d'autres détails du joueur ici si nécessaire -->
-          </div>
-      </div>
-    </div>
-    <div>
-        <h1 class="text-xl font-bold mt-8">Ajouter un Nouveau Joueur</h1>
-        <form @submit.prevent="addPlayer" class="mt-4">
-            <div class="mb-4">
-                <label for="playerName" class="block text-sm font-medium text-gray-700">Nom du Joueur:</label>
-                <input type="text" id="playerName" v-model="playerName" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+    <v-container class="mb-4">
+        <v-form @submit.prevent="addPlayer" class="mt-6">
+            <div class="bg-secondary mb-4 p-4 rounded-md items-center shadow">
+                <label for="playerName" class="text-primary font-bold text-base md:text-lg">AJOUTER UN NOUVEAU JOUEUR</label>
+                <div class="mt-2 flex flex-col md:flex-row md:space-x-4">
+                    <input type="text" id="playerName" v-model="playerName" required class="h-9 pl-3 bg-primary w-full rounded-lg shadow-md shadow-black/20">
+                    <v-btn class="mt-3 md:mt-0 w-full md:w-auto items-center bg-primary text-secondary text-2xl px-7 rounded-lg" type="submit"><b>+</b></v-btn>
+                </div>
             </div>
-            <button class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" type="submit">Ajouter Joueur</button>
-        </form>
-        <p v-if="createError" class="error-message">Erreur lors de l'ajout: {{ createError.message }}</p>
-    </div>
+        </v-form>
+        <p v-if="createError" class="error-message text-error">Erreur lors de l'ajout : {{ createError.message }}</p>
+    </v-container>
+    <v-container class="w-full">
+        <v-card-title class="w-full mb-4">
+            <div class="text-xl md:text-2xl text-center font-bold">LISTE DES JOUEURS</div>
+        </v-card-title>
+        <v-card class="bg-primary shadow-none">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 shadow-secondary">
+                <v-card-item v-for="player in players" :key="String(player.player_id)" class="text-center bg-secondary p-4 rounded-lg">
+                    <v-card-title class="m-4 text-primary text-2xl font-bold text-center uppercase">{{ player.name }}</v-card-title>
+                    <v-card-item class="mt-4 p-0 text-primary text-lg">Taux de victoires :<br/>  {{
+                        player.matches_played && player.matches_played > 0 ?
+                        (((player.wins ?? 0) / (player.matches_played ?? 0)) * 100).toFixed(2) : 0 
+                        }}%
+                    </v-card-item>
+                    <v-card-item class="p-0 text-primary text-lg">EloScore :<br/> {{ player.global_elo }}</v-card-item>
+                    <v-card-item class="p-0 text-primary text-lg">Victoires :<br/>  {{ player.wins }}</v-card-item>
+                    <v-card-item class="p-0 text-primary text-lg">Défaites :<br/>  {{ player.losses }}</v-card-item>
+                    <v-card-item class="p-0 text-primary text-lg">Matchs joués :<br/>  {{ player.matches_played }}</v-card-item>
+                    <v-card-actions class="m-1 justify-center">
+                      <v-btn text>
+                        <v-icon class="mr-1">mdi-account-box</v-icon>
+                        Détails joueur
+                      </v-btn>
+                  </v-card-actions>
+                  </v-card-item>
+            </div>
+        </v-card>
+    </v-container>
 </template>
 
 <style scoped>
   .error-message {
-  color: red;
-  margin-top: 10px;
+    padding: 12px;
+    font-size: smaller;
+    border-radius: 12px;
+    margin-top: 12px;
   }
 </style>

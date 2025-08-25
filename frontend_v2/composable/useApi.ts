@@ -1,21 +1,22 @@
 import { useFetch, useRuntimeConfig } from 'nuxt/app';
 import type { UseFetchOptions } from 'nuxt/app';
-import { ref } from 'vue'; // Importez ref pour l'erreur globale si vous la gérez ici
+import { ofetch } from 'ofetch';
+import { ref } from 'vue';
 
-// Définition d'une interface pour les options de useFetch si vous voulez les étendre ou les restreindre
+// Définition d'une interface pour les options de useFetch pour étendre ou les restreindre
 // type FetchOptions = UseFetchOptions<T>;
 export const useApi = () => {
   const config = useRuntimeConfig();
-  const apiError = ref<Error | null>(null); // Pour une gestion d'erreur globale si nécessaire
+  const apiError = ref<Error | null>(null); // Gestion d'erreur globale
 
   // Créez une instance de $fetch avec une configuration de base
-  const $http = $fetch.create({
+  const $http = ofetch.create({
     baseURL: config.public.apiUrl as string,
     headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
     },
-    // Intercepteurs pour gérer les erreurs globalement si vous le souhaitez
+    // Intercepteurs pour gérer les erreurs globalement
     onResponseError({ response }) {
       console.error('API Error:', response._data || response.statusText);
       apiError.value = new Error(response._data?.message || 'Une erreur est survenue lors de la requête API.');
@@ -24,7 +25,7 @@ export const useApi = () => {
     },
   });
 
-  // --- Opérations de Mutation (Création, Mise à jour, Suppression) : Utilisation de $http ($fetch) ---
+  // --- Opérations de Mutation (Création, Mise à jour, Suppression) : Utilisation de $http (ofetch) ---
   /**
    * Crée une nouvelle ressource.
    * @param endpoint L'endpoint de l'API (ex: 'players').
@@ -42,7 +43,7 @@ export const useApi = () => {
       });
     } catch (error) {
       console.error('Error creating resource:', error);
-      // L'erreur est déjà gérée par l'intercepteur onResponseError, mais on peut la propager
+      // L'erreur est déjà gérée par l'intercepteur onResponseError, mais on la propager
       throw error;
     }
   };

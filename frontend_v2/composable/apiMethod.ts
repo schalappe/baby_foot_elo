@@ -1,5 +1,5 @@
-import type { PlayerModel } from '../models/PlayerModel';
-import { useApi } from './useApi';
+import type { PlayerModel } from '../models/PlayerModel.js';
+import { useApi } from 'composable/useApi.js';
 
 export const apiMethod = () => {
     const { read, readOne, create, update, remove } = useApi();

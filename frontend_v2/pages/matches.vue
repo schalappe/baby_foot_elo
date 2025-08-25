@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import type { MatchModel } from '@/models/MatchModel';
     import { inject, type Ref } from 'vue';
-    const matches =  inject<Ref<MatchModel[]>>('players');
+    const matches =  inject<Ref<MatchModel[]>>('matches');
 </script>
 
 <template>

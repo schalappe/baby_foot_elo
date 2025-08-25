@@ -38,7 +38,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <NuxtLayout>
     <v-app class="bg-primary text-secondary">
-      <v-app-bar app class="custom-app-bar bg-primary d-flex items-center" >
+      <v-app-bar app class="custom-app-bar bg-primary d-flex" >
         <!-- Menu pour les grands écrans -->
         <v-bottom-navigation class="custom-bottom-nav bg-primary text-secondary d-none d-md-flex w-full" v-model="value" active>
           <v-btn class="px-4 custom-btn-width" value="ranking" :to="'/'">
@@ -57,16 +57,20 @@
             <v-icon size="1.2em" left>mdi-mixed-martial-arts</v-icon>
             <span>Matches</span>
           </v-btn>
-          <v-btn class="px-4 theme-toggle-btn text-secondry" 
+          <v-btn class="px-4 custom-btn-width" value="matches" :to="'/test'">
+            <v-icon size="1.2em" left>$upload</v-icon>
+          <span>TEST</span>
+          </v-btn>
+          <v-btn class="me-3 mt-2 theme-screen-btn text-secondry"
             :icon="isDarkMode ? 'mdi-weather-sunny' : 'mdi-weather-night'"
             @click="toggleTheme">
           </v-btn>
         </v-bottom-navigation>   
         <!-- Menu pour les petits écrans -->
-        <div class="custom-bottom-nav d-flex d-md-none items-center" >
+        <div class="ms-2 mb-2 custom-bottom-nav d-flex d-md-none items-center" >
           <v-menu>
             <template v-slot:activator="{ props }">
-              <v-btn class="bottom-1.5  theme-toggle-btn text-secondary" v-bind="props" icon="mdi-menu"></v-btn>
+              <v-btn class="theme-mobime-btn text-secondary" v-bind="props" icon="mdi-menu"></v-btn>
             </template>
             <v-list class="bg-primary" style="height: auto;">
               <v-list-item :to="'/'">
@@ -96,19 +100,19 @@
             </v-list>
           </v-menu>
         </div>
-        <v-btn class="bottom-1.5 theme-toggle-btn text-secondary" 
+        <v-btn class="me-2 mb-2 theme-mobime-btn text-secondary" 
           :icon="isDarkMode ? 'mdi-weather-sunny' : 'mdi-weather-night'"
           @click="toggleTheme">
         </v-btn>
       </v-app-bar>
 
-      <v-main class="fill-height">
-        <v-container >
+      <v-main class="fill-height fill-width">
+        <v-container>
           <NuxtLoadingIndicator />
           <div v-if="allPending" class="loading-indicator">
             Chargement des données...
           </div>
-          <div class="color-container" style="margin: 30px;">
+          <div class="color-container justify-center" style="margin: 30px;">
             <v-btn class="color-box" color="primary">primary</v-btn>
             <v-btn class="color-box" color="secondary">secondary</v-btn>
             <v-btn class="color-box" color="accent">accent</v-btn>
@@ -122,9 +126,9 @@
       </v-main>
 
       <v-footer class="text-center elevation-21 bg-primary text-secondary">
-        <v-container class="pa-3 opacity-85">
+        <v-container class="pa-6 opacity-85">
           <v-row  v-if="anyError" class="error-indicator pa-3 bg-error rounded-lg justify-center">
-            <div class="font-bold pa-3 text-warning rounded-lg" >
+            <div class="font-bold pa-6 text-warning rounded-lg" >
               Une erreur est survenue lors du chargement des données initiales
               <br>
               <p class="font-normal font-italic" v-if="playersError">Joueurs: {{ playersError?.message }}</p>
@@ -132,8 +136,8 @@
               <p class="font-normal font-italic" v-if="matchesError">Matchs: {{ matchesError?.message }}</p>
             </div>
           </v-row>
-          <v-row>
-            <span>© 2023 - All rights reserved</span>
+          <v-row class="pa-6 justify-center">
+            <span>©2025 - All rights reserved</span>
           </v-row>
         </v-container>
       </v-footer>
@@ -151,37 +155,48 @@
 
   .custom-bottom-nav {
     height: 54px !important;
+    width: 100% !important;
+    align-items: center !important;
     box-shadow: none;
   }
 
-  .theme-toggle-btn {
-    width: 54px !important;
-    height: 54px !important;
-    margin-left: auto !important;
-    border-radius: 21px !important;
+  .custom-btn-width {
+    min-width: 144px !important;
+    min-height: 54px !important;
+    text-transform: uppercase !important;
+    font-weight: 500 !important;
+    font-size: 13px !important;
   }
 
-  .custom-btn-width {
-    min-width: 120px !important;
-    text-transform: uppercase !important;
-    font-weight: bold !important;
-    font-size: 14px !important;
-    font-weight: 500 !important;
+  .theme-mobime-btn {
+    height: 36px !important;
+    width: 36px !important;
+    border-radius: 6px !important;
+    box-shadow:  0 1px 6px 1px rgba(var(--v-theme-secondary), 0.3);
+  }
+
+  .theme-screen-btn {
+    height: 36px !important;
+    min-width: auto !important;
+    margin-left: auto !important;
+    border-radius: 6px !important;
+    box-shadow:  0 1px 6px 1px rgba(var(--v-theme-secondary), 0.3);
   }
 
   .color-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-bottom: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
   }
+  
   .color-box {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-size: 10px;
-      text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    text-align: center;
   }
 
   .loading-indicator {

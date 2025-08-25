@@ -5,12 +5,21 @@ import { aliases, mdi } from 'vuetify/iconsets/mdi-svg';
 export default defineNuxtConfig({
   compatibilityDate: '2025-05-15',
   devtools: { enabled: true },
+  ssr: true,
+  app: {
+    head: {
+      link: [
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+      ]
+    }
+  },
   modules: [
     '@nuxtjs/tailwindcss',
     'vuetify-nuxt-module',
   ],
   vuetify: {
     vuetifyOptions: {
+      ssr: true,
       icons: {
         defaultSet: 'mdi',
         aliases,
@@ -27,15 +36,15 @@ export default defineNuxtConfig({
         themes: {
           light: {
             dark: false,
-          colors: {
-            primary: '#556B2F', // Vert olive
-            secondary: '#6B4423', // Marron Terre de Sienne
-            accent: '#F5F5F5', // Blanc cassé base claire
-            error: '#FF5252', // Rouge erreurs
-            info: '#2196F3', // Bleu informations
-            success: '#4CAF50', // Vert succès
-            warning: '#FFC107', // Jaune avertissements
-          },
+            colors: {
+              primary: '#678337', // Vert olive
+              secondary: '#4A280C', // Marron Terre de Sienne
+              accent: '#F5F5F5', // Blanc cassé base claire
+              error: '#FF5252', // Rouge erreurs
+              info: '#2196F3', // Bleu informations
+              success: '#4CAF50', // Vert succès
+              warning: '#FFC107', // Jaune avertissements
+            },
           },
           dark: {
             dark: true,
@@ -56,7 +65,7 @@ export default defineNuxtConfig({
       autoImport: true,
       styles: true,
       useVuetifyLabs: false,
-    }
+    },
   },
   vite: {
     css: {
