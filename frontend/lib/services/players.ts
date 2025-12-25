@@ -2,8 +2,9 @@
 // Orchestrates repositories and applies validation rules.
 
 import {
-  createPlayerByName,
+  createPlayer,
   getAllPlayers,
+  getPlayerById,
   getPlayerByName,
   updatePlayer,
   deletePlayerById,
@@ -56,21 +57,31 @@ export async function createNewPlayer(
   }
 
   try {
-    // [>]: Create the player.
-    const playerId = await createPlayerByName(data.name, data.global_elo);
+    // [>]: Create the player and get full row data.
+    const playerRow = await createPlayer(data.name, data.global_elo);
 
     // [>]: Dynamically create teams with all existing players.
     const allPlayers = await getAllPlayers();
-    for (const existingPlayer of allPlayers) {
-      const existingPlayerId = existingPlayer.player_id;
-      if (existingPlayerId !== playerId) {
+    for (const existingPlayerRow of allPlayers) {
+      const existingPlayerId = existingPlayerRow.player_id;
+      if (existingPlayerId !== playerRow.player_id) {
         // [>]: createTeamByPlayerIds handles deduplication and ordering.
-        await createTeamByPlayerIds(playerId, existingPlayerId);
+        await createTeamByPlayerIds(playerRow.player_id, existingPlayerId);
       }
     }
 
-    // [>]: Return the complete player data.
-    return await getPlayer(playerId);
+    // [>]: Return player response with default stats (new player has no matches).
+    return {
+      player_id: playerRow.player_id,
+      name: playerRow.name,
+      global_elo: playerRow.global_elo,
+      created_at: playerRow.created_at,
+      last_match_at: null,
+      matches_played: 0,
+      wins: 0,
+      losses: 0,
+      win_rate: 0,
+    };
   } catch (error) {
     if (
       error instanceof InvalidPlayerDataError ||
@@ -113,8 +124,14 @@ export async function updateExistingPlayer(
 // [>]: Delete a player.
 // Verifies existence before deletion.
 export async function deletePlayer(playerId: number): Promise<void> {
+  // [>]: Guard against undefined/null playerId.
+  if (playerId === undefined || playerId === null) {
+    throw new InvalidPlayerDataError("Player ID is required for deletion");
+  }
+
   // [>]: Verify player exists (throws PlayerNotFoundError if not).
-  await getPlayer(playerId);
+  // Uses getPlayerById instead of getPlayer to avoid RPC dependency.
+  await getPlayerById(playerId);
 
   // [>]: Delete the player.
   await deletePlayerById(playerId);
@@ -126,7 +143,8 @@ export async function getPlayerEloHistory(
   options?: { limit?: number; offset?: number },
 ): Promise<EloHistoryResponse[]> {
   // [>]: Verify player exists first.
-  await getPlayer(playerId);
+  // Uses getPlayerById instead of getPlayer to avoid RPC dependency.
+  await getPlayerById(playerId);
 
   const history = await getPlayerEloHistoryRepo(playerId, options);
   return history.map((h) => ({

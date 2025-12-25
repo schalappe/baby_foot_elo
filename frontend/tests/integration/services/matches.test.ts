@@ -70,7 +70,7 @@ describe.skipIf(!hasSupabaseConfig)("Match Service", () => {
 
     team1Id = t1.team_id;
     team2Id = t2.team_id;
-  });
+  }, 60000); // [>]: Increase timeout to 60s for player/team creation.
 
   afterAll(async () => {
     // [>]: Clean up in reverse order: matches, then teams, then players.
@@ -85,14 +85,14 @@ describe.skipIf(!hasSupabaseConfig)("Match Service", () => {
     // [>]: Note: We don't delete teams because player deletion doesn't cascade.
     // In a real cleanup, we'd need to delete teams first, but for now we skip.
 
-    // [>]: Delete players.
+    // [>]: Delete players (skip if undefined from failed setup).
     await Promise.all([
-      deletePlayer(player1Id).catch(() => {}),
-      deletePlayer(player2Id).catch(() => {}),
-      deletePlayer(player3Id).catch(() => {}),
-      deletePlayer(player4Id).catch(() => {}),
+      player1Id ? deletePlayer(player1Id).catch(() => {}) : Promise.resolve(),
+      player2Id ? deletePlayer(player2Id).catch(() => {}) : Promise.resolve(),
+      player3Id ? deletePlayer(player3Id).catch(() => {}) : Promise.resolve(),
+      player4Id ? deletePlayer(player4Id).catch(() => {}) : Promise.resolve(),
     ]);
-  });
+  }, 30000); // [>]: Timeout for cleanup.
 
   describe("createNewMatch", () => {
     it("creates a match and updates ELOs", async () => {

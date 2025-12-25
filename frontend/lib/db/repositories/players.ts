@@ -26,17 +26,17 @@ interface PlayerWithStatsRow extends PlayerDbRow {
   rank?: number;
 }
 
-// [>]: Create a new player. Returns the player_id.
-async function createPlayerByNameImpl(
+// [>]: Create a new player. Returns full player row.
+async function createPlayerImpl(
   name: string,
   globalElo: number = 1000,
-): Promise<number> {
+): Promise<PlayerDbRow> {
   const client = getSupabaseClient();
 
   const { data, error } = await client
     .from("players")
     .insert({ name, global_elo: globalElo })
-    .select("player_id")
+    .select("player_id, name, global_elo, created_at")
     .single();
 
   if (error) {
@@ -47,7 +47,7 @@ async function createPlayerByNameImpl(
     throw new PlayerOperationError("Failed to create player: no ID returned");
   }
 
-  return data.player_id;
+  return data;
 }
 
 // [>]: Lookup player by ID. Throws PlayerNotFoundError if not found.
@@ -183,13 +183,23 @@ async function deletePlayerByIdImpl(playerId: number): Promise<void> {
 }
 
 // [>]: Export wrapped functions with retry logic.
-export const createPlayerByName = withRetry(createPlayerByNameImpl);
+export const createPlayer = withRetry(createPlayerImpl);
 export const getPlayerById = withRetry(getPlayerByIdImpl);
 export const getPlayerByName = withRetry(getPlayerByNameImpl);
 export const getAllPlayers = withRetry(getAllPlayersImpl);
 export const updatePlayer = withRetry(updatePlayerImpl);
 export const batchUpdatePlayersElo = withRetry(batchUpdatePlayersEloImpl);
 export const deletePlayerById = withRetry(deletePlayerByIdImpl);
+
+// [>]: Legacy export for backward compatibility with tests.
+// Returns only the player_id for tests that expect the old signature.
+export async function createPlayerByName(
+  name: string,
+  globalElo: number = 1000,
+): Promise<number> {
+  const player = await createPlayer(name, globalElo);
+  return player.player_id;
+}
 
 // [>]: Export types for use in services.
 export type { PlayerDbRow, PlayerWithStatsRow };
