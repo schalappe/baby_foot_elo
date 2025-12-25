@@ -164,16 +164,16 @@ Total Tasks: ~45
 
 **Dependencies:** Task Group 7
 
-- [ ] 8.0 Complete API route handlers
-  - [ ] 8.1 Write 8 integration tests for key endpoints (health, create player, create team, create match)
-  - [ ] 8.2 Create `app/api/v1/health/route.ts` — GET returns { status: 'ok' }
-  - [ ] 8.3 Create player routes: `players/route.ts` (GET, POST), `players/[playerId]/route.ts` (GET, PUT, DELETE)
-  - [ ] 8.4 Create player sub-routes: `[playerId]/matches`, `[playerId]/elo-history`, `[playerId]/statistics`
-  - [ ] 8.5 Create team routes: `teams/route.ts` (GET, POST), `teams/rankings/route.ts`, `teams/[teamId]/route.ts`
-  - [ ] 8.6 Create team sub-routes: `[teamId]/matches`
-  - [ ] 8.7 Create match routes: `matches/route.ts` (GET, POST), `matches/export/route.ts`, `matches/[matchId]/route.ts`
-  - [ ] 8.8 Add error handling wrapper to all routes (catch ZodError → 422, ApiError → statusCode, else → 500)
-  - [ ] 8.9 Ensure tests pass
+- [x] 8.0 Complete API route handlers
+  - [x] 8.1 Write 8 integration tests for key endpoints (health, create player, create team, create match)
+  - [x] 8.2 Create `app/api/v1/health/route.ts` — GET returns { status: 'ok' }
+  - [x] 8.3 Create player routes: `players/route.ts` (GET, POST), `players/[playerId]/route.ts` (GET, PUT, DELETE)
+  - [x] 8.4 Create player sub-routes: `[playerId]/matches`, `[playerId]/elo-history`, `[playerId]/statistics`
+  - [x] 8.5 Create team routes: `teams/route.ts` (GET, POST), `teams/rankings/route.ts`, `teams/[teamId]/route.ts`
+  - [x] 8.6 Create team sub-routes: `[teamId]/matches`
+  - [x] 8.7 Create match routes: `matches/route.ts` (GET, POST), `matches/export/route.ts`, `matches/[matchId]/route.ts`
+  - [x] 8.8 Add error handling wrapper to all routes (catch ZodError → 422, ApiError → statusCode, else → 500)
+  - [x] 8.9 Ensure tests pass
 
 **Acceptance Criteria:**
 
