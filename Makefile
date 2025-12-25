@@ -124,7 +124,7 @@ format-backend:
 
 format-frontend:
 	@echo "$(CYAN)Formatting frontend code...$(NC)"
-	cd $(FRONTEND_DIR) && bun x prettier --write "**/*.{ts,tsx,js,jsx,json,css,md}"
+	cd $(FRONTEND_DIR) && bun run format
 	@echo "$(GREEN)✓ Frontend code formatted$(NC)"
 
 # ============================================================================
@@ -153,7 +153,7 @@ typecheck: typecheck-frontend
 
 typecheck-frontend:
 	@echo "$(CYAN)Type checking frontend...$(NC)"
-	cd $(FRONTEND_DIR) && bun x tsc --noEmit
+	cd $(FRONTEND_DIR) && bun run typecheck
 	@echo "$(GREEN)✓ Frontend type check passed$(NC)"
 
 # ============================================================================
