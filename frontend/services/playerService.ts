@@ -20,7 +20,8 @@ import {
   GetPlayerMatchesParams,
 } from "../types/match.types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+// [>]: Use relative URL to call Next.js API routes (same-origin).
+const API_URL = "/api/v1";
 
 /**
  * Fetches all players from the backend. Can be filtered using optional parameters.

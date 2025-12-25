@@ -15,7 +15,8 @@
 import axios from "axios";
 import { Team, TeamStatistics, TeamMatchWithElo } from "@/types/team.types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+// [>]: Use relative URL to call Next.js API routes (same-origin).
+const API_URL = "/api/v1";
 
 /**
  * Fetches team rankings, sorted by Elo in descending order.

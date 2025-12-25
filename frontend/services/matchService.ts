@@ -6,8 +6,6 @@
  *
  * Exports:
  *   - getMatches: Fetch all matches
- *   - getMatchWithPlayerDetailsById: Fetch a match by ID with player details
- *   - getMatchWithTeamDetailsById: Fetch a match by ID with team details
  *   - createMatch: Create a new match
  */
 // frontend/services/matchService.ts
@@ -18,7 +16,8 @@ import {
   BackendMatchWithEloResponse,
 } from "../types/index";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+// [>]: Use relative URL to call Next.js API routes (same-origin).
+const API_URL = "/api/v1";
 
 /**
  * Fetches all matches from the backend.
@@ -33,44 +32,6 @@ export const getMatches = async (): Promise<Match[]> => {
   } catch (error) {
     console.error("Error fetching matches:", error);
     return [];
-  }
-};
-
-/**
- * Fetches a single match by its ID, including player details.
- *
- * @param id - The unique identifier of the match.
- * @returns A promise that resolves to a BackendMatchWithEloResponse object, or undefined if not found.
- * @throws {Error} If the API request fails.
- */
-export const getMatchWithPlayerDetailsById = async (
-  id: string,
-): Promise<BackendMatchWithEloResponse | undefined> => {
-  try {
-    const response = await axios.get(`${API_URL}/matches/${id}/player`);
-    return response.data as BackendMatchWithEloResponse;
-  } catch (error) {
-    console.error(`Error fetching match with ID ${id}:`, error);
-    return undefined;
-  }
-};
-
-/**
- * Fetches a single match by its ID, including team details.
- *
- * @param id - The unique identifier of the match.
- * @returns A promise that resolves to a BackendMatchWithEloResponse object, or undefined if not found.
- * @throws {Error} If the API request fails.
- */
-export const getMatchWithTeamDetailsById = async (
-  id: string,
-): Promise<BackendMatchWithEloResponse | undefined> => {
-  try {
-    const response = await axios.get(`${API_URL}/matches/${id}/team`);
-    return response.data as BackendMatchWithEloResponse;
-  } catch (error) {
-    console.error(`Error fetching match with ID ${id}:`, error);
-    return undefined;
   }
 };
 

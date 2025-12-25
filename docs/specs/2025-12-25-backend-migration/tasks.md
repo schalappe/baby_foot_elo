@@ -191,15 +191,15 @@ Total Tasks: ~45
 
 **Dependencies:** Task Group 8
 
-- [ ] 9.0 Complete integration
-  - [ ] 9.1 Update `frontend/services/playerService.ts` — change base URL to relative `/api/v1`
-  - [ ] 9.2 Update `frontend/services/teamService.ts` — change base URL to relative `/api/v1`
-  - [ ] 9.3 Update `frontend/services/matchService.ts` — change base URL to relative `/api/v1`
-  - [ ] 9.4 Remove or comment out `NEXT_PUBLIC_API_URL` usage
-  - [ ] 9.5 Run full development server and manually test key flows
-  - [ ] 9.6 Review all tests from groups 2-8 (~30 tests)
-  - [ ] 9.7 Identify and write max 5 additional tests for critical gaps
-  - [ ] 9.8 Run all feature tests and verify passing
+- [x] 9.0 Complete integration
+  - [x] 9.1 Update `frontend/services/playerService.ts` — change base URL to relative `/api/v1`
+  - [x] 9.2 Update `frontend/services/teamService.ts` — change base URL to relative `/api/v1`
+  - [x] 9.3 Update `frontend/services/matchService.ts` — change base URL to relative `/api/v1`
+  - [x] 9.4 Remove or comment out `NEXT_PUBLIC_API_URL` usage
+  - [x] 9.5 Run full development server and manually test key flows
+  - [x] 9.6 Review all tests from groups 2-8 (~30 tests)
+  - [x] 9.7 Identify and write max 5 additional tests for critical gaps
+  - [x] 9.8 Run all feature tests and verify passing
 
 **Acceptance Criteria:**
 
@@ -225,14 +225,14 @@ Total Tasks: ~45
 | Task Group | Tests Written | Type        |
 | ---------- | ------------- | ----------- |
 | 2          | 3             | Unit        |
-| 3          | 4             | Unit        |
-| 4          | 6             | Unit        |
-| 5          | 8             | Unit        |
-| 6          | 6             | Integration |
-| 7          | 5             | Integration |
-| 8          | 8             | Integration |
-| 9          | 5 (gap fill)  | Mixed       |
-| **Total**  | **~45**       |             |
+| 3          | 12            | Unit        |
+| 4          | 10            | Unit        |
+| 5          | 22            | Unit        |
+| 6          | 12            | Integration |
+| 7          | 6             | Integration |
+| 8          | 18            | Integration |
+| 9          | 0 (no gaps)   | N/A         |
+| **Total**  | **83**        |             |
 
 ## Notes
 
