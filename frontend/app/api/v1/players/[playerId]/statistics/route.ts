@@ -21,7 +21,12 @@ export const GET = handleApiRequest(
     const player = await getPlayer(id);
 
     // [>]: Get ELO history for computing additional stats.
+    // History is ordered by date DESC (newest first).
     const history = await getPlayerEloHistory(id, { limit: 1000 });
+
+    // [>]: Extract ELO values and differences from history.
+    const eloValues = history.map((entry) => entry.new_elo);
+    const eloDifference = history.map((entry) => entry.difference);
 
     // [>]: Calculate additional statistics.
     let highestElo = player.global_elo;
@@ -37,6 +42,26 @@ export const GET = handleApiRequest(
     const averageEloChange =
       history.length > 0 ? Math.trunc(totalEloChange / history.length) : 0;
 
+    // [>]: Calculate recent stats from last 10 matches.
+    const recentHistory = history.slice(0, 10);
+    let recentWins = 0;
+    let recentLosses = 0;
+    const recentEloChanges: number[] = [];
+
+    for (const entry of recentHistory) {
+      recentEloChanges.push(entry.difference);
+      if (entry.difference > 0) recentWins++;
+      else if (entry.difference < 0) recentLosses++;
+    }
+
+    const recentMatchesPlayed = recentWins + recentLosses;
+    const recentWinRate =
+      recentMatchesPlayed > 0 ? (recentWins / recentMatchesPlayed) * 100 : 0;
+    const recentAvgEloChange =
+      recentEloChanges.length > 0
+        ? recentEloChanges.reduce((a, b) => a + b, 0) / recentEloChanges.length
+        : 0;
+
     return NextResponse.json({
       player_id: player.player_id,
       name: player.name,
@@ -45,9 +70,20 @@ export const GET = handleApiRequest(
       wins: player.wins,
       losses: player.losses,
       win_rate: player.win_rate,
+      elo_values: eloValues,
+      elo_difference: eloDifference,
       average_elo_change: averageEloChange,
       highest_elo: highestElo,
       lowest_elo: lowestElo,
+      creation_date: player.created_at,
+      recent: {
+        matches_played: recentMatchesPlayed,
+        wins: recentWins,
+        losses: recentLosses,
+        win_rate: Math.round(recentWinRate * 100) / 100,
+        average_elo_change: Math.round(recentAvgEloChange * 100) / 100,
+        elo_changes: recentEloChanges,
+      },
     });
   },
 );
