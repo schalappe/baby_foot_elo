@@ -1,5 +1,6 @@
 // [>]: Integration tests for player repository.
 // Tests run against real Supabase instance.
+// Skipped when NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY are not set.
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
@@ -12,7 +13,12 @@ import {
 } from "@/lib/db/repositories/players";
 import { PlayerNotFoundError } from "@/lib/errors/api-errors";
 
-describe("Player Repository", () => {
+// [>]: Check if Supabase env vars are configured.
+const hasSupabaseConfig =
+  !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
+  !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+describe.skipIf(!hasSupabaseConfig)("Player Repository", () => {
   let testPlayerId: number;
   const testPlayerName = `Test Player ${Date.now()}`;
 

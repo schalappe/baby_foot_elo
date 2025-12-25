@@ -159,6 +159,25 @@ async function getTeamsEloHistoryByMatchIdImpl(
   return data ?? [];
 }
 
+// [>]: Delete all team ELO history records for a match.
+// Used when deleting a match to avoid FK constraint violations.
+async function deleteTeamEloHistoryByMatchIdImpl(
+  matchId: number,
+): Promise<void> {
+  const client = getSupabaseClient();
+
+  const { error } = await client
+    .from("teams_elo_history")
+    .delete()
+    .eq("match_id", matchId);
+
+  if (error) {
+    throw new OperationError(
+      `Failed to delete team ELO history: ${error.message}`,
+    );
+  }
+}
+
 // [>]: Export wrapped functions with retry logic.
 export const recordTeamEloUpdate = withRetry(recordTeamEloUpdateImpl);
 export const batchRecordTeamEloUpdates = withRetry(
@@ -167,6 +186,9 @@ export const batchRecordTeamEloUpdates = withRetry(
 export const getTeamEloHistory = withRetry(getTeamEloHistoryImpl);
 export const getTeamsEloHistoryByMatchId = withRetry(
   getTeamsEloHistoryByMatchIdImpl,
+);
+export const deleteTeamEloHistoryByMatchId = withRetry(
+  deleteTeamEloHistoryByMatchIdImpl,
 );
 
 // [>]: Export types for use in services.

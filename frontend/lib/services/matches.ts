@@ -11,10 +11,16 @@ import {
 } from "@/lib/db/repositories/matches";
 import { batchUpdatePlayersElo } from "@/lib/db/repositories/players";
 import { batchUpdateTeamsElo } from "@/lib/db/repositories/teams";
-import { batchRecordPlayerEloUpdates } from "@/lib/db/repositories/player-elo-history";
-import { batchRecordTeamEloUpdates } from "@/lib/db/repositories/team-elo-history";
-import { getPlayersEloHistoryByMatchId } from "@/lib/db/repositories/player-elo-history";
-import { getTeamsEloHistoryByMatchId } from "@/lib/db/repositories/team-elo-history";
+import {
+  batchRecordPlayerEloUpdates,
+  getPlayersEloHistoryByMatchId,
+  deletePlayerEloHistoryByMatchId,
+} from "@/lib/db/repositories/player-elo-history";
+import {
+  batchRecordTeamEloUpdates,
+  getTeamsEloHistoryByMatchId,
+  deleteTeamEloHistoryByMatchId,
+} from "@/lib/db/repositories/team-elo-history";
 import { getTeam } from "@/lib/services/teams";
 import { processMatchResult, type TeamWithPlayers } from "@/lib/services/elo";
 import {
@@ -349,10 +355,16 @@ export async function getMatchWithTeamElo(
 }
 
 // [>]: Delete a match.
-// Note: Does not reverse ELO changes (matches Python behavior).
+// [!]: Does not reverse ELO changes (matches Python behavior).
 export async function deleteMatch(matchId: number): Promise<void> {
   // [>]: Verify match exists (throws MatchNotFoundError if not).
   await getMatchById(matchId);
+
+  // [>]: Delete ELO history records first to avoid FK constraint violations.
+  await Promise.all([
+    deletePlayerEloHistoryByMatchId(matchId),
+    deleteTeamEloHistoryByMatchId(matchId),
+  ]);
 
   // [>]: Delete the match.
   await deleteMatchById(matchId);

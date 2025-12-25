@@ -1,5 +1,6 @@
 // [>]: Integration tests for match service.
 // Tests the complete match creation flow with ELO updates.
+// Skipped when NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY are not set.
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createNewMatch, getMatch, deleteMatch } from "@/lib/services/matches";
@@ -10,7 +11,12 @@ import {
   MatchNotFoundError,
 } from "@/lib/errors/api-errors";
 
-describe("Match Service", () => {
+// [>]: Check if Supabase env vars are configured.
+const hasSupabaseConfig =
+  !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
+  !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+describe.skipIf(!hasSupabaseConfig)("Match Service", () => {
   // [>]: Test fixtures - we'll create players and teams for match testing.
   let player1Id: number;
   let player2Id: number;
@@ -21,14 +27,25 @@ describe("Match Service", () => {
   let testMatchId: number | null = null;
 
   beforeAll(async () => {
-    // [>]: Create 4 test players.
+    // [>]: Create 4 test players sequentially.
+    // [!]: Must be sequential because createNewPlayer auto-creates teams with existing players.
     const timestamp = Date.now();
-    const [p1, p2, p3, p4] = await Promise.all([
-      createNewPlayer({ name: `Match Test P1 ${timestamp}`, global_elo: 1000 }),
-      createNewPlayer({ name: `Match Test P2 ${timestamp}`, global_elo: 1000 }),
-      createNewPlayer({ name: `Match Test P3 ${timestamp}`, global_elo: 1000 }),
-      createNewPlayer({ name: `Match Test P4 ${timestamp}`, global_elo: 1000 }),
-    ]);
+    const p1 = await createNewPlayer({
+      name: `Match Test P1 ${timestamp}`,
+      global_elo: 1000,
+    });
+    const p2 = await createNewPlayer({
+      name: `Match Test P2 ${timestamp}`,
+      global_elo: 1000,
+    });
+    const p3 = await createNewPlayer({
+      name: `Match Test P3 ${timestamp}`,
+      global_elo: 1000,
+    });
+    const p4 = await createNewPlayer({
+      name: `Match Test P4 ${timestamp}`,
+      global_elo: 1000,
+    });
 
     player1Id = p1.player_id;
     player2Id = p2.player_id;
