@@ -117,6 +117,12 @@ export class MatchCreationError extends OperationError {
   }
 }
 
+export class MatchOperationError extends OperationError {
+  constructor(detail: string) {
+    super(`Match operation failed: ${detail}`);
+  }
+}
+
 export class MatchDeletionError extends OperationError {
   constructor(detail: string) {
     super(`Match deletion failed: ${detail}`);

@@ -10,7 +10,7 @@
         format format-backend format-frontend \
         lint lint-backend lint-frontend \
         typecheck typecheck-frontend \
-        test test-backend test-backend-v test-backend-cov \
+        test test-backend test-backend-v test-backend-cov test-frontend test-frontend-watch \
         build quality clean clean-cache
 
 # ============================================================================
@@ -57,10 +57,12 @@ help:
 	@echo "  typecheck-frontend   Run TypeScript type check"
 	@echo ""
 	@echo "$(GREEN)Testing:$(NC)"
-	@echo "  test                 Run all tests"
+	@echo "  test                 Run all tests (backend + frontend)"
 	@echo "  test-backend         Run backend tests (pytest)"
 	@echo "  test-backend-v       Run backend tests with verbose output"
 	@echo "  test-backend-cov     Run backend tests with coverage"
+	@echo "  test-frontend        Run frontend tests (vitest)"
+	@echo "  test-frontend-watch  Run frontend tests in watch mode"
 	@echo ""
 	@echo "$(GREEN)Build:$(NC)"
 	@echo "  build                Build frontend for production"
@@ -158,7 +160,7 @@ typecheck-frontend:
 # Testing
 # ============================================================================
 
-test: test-backend
+test: test-backend test-frontend
 	@echo "$(GREEN)✓ All tests passed$(NC)"
 
 test-backend:
@@ -175,6 +177,15 @@ test-backend-cov:
 	@echo "$(CYAN)Running backend tests with coverage...$(NC)"
 	cd $(BACKEND_DIR) && poetry run pytest tests/ --cov=app --cov-report=term-missing
 	@echo "$(GREEN)✓ Backend tests with coverage completed$(NC)"
+
+test-frontend:
+	@echo "$(CYAN)Running frontend tests...$(NC)"
+	cd $(FRONTEND_DIR) && bun run test:run
+	@echo "$(GREEN)✓ Frontend tests passed$(NC)"
+
+test-frontend-watch:
+	@echo "$(CYAN)Running frontend tests in watch mode...$(NC)"
+	cd $(FRONTEND_DIR) && bun run test
 
 # ============================================================================
 # Build

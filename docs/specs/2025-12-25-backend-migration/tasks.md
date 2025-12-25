@@ -115,16 +115,16 @@ Total Tasks: ~45
 
 **Dependencies:** Task Groups 2, 3, 4
 
-- [ ] 6.0 Complete repository layer
-  - [ ] 6.1 Write 6 integration tests for CRUD operations (create player, get player, update ELO, RPC call)
-  - [ ] 6.2 Create `lib/repositories/players.ts` — createPlayer, getPlayer, updatePlayer, batchUpdateElo
-  - [ ] 6.3 Create `lib/repositories/teams.ts` — createTeam, getTeam, deleteTeam, batchUpdateElo
-  - [ ] 6.4 Create `lib/repositories/matches.ts` — createMatch, getMatch, getMatchesByPlayer, getMatchesByTeam
-  - [ ] 6.5 Create `lib/repositories/player-elo-history.ts` — recordEloChange, getHistory
-  - [ ] 6.6 Create `lib/repositories/team-elo-history.ts` — recordEloChange, getHistory
-  - [ ] 6.7 Create `lib/repositories/stats.ts` — RPC calls for get_player_full_stats, get_team_full_stats
-  - [ ] 6.8 Wrap all functions with `withRetry()`
-  - [ ] 6.9 Ensure tests pass
+- [x] 6.0 Complete repository layer
+  - [x] 6.1 Write 6 integration tests for CRUD operations (create player, get player, update ELO, RPC call)
+  - [x] 6.2 Create `lib/db/repositories/players.ts` — createPlayer, getPlayer, updatePlayer, batchUpdateElo
+  - [x] 6.3 Create `lib/db/repositories/teams.ts` — createTeam, getTeam, deleteTeam, batchUpdateElo
+  - [x] 6.4 Create `lib/db/repositories/matches.ts` — createMatch, getMatch, getMatchesByPlayer, getMatchesByTeam
+  - [x] 6.5 Create `lib/db/repositories/player-elo-history.ts` — recordEloChange, getHistory
+  - [x] 6.6 Create `lib/db/repositories/team-elo-history.ts` — recordEloChange, getHistory
+  - [x] 6.7 Create `lib/db/repositories/stats.ts` — RPC calls for get_player_full_stats, get_team_full_stats
+  - [x] 6.8 Wrap all functions with `withRetry()`
+  - [x] 6.9 Ensure tests pass
 
 **Acceptance Criteria:**
 
@@ -141,13 +141,13 @@ Total Tasks: ~45
 
 **Dependencies:** Task Groups 5, 6
 
-- [ ] 7.0 Complete service layer
-  - [ ] 7.1 Write 5 integration tests for services (create match with ELO update, delete player validation)
-  - [ ] 7.2 Create `lib/services/players.ts` — getPlayerWithStats, deletePlayer (with validation)
-  - [ ] 7.3 Create `lib/services/teams.ts` — getTeamWithPlayers, deleteTeam (with validation)
-  - [ ] 7.4 Create `lib/services/matches.ts` — createMatch (orchestrates ELO), getMatchHistory
-  - [ ] 7.5 Ensure services throw custom errors for not-found and conflict cases
-  - [ ] 7.6 Ensure tests pass
+- [x] 7.0 Complete service layer
+  - [x] 7.1 Write 5 integration tests for services (create match with ELO update, delete player validation)
+  - [x] 7.2 Create `lib/services/players.ts` — getPlayerWithStats, deletePlayer (with validation)
+  - [x] 7.3 Create `lib/services/teams.ts` — getTeamWithPlayers, deleteTeam (with validation)
+  - [x] 7.4 Create `lib/services/matches.ts` — createMatch (orchestrates ELO), getMatchHistory
+  - [x] 7.5 Ensure services throw custom errors for not-found and conflict cases
+  - [x] 7.6 Ensure tests pass
 
 **Acceptance Criteria:**
 
