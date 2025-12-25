@@ -164,6 +164,7 @@ venv.bak/
 .env.test.local
 .env.production.local
 .env.local
+.env.dev
 
 # -----------------------------------------------------------------------------
 #                       Spyder
