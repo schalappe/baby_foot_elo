@@ -34,6 +34,11 @@ interface MatchWithTeamsRow extends MatchDbRow {
     player2_id: number;
     global_elo: number;
   } | null;
+  // [>]: ELO changes keyed by player ID (from get_player_matches_json RPC).
+  elo_changes?: Record<
+    string,
+    { old_elo: number; new_elo: number; difference: number }
+  > | null;
 }
 
 // [>]: Query options for match filtering.

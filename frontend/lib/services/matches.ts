@@ -27,7 +27,10 @@ import {
   InvalidMatchTeamsError,
   MatchCreationError,
 } from "@/lib/errors/api-errors";
-import { mapToMatchResponse } from "@/lib/mappers/entity-mappers";
+import {
+  mapToMatchResponse,
+  mapToMatchWithEloResponse,
+} from "@/lib/mappers/entity-mappers";
 import type {
   MatchCreate,
   MatchResponse,
@@ -96,11 +99,11 @@ export async function getMatches(
   return matchesData.map(mapToMatchResponse);
 }
 
-// [>]: Get matches for a specific player.
+// [>]: Get matches for a specific player (includes elo_changes).
 export async function getMatchesByPlayer(
   playerId: number,
   options: Omit<MatchQueryOptions, "teamId"> = {},
-): Promise<MatchResponse[]> {
+): Promise<MatchWithEloResponse[]> {
   const { skip = 0, limit = 100, startDate, endDate, isFanny } = options;
 
   const matchesData = await getMatchesByPlayerIdRepo(playerId, {
@@ -111,7 +114,7 @@ export async function getMatchesByPlayer(
     isFanny,
   });
 
-  return matchesData.map(mapToMatchResponse);
+  return matchesData.map(mapToMatchWithEloResponse);
 }
 
 // [>]: Create a new match with full ELO processing.

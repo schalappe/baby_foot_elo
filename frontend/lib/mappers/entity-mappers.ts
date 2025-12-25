@@ -8,7 +8,10 @@ import type { TeamWithStatsRow } from "@/lib/db/repositories/teams";
 import type { MatchWithTeamsRow } from "@/lib/db/repositories/matches";
 import type { PlayerResponse } from "@/lib/types/schemas/player";
 import type { TeamResponse } from "@/lib/types/schemas/team";
-import type { MatchResponse } from "@/lib/types/schemas/match";
+import type {
+  MatchResponse,
+  MatchWithEloResponse,
+} from "@/lib/types/schemas/match";
 
 // [>]: Map raw player data to PlayerResponse.
 export function mapToPlayerResponse(data: PlayerWithStatsRow): PlayerResponse {
@@ -59,5 +62,23 @@ export function mapToMatchResponse(data: MatchWithTeamsRow): MatchResponse {
     // [>]: Cast partial team data - RPC returns subset of TeamResponse fields.
     winner_team: data.winner_team as unknown as TeamResponse | null,
     loser_team: data.loser_team as unknown as TeamResponse | null,
+  };
+}
+
+// [>]: Map raw match data to MatchWithEloResponse (includes elo_changes).
+// Used for player match history where ELO changes are needed.
+export function mapToMatchWithEloResponse(
+  data: MatchWithTeamsRow,
+): MatchWithEloResponse {
+  return {
+    match_id: data.match_id,
+    winner_team_id: data.winner_team_id,
+    loser_team_id: data.loser_team_id,
+    is_fanny: data.is_fanny,
+    played_at: data.played_at,
+    notes: data.notes ?? null,
+    winner_team: data.winner_team as unknown as TeamResponse | null,
+    loser_team: data.loser_team as unknown as TeamResponse | null,
+    elo_changes: data.elo_changes ?? {},
   };
 }
