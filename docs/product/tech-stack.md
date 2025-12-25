@@ -47,10 +47,11 @@ Baby Foot ELO uses a modern full-stack architecture with clear separation betwee
 
 ### Frontend Development Tools
 
-| Tool     | Purpose         |
-| -------- | --------------- |
-| ESLint   | Code linting    |
-| Prettier | Code formatting |
+| Tool     | Purpose                             |
+| -------- | ----------------------------------- |
+| Bun      | Fast JavaScript runtime and bundler |
+| ESLint   | Code linting                        |
+| Prettier | Code formatting                     |
 
 ## Backend
 
@@ -122,9 +123,31 @@ Team_History (id, team_id, match_id, elo_change, elo_after)
 
 | Component  | Configuration                       |
 | ---------- | ----------------------------------- |
-| Frontend   | `npm run dev` (localhost:3000)      |
+| Frontend   | `bun run dev` (localhost:3000)      |
 | Backend    | `uvicorn --reload` (localhost:8000) |
-| Concurrent | `npm run dev` from root runs both   |
+| Concurrent | `bun run dev` from root runs both   |
+
+### Deployment
+
+| Platform | Component | Runtime     | Configuration                 |
+| -------- | --------- | ----------- | ----------------------------- |
+| Vercel   | Frontend  | Bun 1.x     | `vercel.json` with bunVersion |
+| TBD      | Backend   | Python 3.12 | -                             |
+
+**Vercel Configuration (`frontend/vercel.json`):**
+
+```json
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "bunVersion": "1.x"
+}
+```
+
+This configuration ensures:
+
+- Vercel uses Bun runtime instead of Node.js
+- Automatic package manager detection via `bun.lock` file
+- Consistent runtime between local development and production
 
 ### Environment Variables
 
@@ -164,3 +187,11 @@ Our hybrid approach calculates individual changes based on personal K-factors wh
 - Python excels at mathematical calculations (ELO)
 - Next.js provides excellent React DX with App Router
 - Both support TypeScript/type hints for safety
+
+### Why Bun over npm?
+
+- **Speed**: Up to 30x faster than npm for install operations
+- **All-in-one**: Runtime, bundler, package manager, and test runner in one tool
+- **Drop-in replacement**: Uses the same `package.json` and npm registry
+- **Better DX**: Faster feedback loops during development
+- **Vercel support**: First-class support on Vercel deployment platform

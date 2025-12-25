@@ -39,7 +39,7 @@ help:
 	@echo "$(GREEN)Installation:$(NC)"
 	@echo "  install              Install all dependencies (backend + frontend)"
 	@echo "  install-backend      Install backend dependencies (Poetry)"
-	@echo "  install-frontend     Install frontend dependencies (npm)"
+	@echo "  install-frontend     Install frontend dependencies (bun)"
 	@echo ""
 	@echo "$(GREEN)Development:$(NC)"
 	@echo "  dev                  Start both backend and frontend servers"
@@ -85,7 +85,7 @@ install-backend:
 
 install-frontend:
 	@echo "$(CYAN)Installing frontend dependencies...$(NC)"
-	cd $(FRONTEND_DIR) && npm install
+	cd $(FRONTEND_DIR) && bun install
 	@echo "$(GREEN)✓ Frontend dependencies installed$(NC)"
 
 # ============================================================================
@@ -97,7 +97,7 @@ dev:
 	@echo "$(YELLOW)Backend: http://localhost:8000$(NC)"
 	@echo "$(YELLOW)Frontend: http://localhost:3000$(NC)"
 	@echo ""
-	npm run dev
+	bun run dev
 
 dev-backend:
 	@echo "$(CYAN)Starting backend server...$(NC)"
@@ -105,7 +105,7 @@ dev-backend:
 
 dev-frontend:
 	@echo "$(CYAN)Starting frontend server...$(NC)"
-	cd $(FRONTEND_DIR) && npm run dev
+	cd $(FRONTEND_DIR) && bun run dev
 
 # ============================================================================
 # Formatting
@@ -122,7 +122,7 @@ format-backend:
 
 format-frontend:
 	@echo "$(CYAN)Formatting frontend code...$(NC)"
-	cd $(FRONTEND_DIR) && npx prettier --write "**/*.{ts,tsx,js,jsx,json,css,md}"
+	cd $(FRONTEND_DIR) && bun x prettier --write "**/*.{ts,tsx,js,jsx,json,css,md}"
 	@echo "$(GREEN)✓ Frontend code formatted$(NC)"
 
 # ============================================================================
@@ -139,7 +139,7 @@ lint-backend:
 
 lint-frontend:
 	@echo "$(CYAN)Linting frontend code...$(NC)"
-	cd $(FRONTEND_DIR) && npm run lint
+	cd $(FRONTEND_DIR) && bun run lint
 	@echo "$(GREEN)✓ Frontend linting passed$(NC)"
 
 # ============================================================================
@@ -151,7 +151,7 @@ typecheck: typecheck-frontend
 
 typecheck-frontend:
 	@echo "$(CYAN)Type checking frontend...$(NC)"
-	cd $(FRONTEND_DIR) && npx tsc --noEmit
+	cd $(FRONTEND_DIR) && bun x tsc --noEmit
 	@echo "$(GREEN)✓ Frontend type check passed$(NC)"
 
 # ============================================================================
@@ -182,7 +182,7 @@ test-backend-cov:
 
 build:
 	@echo "$(CYAN)Building frontend for production...$(NC)"
-	cd $(FRONTEND_DIR) && npm run build
+	cd $(FRONTEND_DIR) && bun run build
 	@echo "$(GREEN)✓ Frontend build completed$(NC)"
 
 # ============================================================================
