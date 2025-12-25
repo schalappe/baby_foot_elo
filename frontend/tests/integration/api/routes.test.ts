@@ -108,6 +108,7 @@ describe.skipIf(!hasSupabaseConfig)("API Route Handlers", () => {
   });
 
   describe("Player endpoints", () => {
+    // [>]: Increased timeout because createNewPlayer creates teams with all existing players.
     it("POST /players creates a player", async () => {
       const timestamp = Date.now();
       const request = createRequest("/api/v1/players", {
@@ -123,7 +124,7 @@ describe.skipIf(!hasSupabaseConfig)("API Route Handlers", () => {
       expect(data.player_id).toBeTypeOf("number");
 
       testPlayerId = data.player_id;
-    });
+    }, 30000);
 
     it("POST /players returns 422 for invalid data", async () => {
       const request = createRequest("/api/v1/players", {
@@ -202,6 +203,7 @@ describe.skipIf(!hasSupabaseConfig)("API Route Handlers", () => {
   });
 
   describe("Team endpoints", () => {
+    // [>]: Increased timeout for creating 3 players with team generation.
     beforeAll(async () => {
       // [>]: Create additional players for team testing.
       const timestamp = Date.now();
@@ -231,7 +233,7 @@ describe.skipIf(!hasSupabaseConfig)("API Route Handlers", () => {
       testPlayer2Id = p2Data.player_id;
       testPlayer3Id = p3Data.player_id;
       testPlayer4Id = p4Data.player_id;
-    }, 30000);
+    }, 90000);
 
     it("POST /teams creates a team", async () => {
       if (!testPlayerId || !testPlayer2Id) return;

@@ -61,7 +61,9 @@ async function getPlayerStatsImpl(playerId: number): Promise<PlayerStatsRow> {
     throw new OperationError(`Failed to get player stats: ${error.message}`);
   }
 
-  if (!data) {
+  // [>]: RPC returns object with null fields for non-existent players.
+  // Check for null name to detect missing player.
+  if (!data || data.name === null) {
     throw new PlayerNotFoundError(playerId);
   }
 

@@ -70,7 +70,7 @@ describe.skipIf(!hasSupabaseConfig)("Match Service", () => {
 
     team1Id = t1.team_id;
     team2Id = t2.team_id;
-  }, 60000); // [>]: Increase timeout to 60s for player/team creation.
+  }, 120000); // [>]: Increase timeout to 120s for 4 player + team creation (O(n) team auto-creation).
 
   afterAll(async () => {
     // [>]: Clean up in reverse order: matches, then teams, then players.

@@ -25,16 +25,16 @@ export function withRetry<T extends unknown[], R>(
     options;
 
   return async (...args: T): Promise<R> => {
-    let lastError: Error | null = null;
+    // [>]: Preserve original error type for instanceof checks in error handlers.
+    let lastError: unknown = null;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         return await fn(...args);
       } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
-        console.warn(
-          `Attempt ${attempt}/${maxRetries} failed: ${lastError.message}`,
-        );
+        lastError = error;
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn(`Attempt ${attempt}/${maxRetries} failed: ${message}`);
 
         if (attempt < maxRetries) {
           await new Promise((resolve) => setTimeout(resolve, retryDelay));
@@ -42,9 +42,9 @@ export function withRetry<T extends unknown[], R>(
       }
     }
 
-    console.error(
-      `All ${maxRetries} attempts failed. Last error: ${lastError?.message}`,
-    );
+    const message =
+      lastError instanceof Error ? lastError.message : String(lastError);
+    console.error(`All ${maxRetries} attempts failed. Last error: ${message}`);
     throw lastError;
   };
 }
