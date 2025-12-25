@@ -89,15 +89,15 @@ Total Tasks: ~45
 
 **Dependencies:** Task Group 4
 
-- [ ] 5.0 Complete ELO calculation service
-  - [ ] 5.1 Write 8 tests ported from Python `test_elo_service.py` (K-factors, win probability, pool correction)
-  - [ ] 5.2 Create `lib/services/elo.ts` — Define constants (K_TIER1=200, K_TIER2=100, K_TIER3=50)
-  - [ ] 5.3 Implement `calculateTeamElo()` and `calculateWinProbability()`
-  - [ ] 5.4 Implement `determineKFactor()` and `calculateEloChange()` using `Math.trunc()`
-  - [ ] 5.5 Implement `calculateEloChangesWithPoolCorrection()` — zero-sum correction
-  - [ ] 5.6 Implement `calculatePlayersEloChange()` and `calculateTeamEloChange()`
-  - [ ] 5.7 Implement `processMatchResult()` — main entry point
-  - [ ] 5.8 Ensure tests pass and verify against Python baseline values
+- [x] 5.0 Complete ELO calculation service
+  - [x] 5.1 Write 8 tests ported from Python `test_elo_service.py` (K-factors, win probability, pool correction)
+  - [x] 5.2 Create `lib/services/elo.ts` — Define constants (K_TIER1=200, K_TIER2=100, K_TIER3=50)
+  - [x] 5.3 Implement `calculateTeamElo()` and `calculateWinProbability()`
+  - [x] 5.4 Implement `determineKFactor()` and `calculateEloChange()` using `Math.trunc()`
+  - [x] 5.5 Implement `calculateEloChangesWithPoolCorrection()` — zero-sum correction
+  - [x] 5.6 Implement `calculatePlayersEloChange()` and `calculateTeamEloChange()`
+  - [x] 5.7 Implement `processMatchResult()` — main entry point
+  - [x] 5.8 Ensure tests pass and verify against Python baseline values
 
 **Acceptance Criteria:**
 
