@@ -13,10 +13,10 @@ Total Tasks: ~45
 
 **Dependencies:** None
 
-- [ ] 1.0 Complete project setup
-  - [ ] 1.1 Install Zod dependency (`bun add zod`)
-  - [ ] 1.2 Create directory structure under `frontend/lib/` (db, errors, repositories, services, types/schemas)
-  - [ ] 1.3 Create directory structure under `frontend/app/api/v1/` (health, players, teams, matches)
+- [x] 1.0 Complete project setup
+  - [x] 1.1 Install Zod dependency (`bun add zod`)
+  - [x] 1.2 Create directory structure under `frontend/lib/` (db, errors, repositories, services, types/schemas)
+  - [x] 1.3 Create directory structure under `frontend/app/api/v1/` (health, players, teams, matches)
 
 **Acceptance Criteria:**
 
@@ -29,11 +29,11 @@ Total Tasks: ~45
 
 **Dependencies:** Task Group 1
 
-- [ ] 2.0 Complete database utilities
-  - [ ] 2.1 Write 3 tests for retry utility (success, retry on failure, exhaust retries)
-  - [ ] 2.2 Create `lib/db/client.ts` — Supabase client singleton
-  - [ ] 2.3 Create `lib/db/retry.ts` — `withRetry()` HOF with 3 retries, 500ms delay
-  - [ ] 2.4 Ensure tests pass
+- [x] 2.0 Complete database utilities
+  - [x] 2.1 Write 3 tests for retry utility (success, retry on failure, exhaust retries)
+  - [x] 2.2 Create `lib/db/client.ts` — Supabase client singleton
+  - [x] 2.3 Create `lib/db/retry.ts` — `withRetry()` HOF with 3 retries, 500ms delay
+  - [x] 2.4 Ensure tests pass
 
 **Acceptance Criteria:**
 
@@ -47,12 +47,12 @@ Total Tasks: ~45
 
 **Dependencies:** Task Group 1
 
-- [ ] 3.0 Complete error handling layer
-  - [ ] 3.1 Write 4 tests for error classes (ApiError, NotFoundError, ConflictError, ValidationError)
-  - [ ] 3.2 Create `lib/errors/api-errors.ts` — Base ApiError class with statusCode and detail
-  - [ ] 3.3 Add NotFoundError, ConflictError, ValidationError extending ApiError
-  - [ ] 3.4 Add domain-specific errors: PlayerNotFoundError, TeamNotFoundError, MatchNotFoundError
-  - [ ] 3.5 Ensure tests pass
+- [x] 3.0 Complete error handling layer
+  - [x] 3.1 Write 4 tests for error classes (ApiError, NotFoundError, ConflictError, ValidationError)
+  - [x] 3.2 Create `lib/errors/api-errors.ts` — Base ApiError class with statusCode and detail
+  - [x] 3.3 Add NotFoundError, ConflictError, ValidationError extending ApiError
+  - [x] 3.4 Add domain-specific errors: PlayerNotFoundError, TeamNotFoundError, MatchNotFoundError
+  - [x] 3.5 Ensure tests pass
 
 **Acceptance Criteria:**
 
@@ -66,13 +66,13 @@ Total Tasks: ~45
 
 **Dependencies:** Task Group 1
 
-- [ ] 4.0 Complete type definitions
-  - [ ] 4.1 Write 6 tests for schema validation (player create, team create with ID normalization, match create)
-  - [ ] 4.2 Create `lib/types/schemas/player.ts` — PlayerBase, PlayerCreate, PlayerUpdate, PlayerResponse
-  - [ ] 4.3 Create `lib/types/schemas/team.ts` — TeamCreate with `.refine().transform()` for ID normalization
-  - [ ] 4.4 Create `lib/types/schemas/match.ts` — MatchCreate, MatchResponse, MatchWithEloResponse
-  - [ ] 4.5 Create `lib/types/schemas/elo-history.ts` — EloHistoryCreate, EloHistoryResponse
-  - [ ] 4.6 Ensure tests pass
+- [x] 4.0 Complete type definitions
+  - [x] 4.1 Write 6 tests for schema validation (player create, team create with ID normalization, match create)
+  - [x] 4.2 Create `lib/types/schemas/player.ts` — PlayerBase, PlayerCreate, PlayerUpdate, PlayerResponse
+  - [x] 4.3 Create `lib/types/schemas/team.ts` — TeamCreate with `.refine().transform()` for ID normalization
+  - [x] 4.4 Create `lib/types/schemas/match.ts` — MatchCreate, MatchResponse, MatchWithEloResponse
+  - [x] 4.5 Create `lib/types/schemas/elo-history.ts` — EloHistoryCreate, EloHistoryResponse
+  - [x] 4.6 Ensure tests pass
 
 **Acceptance Criteria:**
 
