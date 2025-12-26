@@ -55,8 +55,9 @@ export const GET = handleApiRequest(
     }
 
     const recentMatchesPlayed = recentWins + recentLosses;
+    // [>]: Calculate win rate as decimal (0-1) for consistency with other stats.
     const recentWinRate =
-      recentMatchesPlayed > 0 ? (recentWins / recentMatchesPlayed) * 100 : 0;
+      recentMatchesPlayed > 0 ? recentWins / recentMatchesPlayed : 0;
     const recentAvgEloChange =
       recentEloChanges.length > 0
         ? recentEloChanges.reduce((a, b) => a + b, 0) / recentEloChanges.length
@@ -80,7 +81,7 @@ export const GET = handleApiRequest(
         matches_played: recentMatchesPlayed,
         wins: recentWins,
         losses: recentLosses,
-        win_rate: Math.round(recentWinRate * 100) / 100,
+        win_rate: recentWinRate,
         average_elo_change: Math.round(recentAvgEloChange * 100) / 100,
         elo_changes: recentEloChanges,
       },

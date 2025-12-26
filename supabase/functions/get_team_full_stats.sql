@@ -42,9 +42,9 @@ BEGIN
   ORDER BY m.played_at DESC
   LIMIT 1;
 
-  -- Calculate win rate
+  -- Calculate win rate as decimal (0.0 to 1.0)
   IF v_total_matches > 0 THEN
-    v_win_rate := (v_win_count::NUMERIC / v_total_matches::NUMERIC) * 100;
+    v_win_rate := v_win_count::NUMERIC / v_total_matches::NUMERIC;
   ELSE
     v_win_rate := 0;
   END IF;
@@ -61,6 +61,6 @@ BEGIN
     'wins', COALESCE(v_win_count, 0),
     'losses', COALESCE(v_loss_count, 0),
     'last_match_at', v_last_match_date,
-    'win_rate', v_win_rate
+    'win_rate', ROUND(COALESCE(v_win_rate, 0), 4)
   );
 END;

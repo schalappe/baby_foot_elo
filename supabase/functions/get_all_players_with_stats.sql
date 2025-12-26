@@ -8,6 +8,7 @@ DECLARE
   win_count INTEGER;
   loss_count INTEGER;
   last_match_date TIMESTAMPTZ;
+  player_win_rate NUMERIC;
 BEGIN
   -- Calculate total matches played by the player
   SELECT COUNT(m.match_id)
@@ -43,11 +44,19 @@ BEGIN
   ORDER BY m.played_at DESC
   LIMIT 1;
 
+  -- Calculate win rate as decimal (0.0 to 1.0)
+  IF COALESCE(total_matches, 0) > 0 THEN
+    player_win_rate := win_count::NUMERIC / total_matches::NUMERIC;
+  ELSE
+    player_win_rate := 0;
+  END IF;
+
   RETURN jsonb_build_object(
     'matches_played', COALESCE(total_matches, 0),
     'wins', COALESCE(win_count, 0),
     'losses', COALESCE(loss_count, 0),
-    'last_match_at', last_match_date -- last_match_date can be null if no matches played
+    'win_rate', ROUND(COALESCE(player_win_rate, 0), 4),
+    'last_match_at', last_match_date
   );
 END;
 $$;

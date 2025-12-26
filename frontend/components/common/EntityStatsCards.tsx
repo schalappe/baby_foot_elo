@@ -162,7 +162,7 @@ const EntityStatsCards: React.FC<EntityStatsCardsProps> = ({ stats }) => {
                     : "var(--muted)",
                 }}
               >
-                {stats ? `${Math.round(stats.win_rate ?? 0)}%` : "--"}
+                {stats ? `${Math.round((stats.win_rate ?? 0) * 100)}%` : "--"}
               </span>
               <span className="text-xs text-muted-foreground">
                 Taux de victoire
@@ -177,8 +177,9 @@ const EntityStatsCards: React.FC<EntityStatsCardsProps> = ({ stats }) => {
         <CardContent className="flex flex-col items-center justify-center p-6 h-full space-y-2 text-center">
           <div className="relative w-32 h-32 sm:w-36 sm:h-36">
             {(() => {
+              // [>]: Convert decimal win_rate (0-1) to percentage (0-100) for pie chart.
               const currentWinRate =
-                stats.recent?.win_rate ?? stats.win_rate ?? 0;
+                (stats.recent?.win_rate ?? stats.win_rate ?? 0) * 100;
               const chartConfig = {
                 winSegment: {
                   label: "Win Rate",

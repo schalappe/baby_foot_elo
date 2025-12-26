@@ -52,10 +52,9 @@ export const GET = handleApiRequest(
     const recentWins = recentHistory.filter((h) => h.difference > 0).length;
     const recentLosses = recentHistory.filter((h) => h.difference < 0).length;
     const recentMatchesPlayed = recentHistory.length;
+    // [>]: Calculate win rate as decimal (0-1) for consistency with other stats.
     const recentWinRate =
-      recentMatchesPlayed > 0
-        ? Math.round((recentWins / recentMatchesPlayed) * 100)
-        : 0;
+      recentMatchesPlayed > 0 ? recentWins / recentMatchesPlayed : 0;
     const recentTotalChange = recentHistory.reduce(
       (sum, h) => sum + h.difference,
       0,
