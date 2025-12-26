@@ -78,8 +78,11 @@ Comprehensive technical architecture and implementation details.
 | [Database Schema](./technical/02-database-schema.md) | Complete database structure with ERD | 575 |
 | [Sequence Diagrams](./technical/03-sequence-diagrams.md) | Key flow diagrams (match creation, rankings, etc.) | 644 |
 | [ELO Calculation System](./technical/04-elo-calculation-system.md) | Algorithm details with worked examples | 682 |
+| [Service Layer Reference](./technical/05-service-layer.md) ⭐ **NEW** | Complete class documentation for all services | 1,328 |
+| [Repository Layer Reference](./technical/06-repository-layer.md) ⭐ **NEW** | Complete class documentation for all repositories | 1,127 |
+| [Class Diagrams & Relationships](./technical/07-class-diagrams.md) ⭐ **NEW** | 13 comprehensive Mermaid diagrams of system architecture | 867 |
 
-**Total**: 2,422 lines of technical documentation
+**Total**: 5,744+ lines of technical documentation (138% increase!)
 
 [→ Technical Documentation Index](./technical/README.md)
 
@@ -123,25 +126,42 @@ Guides for deployment, backup, testing, and maintenance.
    # Open http://localhost:3000
    ```
 
-### Understanding the Codebase (30 minutes)
+### Understanding the Codebase (60 minutes)
 
 **Recommended reading order:**
 
-1. **[Architecture Overview](./technical/01-architecture-overview.md)** (15 min)
+1. **[Architecture Overview](./technical/01-architecture-overview.md)** (20 min)
    - Understand the 6-layer architecture
    - Learn design patterns (Service, Repository, Mapper)
    - See technology stack
 
-2. **[Database Schema](./technical/02-database-schema.md)** (10 min)
+2. **[Class Diagrams](./technical/07-class-diagrams.md)** ⭐ **NEW** (15 min)
+   - Visual system architecture with all layers
+   - Component hierarchy and data flow
+   - 13 comprehensive Mermaid diagrams
+
+3. **[Database Schema](./technical/02-database-schema.md)** (10 min)
    - Review 5 core tables (players, teams, matches, history)
    - Understand relationships and constraints
    - See RPC function optimization
 
-3. **[Sequence Diagrams](./technical/03-sequence-diagrams.md)** (5 min)
+4. **[Sequence Diagrams](./technical/03-sequence-diagrams.md)** (10 min)
    - Focus on "Match Creation Flow" (9-step process)
    - See how components interact
 
-4. **Optional: [ELO Calculation](./technical/04-elo-calculation-system.md)** (only if working on ELO logic)
+5. **Deep Dive - Service & Repository Layers** ⭐ **NEW** (15 min)
+   - **[Service Layer Reference](./technical/05-service-layer.md)** - Complete class documentation
+     - All service functions with signatures, parameters, examples
+     - ELO Service: Pure calculation functions
+     - Match Service: 9-step match creation orchestration
+     - Player/Team Services: Lifecycle management
+
+   - **[Repository Layer Reference](./technical/06-repository-layer.md)** - Complete class documentation
+     - All repository functions with CRUD operations
+     - Retry patterns and batch operations
+     - RPC-based statistics aggregation
+
+6. **Optional: [ELO Calculation](./technical/04-elo-calculation-system.md)** (only if working on ELO logic)
 
 ### Code Exploration Guide
 
@@ -396,13 +416,16 @@ tests/
 
 | Metric | Count |
 |--------|-------|
-| **Documentation Files** | 15 |
-| **Total Documentation Lines** | 3,900+ |
-| **Technical Diagrams** | 26+ |
+| **Documentation Files** | 18 |
+| **Total Documentation Lines** | 7,300+ |
+| **Technical Diagrams** | 39+ (13 new Mermaid diagrams!) |
+| **Class References** | 2 complete layers (Service + Repository) |
 | **API Endpoints** | 20+ |
 | **Database Tables** | 5 |
 | **React Components** | 40+ |
 | **RPC Functions** | 6 |
+| **Service Functions Documented** | 24 |
+| **Repository Functions Documented** | 40+ |
 
 ---
 

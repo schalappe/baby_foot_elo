@@ -21,7 +21,7 @@ The Baby Foot ELO application implements a **hybrid ELO rating system** with **p
 
 ## Implementation File
 
-**Location**: `/Users/schalappe/Documents/Lab/Engineer/Projects/baby_foot_elo/lib/services/elo.ts`
+**Location**: `lib/services/elo.ts`
 
 ## Core Concepts
 

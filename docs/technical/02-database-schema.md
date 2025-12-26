@@ -512,7 +512,7 @@ Frequently queried columns:
 
 ### Schema Changes
 
-**Location**: Supabase migrations (not currently tracked in codebase)
+**Location**: `supabase/migrations`
 
 **Process**:
 1. Create migration SQL in Supabase dashboard

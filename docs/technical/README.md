@@ -39,23 +39,42 @@ This directory contains comprehensive technical documentation for the Baby Foot 
    - Win probability calculation
    - Worked examples with step-by-step math
 
-5. **[Service Layer Documentation](./05-service-layer.md)** ⚙️
-   - Service pattern implementation
-   - Business logic organization
-   - Match orchestration (matches.ts)
-   - Player/team lifecycle management
-   - Service dependencies and composition
+5. **[Service Layer Documentation](./05-service-layer.md)** ⚙️ **NEW**
+   - Complete class reference for all services
+   - ELO Service: Pure calculation functions with formulas
+   - Match Service: Match orchestration and ELO application (9-step flow)
+   - Player Service: Lifecycle management and auto-team creation
+   - Team Service: Team normalization and active rankings
+   - Function signatures, parameters, return types, examples
+   - Design patterns and testing strategies
 
-6. **[Repository Layer](./06-repository-layer.md)** 💾
-   - Repository pattern implementation
-   - Database access abstraction
-   - Retry logic with exponential backoff
-   - RPC function calls
-   - Batch operations for performance
+6. **[Repository Layer](./06-repository-layer.md)** 💾 **NEW**
+   - Complete class reference for all repositories
+   - Player Repository: CRUD operations and ELO history
+   - Team Repository: Player ID normalization pattern
+   - Match Repository: Match creation and filtering
+   - Stats Repository: RPC-based statistics aggregation
+   - Retry wrapper with exponential backoff
+   - Batch operations and performance optimization
+   - Testing patterns for integration tests
+
+7. **[Class Diagrams and Relationships](./07-class-diagrams.md)** 📊 **NEW**
+   - System-wide architecture diagram (all layers)
+   - Service layer class diagram with dependencies
+   - Repository layer class diagram
+   - Domain model (ERD with relationships)
+   - Type system class hierarchy
+   - Component hierarchy and composition
+   - API route handler structure
+   - Match creation sequence diagram
+   - Player rankings data flow
+   - ELO calculation flow chart
+   - Error handling flow
+   - 13 comprehensive Mermaid diagrams
 
 ### API Documentation
 
-7. **[API Reference](./07-api-reference.md)** 🔌
+8. **[API Reference](./08-api-reference.md)** 🔌
    - Complete REST API endpoint documentation
    - Request/response schemas
    - Error codes and handling
@@ -64,22 +83,22 @@ This directory contains comprehensive technical documentation for the Baby Foot 
 
 ### Frontend Architecture
 
-8. **[Frontend Architecture](./08-frontend-architecture.md)** 🎨
+9. **[Frontend Architecture](./09-frontend-architecture.md)** 🎨
    - Component hierarchy and organization
    - SWR data fetching patterns
    - State management strategy
    - UI component library (ShadCN)
    - Performance optimizations
 
-9. **[Component Documentation](./09-component-reference.md)** 🧩
-   - Individual component documentation
-   - Props and interfaces
-   - Usage examples
-   - Reusable patterns
+10. **[Component Documentation](./10-component-reference.md)** 🧩
+    - Individual component documentation
+    - Props and interfaces
+    - Usage examples
+    - Reusable patterns
 
 ### Deployment & Operations
 
-10. **[Deployment Guide](./10-deployment-guide.md)** 🚀
+11. **[Deployment Guide](./11-deployment-guide.md)** 🚀
     - Environment setup
     - Vercel deployment configuration
     - Supabase configuration
@@ -91,29 +110,38 @@ This directory contains comprehensive technical documentation for the Baby Foot 
 ### Understanding the System
 
 **New to the codebase?** Read in this order:
-1. [Architecture Overview](./01-architecture-overview.md) - Get the big picture
-2. [Database Schema](./02-database-schema.md) - Understand data structure
-3. [Sequence Diagrams](./03-sequence-diagrams.md) - See how it all works together
+1. [Architecture Overview](./01-architecture-overview.md) - Get the big picture (20 min)
+2. [Class Diagrams](./07-class-diagrams.md) - Visual overview of all components (15 min)
+3. [Database Schema](./02-database-schema.md) - Understand data structure (10 min)
+4. [Sequence Diagrams](./03-sequence-diagrams.md) - See how it all works together (10 min)
+
+**Deep dive into specific layers**:
+- [Service Layer](./05-service-layer.md) - Business logic and orchestration
+- [Repository Layer](./06-repository-layer.md) - Data access patterns
 
 ### Working on Specific Areas
 
 **Frontend Development**:
-- [Frontend Architecture](./08-frontend-architecture.md)
-- [Component Documentation](./09-component-reference.md)
-- [API Reference](./07-api-reference.md) (for API integration)
+- [Class Diagrams](./07-class-diagrams.md) - Component hierarchy section
+- [Frontend Architecture](./09-frontend-architecture.md)
+- [Component Documentation](./10-component-reference.md)
+- [API Reference](./08-api-reference.md) (for API integration)
 
 **Backend Development**:
-- [Service Layer Documentation](./05-service-layer.md)
-- [Repository Layer](./06-repository-layer.md)
+- [Service Layer Documentation](./05-service-layer.md) - Complete class reference
+- [Repository Layer](./06-repository-layer.md) - Complete class reference
+- [Class Diagrams](./07-class-diagrams.md) - Service & repository diagrams
 - [Database Schema](./02-database-schema.md)
 
 **ELO Algorithm**:
-- [ELO Calculation System](./04-elo-calculation-system.md)
+- [Service Layer - ELO Service](./05-service-layer.md#elo-service-libserviceselots) - Function reference
+- [ELO Calculation System](./04-elo-calculation-system.md) - Algorithm details
+- [Class Diagrams](./07-class-diagrams.md#elo-calculation-flow-diagram) - Visual flow
 - [Sequence Diagrams](./03-sequence-diagrams.md) (Match Creation Flow)
 
 **Deployment & DevOps**:
-- [Deployment Guide](./10-deployment-guide.md)
-- [API Reference](./07-api-reference.md) (for endpoint configuration)
+- [Deployment Guide](./11-deployment-guide.md)
+- [API Reference](./08-api-reference.md) (for endpoint configuration)
 
 ## Documentation Standards
 
@@ -206,18 +234,41 @@ const result = functionName(params);
 
 ## Document Status
 
-| Document | Status | Coverage |
-|----------|--------|----------|
-| 01-architecture-overview.md | ✅ Complete | 100% |
-| 02-database-schema.md | ✅ Complete | 100% |
-| 03-sequence-diagrams.md | ✅ Complete | 100% |
-| 04-elo-calculation-system.md | 🚧 In Progress | 0% |
-| 05-service-layer.md | 📝 Planned | 0% |
-| 06-repository-layer.md | 📝 Planned | 0% |
-| 07-api-reference.md | 📝 Planned | 0% |
-| 08-frontend-architecture.md | 📝 Planned | 0% |
-| 09-component-reference.md | 📝 Planned | 0% |
-| 10-deployment-guide.md | 📝 Planned | 0% |
+| Document | Status | Coverage | Lines |
+|----------|--------|----------|-------|
+| 01-architecture-overview.md | ✅ Complete | 100% | 521 |
+| 02-database-schema.md | ✅ Complete | 100% | 575 |
+| 03-sequence-diagrams.md | ✅ Complete | 100% | 644 |
+| 04-elo-calculation-system.md | ✅ Complete | 100% | 682 |
+| 05-service-layer.md | ✅ Complete | 100% | 1,328 |
+| 06-repository-layer.md | ✅ Complete | 100% | 1,127 |
+| 07-class-diagrams.md | ✅ Complete | 100% | 867 |
+| 08-api-reference.md | 📝 Planned | 0% | - |
+| 09-frontend-architecture.md | 📝 Planned | 0% | - |
+| 10-component-reference.md | 📝 Planned | 0% | - |
+| 11-deployment-guide.md | 📝 Planned | 0% | - |
+
+**Total Documentation**: 5,744+ lines across 7 comprehensive documents
+
+---
+
+## Documentation Metrics
+
+**Coverage by Layer**:
+- ✅ Architecture & Design: 100% (Architecture, Class Diagrams, Sequence Diagrams)
+- ✅ Database Layer: 100% (Schema, RPC Functions)
+- ✅ Repository Layer: 100% (Complete class reference)
+- ✅ Service Layer: 100% (Complete class reference)
+- ✅ Business Logic: 100% (ELO Calculation System)
+- 🚧 API Layer: Planned (API Reference)
+- 🚧 Frontend Layer: Planned (Frontend Architecture, Component Reference)
+- 🚧 Operations: Planned (Deployment Guide)
+
+**Documentation Quality**:
+- All code examples reference actual file paths
+- All functions include: purpose, parameters, returns, examples
+- All diagrams use Mermaid for visualization
+- All documents cross-reference related docs
 
 ---
 
