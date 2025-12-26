@@ -1,12 +1,11 @@
 #!/bin/bash
 # Supabase Data Restore Script
-# Restores data from a backup archive
+# Restores data from a backup archive using direct PostgreSQL connection
 
 set -e
 
 # Configuration
-SUPABASE_URL="${SUPABASE_URL:-}"
-SUPABASE_KEY="${SUPABASE_KEY:-}"
+DATABASE_URL="${DATABASE_URL:-}"
 
 # Tables in order for restoration (respects foreign key constraints)
 TABLES=("players" "teams" "matches" "players_elo_history" "teams_elo_history")
@@ -21,9 +20,24 @@ log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
+# Check for required tools
+if ! command -v psql &> /dev/null; then
+    log_error "psql is required but not installed."
+    log_error "Install PostgreSQL client: brew install libpq && brew link libpq --force"
+    exit 1
+fi
+
+if ! command -v jq &> /dev/null; then
+    log_error "jq is required but not installed."
+    exit 1
+fi
+
 # Validate arguments
 if [ -z "$1" ]; then
-    log_error "Usage: SUPABASE_URL=xxx SUPABASE_KEY=xxx ./restore_supabase.sh <backup_file.tar.gz>"
+    log_error "Usage: DATABASE_URL=xxx ./restore_supabase.sh <backup_file.tar.gz>"
+    log_info ""
+    log_info "Get your DATABASE_URL from Supabase Dashboard:"
+    log_info "  Settings → Database → Connection string → URI"
     exit 1
 fi
 
@@ -35,10 +49,21 @@ if [ ! -f "$BACKUP_FILE" ]; then
 fi
 
 # Validate environment variables
-if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
-    log_error "SUPABASE_URL and SUPABASE_KEY environment variables are required"
+if [ -z "$DATABASE_URL" ]; then
+    log_error "DATABASE_URL environment variable is required"
+    log_info ""
+    log_info "Get your DATABASE_URL from Supabase Dashboard:"
+    log_info "  Settings → Database → Connection string → URI"
     exit 1
 fi
+
+# Test database connection
+log_info "Testing database connection..."
+if ! psql "$DATABASE_URL" -c "SELECT 1" &> /dev/null; then
+    log_error "Failed to connect to database. Check your DATABASE_URL."
+    exit 1
+fi
+log_info "Database connection successful."
 
 # Extract backup
 TEMP_DIR=$(mktemp -d)
@@ -64,6 +89,39 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     exit 0
 fi
 
+# Function to generate INSERT SQL from JSON
+generate_insert_sql() {
+    local table="$1"
+    local json_file="$2"
+    local temp_sql="$3"
+
+    # [>]: Use jq to generate complete SQL in one pass for correctness and performance.
+    # Keys are sorted alphabetically by jq, so we extract values in the same order.
+    jq -r '
+        # Get sorted column names from first record
+        (.[0] | keys) as $cols |
+
+        # Build the INSERT statement header
+        "INSERT INTO '"${table}"' (" + ($cols | join(", ")) + ") OVERRIDING SYSTEM VALUE VALUES",
+
+        # Build each row values
+        (.[] | [.[$cols[]]] |
+            "(" + (
+                map(
+                    if . == null then "NULL"
+                    elif type == "string" then "$$" + gsub("\\$\\$"; "$ $") + "$$"
+                    elif type == "boolean" then (if . then "true" else "false" end)
+                    else tostring
+                    end
+                ) | join(", ")
+            ) + "),"
+        )
+    ' "$json_file" > "$temp_sql"
+
+    # Remove trailing comma from last line and add semicolon
+    sed -i '' '$ s/,$/;/' "$temp_sql"
+}
+
 # Restore each table in order
 for table in "${TABLES[@]}"; do
     json_file="${BACKUP_DIR}/${table}.json"
@@ -82,34 +140,31 @@ for table in "${TABLES[@]}"; do
 
     log_info "Restoring table ${table}: ${record_count} records..."
 
-    # Insert data using Supabase REST API
-    response=$(curl -s -w "\n%{http_code}" \
-        "${SUPABASE_URL}/rest/v1/${table}" \
-        -H "apikey: ${SUPABASE_KEY}" \
-        -H "Authorization: Bearer ${SUPABASE_KEY}" \
-        -H "Content-Type: application/json" \
-        -H "Prefer: resolution=ignore-duplicates" \
-        -d @"$json_file")
+    # Generate SQL file
+    temp_sql="${TEMP_DIR}/${table}_insert.sql"
+    generate_insert_sql "$table" "$json_file" "$temp_sql"
 
-    http_code=$(echo "$response" | tail -n1)
-
-    if [ "$http_code" -eq 201 ] || [ "$http_code" -eq 200 ]; then
+    # Execute SQL using psql
+    if psql "$DATABASE_URL" -f "$temp_sql" &> /dev/null; then
         log_info "  -> Success"
     else
-        body=$(echo "$response" | sed '$d')
-        log_error "  -> Failed (HTTP ${http_code})"
-        log_error "  -> ${body}"
+        log_error "  -> Failed to restore ${table}"
+        # Show error details
+        psql "$DATABASE_URL" -f "$temp_sql" 2>&1 | head -5
     fi
 done
+
+# Reset sequences for identity columns
+log_info "Resetting identity sequences..."
+psql "$DATABASE_URL" <<EOF
+SELECT setval(pg_get_serial_sequence('players', 'player_id'), COALESCE(MAX(player_id), 1)) FROM players;
+SELECT setval(pg_get_serial_sequence('teams', 'team_id'), COALESCE(MAX(team_id), 1)) FROM teams;
+SELECT setval(pg_get_serial_sequence('matches', 'match_id'), COALESCE(MAX(match_id), 1)) FROM matches;
+SELECT setval(pg_get_serial_sequence('players_elo_history', 'history_id'), COALESCE(MAX(history_id), 1)) FROM players_elo_history;
+SELECT setval(pg_get_serial_sequence('teams_elo_history', 'history_id'), COALESCE(MAX(history_id), 1)) FROM teams_elo_history;
+EOF
 
 # Cleanup
 rm -rf "$TEMP_DIR"
 
 log_info "Restore complete!"
-log_warn "You may need to reset sequences if using IDENTITY columns."
-log_warn "Run this SQL in Supabase SQL Editor if needed:"
-echo ""
-echo "  SELECT setval(pg_get_serial_sequence('players', 'player_id'), COALESCE(MAX(player_id), 1)) FROM players;"
-echo "  SELECT setval(pg_get_serial_sequence('teams', 'team_id'), COALESCE(MAX(team_id), 1)) FROM teams;"
-echo "  SELECT setval(pg_get_serial_sequence('matches', 'match_id'), COALESCE(MAX(match_id), 1)) FROM matches;"
-echo ""

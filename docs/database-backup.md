@@ -157,66 +157,109 @@ Backups are saved to `./backups/backup_YYYYMMDD_HHMMSS.tar.gz`
 
 ## How to Restore from Backup
 
-### Step 1: Download Backup
+### Quick Reference
+
+```bash
+# 1. Install prerequisites
+brew install libpq jq && brew link libpq --force
+
+# 2. Get DATABASE_URL from Supabase Dashboard:
+#    Settings → Database → Connection string → URI
+
+# 3. Restore
+export DATABASE_URL="postgresql://postgres:password@db.xxx.supabase.co:5432/postgres"
+./scripts/restore_supabase.sh backups/backup_YYYYMMDD_HHMMSS.tar.gz
+```
+
+**Key Changes from Previous Version:**
+- ✅ Now uses `DATABASE_URL` (not `SUPABASE_URL` + `SUPABASE_KEY`)
+- ✅ Requires `psql` installed
+- ✅ Automatically resets identity sequences
+- ✅ Preserves original IDs (critical for data integrity)
+
+---
+
+### Prerequisites
+
+**Required Tools:**
+- `psql` (PostgreSQL client)
+- `jq` (JSON processor)
+
+**Install on macOS:**
+```bash
+brew install libpq jq
+brew link libpq --force
+```
+
+**Why psql is needed**: The restore script uses direct PostgreSQL connection to insert data with `OVERRIDING SYSTEM VALUE`, which allows restoring original IDs for identity columns. The Supabase REST API doesn't support this operation.
+
+### Step 1: Get Your Database Connection String
+
+You need your direct PostgreSQL connection URL (not the REST API URL).
+
+**Get it from Supabase Dashboard:**
+1. Go to **Settings** → **Database**
+2. Scroll to **Connection string** section
+3. Select **URI** tab
+4. Copy the full connection string (format: `postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres`)
+
+**Example:**
+```text
+postgresql://postgres:your-password@db.rdjdjscjgozpvbtjjzrf.supabase.co:5432/postgres
+```
+
+### Step 2: Download Backup
 
 - **From GitHub**: Download from Actions → Artifacts
 - **Local**: Use existing backup from `./backups/`
 
 Extract the `.zip` (if from GitHub) to get the `.tar.gz` file.
 
-### Step 2: Run Restore Script
+### Step 3: Run Restore Script
 
 ```bash
 cd /Users/schalappe/Documents/Lab/Engineer/Projects/baby_foot_elo
 
-# Set credentials
-export SUPABASE_URL="https://rdjdjscjgozpvbtjjzrf.supabase.co"
-export SUPABASE_KEY="your-anon-key-here"
+# Set database connection string
+export DATABASE_URL="postgresql://postgres:your-password@db.xxx.supabase.co:5432/postgres"
 
 # Restore from backup
 ./scripts/restore_supabase.sh backups/backup_20251226_020000.tar.gz
 ```
 
-**Important**: The script will prompt for confirmation before restoring:
+**What happens:**
+1. Script tests database connection
+2. Extracts backup archive
+3. Prompts for confirmation:
+   ```text
+   [WARN] This will INSERT data into your database.
+   [WARN] Make sure the tables are empty or you may get duplicate key errors.
+   Continue? (y/N)
+   ```
+4. Restores each table with original IDs
+5. Automatically resets all identity sequences
+6. Cleans up temporary files
 
-```sql
+**Expected Output:**
+```text
+[INFO] Testing database connection...
+[INFO] Database connection successful.
+[INFO] Extracting backup to /var/folders/.../tmp.xxxxx
 [WARN] This will INSERT data into your database.
 [WARN] Make sure the tables are empty or you may get duplicate key errors.
-Continue? (y/N)
-```
-
-### Step 3: Reset Database Sequences
-
-After restoring, you **must** reset the auto-increment sequences to prevent ID conflicts.
-
-Go to Supabase Dashboard → SQL Editor and run:
-
-```sql
--- Reset all sequence counters to match the maximum IDs
-SELECT setval(
-    pg_get_serial_sequence('players', 'player_id'),
-    COALESCE(MAX(player_id), 1)
-) FROM players;
-
-SELECT setval(
-    pg_get_serial_sequence('teams', 'team_id'),
-    COALESCE(MAX(team_id), 1)
-) FROM teams;
-
-SELECT setval(
-    pg_get_serial_sequence('matches', 'match_id'),
-    COALESCE(MAX(match_id), 1)
-) FROM matches;
-
-SELECT setval(
-    pg_get_serial_sequence('players_elo_history', 'history_id'),
-    COALESCE(MAX(history_id), 1)
-) FROM players_elo_history;
-
-SELECT setval(
-    pg_get_serial_sequence('teams_elo_history', 'history_id'),
-    COALESCE(MAX(history_id), 1)
-) FROM teams_elo_history;
+Continue? (y/N) y
+[INFO] Restoring table players: 19 records...
+[INFO]   -> Success
+[INFO] Restoring table teams: 171 records...
+[INFO]   -> Success
+[INFO] Restoring table matches: 492 records...
+[INFO]   -> Success
+[INFO] Restoring table players_elo_history: 1000 records...
+[INFO]   -> Success
+[INFO] Restoring table teams_elo_history: 984 records...
+[INFO]   -> Success
+[INFO] Resetting identity sequences...
+[INFO] Restore complete!
 ```
 
 ### Step 4: Verify Restoration
@@ -284,12 +327,54 @@ Check that your data was restored correctly:
 3. Update the `SUPABASE_KEY` secret in GitHub
 4. Re-run the workflow
 
-### Restore Fails with "Duplicate Key Error"
+### Restore Fails: "psql is required but not installed"
 
-**Cause**: Data already exists in the target tables.
+**Cause**: PostgreSQL client tools are not installed.
 
 **Solution**:
-1. Delete existing data from tables (in order):
+```bash
+# macOS
+brew install libpq
+brew link libpq --force
+
+# Ubuntu/Debian
+sudo apt-get install postgresql-client
+
+# Verify installation
+psql --version
+```
+
+### Restore Fails: "Failed to connect to database"
+
+**Cause**: Invalid `DATABASE_URL` or network connectivity issue.
+
+**Solution**:
+1. Verify your DATABASE_URL format:
+   ```text
+   postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres
+   ```
+2. Get the correct URL from Supabase Dashboard → Settings → Database → Connection string → URI
+3. Ensure your password doesn't contain special characters that need URL encoding
+4. Test connection manually:
+   ```bash
+   psql "$DATABASE_URL" -c "SELECT 1"
+   ```
+
+### Restore Fails with "cannot insert a non-DEFAULT value into column"
+
+**Cause**: This error should not occur with the updated script, but if it does, the `OVERRIDING SYSTEM VALUE` clause may not be working.
+
+**Solution**:
+1. Verify you're using the latest version of the restore script
+2. Check that your PostgreSQL version supports `OVERRIDING SYSTEM VALUE` (9.6+)
+3. Manually verify the generated SQL in `/tmp/` if the error persists
+
+### Restore Fails with "Duplicate Key Error"
+
+**Cause**: Data already exists in the target tables with the same IDs.
+
+**Solution**:
+1. Delete existing data from tables (in reverse dependency order):
    ```sql
    DELETE FROM teams_elo_history;
    DELETE FROM players_elo_history;
@@ -297,7 +382,11 @@ Check that your data was restored correctly:
    DELETE FROM teams;
    DELETE FROM players;
    ```
-2. Re-run the restore script
+2. Or truncate all tables (faster for large datasets):
+   ```sql
+   TRUNCATE teams_elo_history, players_elo_history, matches, teams, players CASCADE;
+   ```
+3. Re-run the restore script
 
 ### Backup Contains 0 Records
 
@@ -307,23 +396,51 @@ Check that your data was restored correctly:
 - This is expected if the backup ran when the database was empty
 - Use an earlier backup with actual data
 
-### Sequences Not Resetting
+### Restore Succeeds But New Records Get Wrong IDs
 
-**Cause**: SQL syntax error or permissions issue.
+**Cause**: Identity sequences were not properly reset.
 
 **Solution**:
-1. Ensure you're running the SQL in Supabase SQL Editor (not the API)
-2. Check that each query runs individually
-3. Verify the table names match exactly (case-sensitive)
+The script should reset sequences automatically. If IDs are still wrong:
+1. Manually reset sequences in Supabase SQL Editor:
+   ```sql
+   SELECT setval(pg_get_serial_sequence('players', 'player_id'), COALESCE(MAX(player_id), 1)) FROM players;
+   SELECT setval(pg_get_serial_sequence('teams', 'team_id'), COALESCE(MAX(team_id), 1)) FROM teams;
+   SELECT setval(pg_get_serial_sequence('matches', 'match_id'), COALESCE(MAX(match_id), 1)) FROM matches;
+   SELECT setval(pg_get_serial_sequence('players_elo_history', 'history_id'), COALESCE(MAX(history_id), 1)) FROM players_elo_history;
+   SELECT setval(pg_get_serial_sequence('teams_elo_history', 'history_id'), COALESCE(MAX(history_id), 1)) FROM teams_elo_history;
+   ```
+2. Verify sequences:
+   ```sql
+   SELECT last_value FROM players_player_id_seq;
+   SELECT MAX(player_id) FROM players;
+   ```
+
+### Restore Hangs or Takes Too Long
+
+**Cause**: Large dataset or slow network connection.
+
+**Solution**:
+1. The script runs all inserts in a single transaction per table, which can take time
+2. Monitor progress - check Supabase Dashboard → Database → Table Editor
+3. For very large restores (>10K records per table), consider breaking the backup into smaller chunks
 
 ## Security Considerations
 
 ### Secrets Management
 
+**For Backups:**
 - ✅ **DO**: Store credentials in GitHub Secrets
-- ✅ **DO**: Use the `anon` public key (not service role)
+- ✅ **DO**: Use the `anon` public key (not service role) for REST API access
 - ❌ **DON'T**: Commit credentials to the repository
 - ❌ **DON'T**: Share backup files publicly (they contain your data)
+
+**For Restores:**
+- ✅ **DO**: Use `DATABASE_URL` from environment variables (never hardcode it)
+- ✅ **DO**: Protect your database password - it grants full database access
+- ⚠️  **CAUTION**: The `DATABASE_URL` contains your database password in plaintext
+- ❌ **DON'T**: Share your `DATABASE_URL` or commit it to version control
+- ❌ **DON'T**: Use the database connection string in production application code (use Supabase client instead)
 
 ### Backup Files
 
@@ -421,6 +538,33 @@ Edit `.github/workflows/backup-database.yml`:
 **Recommendation**: Use both for maximum protection:
 - Supabase PITR: Quick recovery for recent issues
 - GitHub backups: Long-term archive and cost-effective fallback
+
+## Technical Details
+
+### Why Direct PostgreSQL Connection for Restore?
+
+The restore script uses `psql` (direct PostgreSQL connection) instead of the Supabase REST API because:
+
+| Feature | REST API | Direct PostgreSQL (`psql`) |
+|---------|----------|---------------------------|
+| **Identity Columns** | ❌ Cannot insert explicit IDs | ✅ Supports `OVERRIDING SYSTEM VALUE` |
+| **ID Preservation** | ❌ IDs get regenerated | ✅ Original IDs preserved |
+| **Foreign Keys** | ⚠️  May break relationships | ✅ Maintains all relationships |
+| **Sequence Reset** | ⚠️  Manual step required | ✅ Automatic in script |
+| **Authentication** | Requires API key | Requires database password |
+| **Use Case** | Read-only operations | Full database operations |
+
+**Why this matters**: When restoring data, preserving the original IDs is critical because:
+- Match records reference specific player and team IDs
+- ELO history records reference specific matches
+- Breaking these relationships would corrupt your data
+
+### Backup vs Restore Methods
+
+| Operation | Method | Authentication | Why? |
+|-----------|--------|----------------|------|
+| **Backup** | Supabase REST API | `anon` key | Read-only, no special privileges needed |
+| **Restore** | Direct PostgreSQL | Database password | Requires `OVERRIDING SYSTEM VALUE` for identity columns |
 
 ## Alternative Backup Methods
 
