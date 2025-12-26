@@ -37,7 +37,7 @@ The Baby Foot ELO frontend is built with **Next.js 16 App Router** and follows a
 ### Key Characteristics
 
 - **45+ React components** organized by domain (players, teams, matches, rankings)
-- **31 ShadCN UI primitives** for consistent design system
+- **43 ShadCN UI primitives** for consistent design system
 - **Client-side data fetching** with `useEffect` and `useState`
 - **TanStack Table** for sortable/filterable tables
 - **Recharts** for ELO trend visualization
