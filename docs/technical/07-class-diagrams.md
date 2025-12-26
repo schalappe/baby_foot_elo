@@ -165,44 +165,40 @@ classDiagram
 ```mermaid
 classDiagram
     class PlayerRepository {
-        +createPlayer(name: string, elo?: number): Promise~Player~
-        +getPlayerById(playerId: number): Promise~Player~
-        +getPlayerByName(name: string): Promise~Player | null~
-        +getAllPlayers(): Promise~PlayerWithStatsRow[]~
-        +updatePlayerElo(playerId, newElo): Promise~void~
+        +createPlayer(name: string, elo?: number): Promise~PlayerDbRow~
+        +getPlayerById(playerId: number): Promise~PlayerDbRow~ ⚠throws
+        +getPlayerByName(name: string): Promise~PlayerDbRow | null~
+        +getAllPlayers(): Promise~PlayerWithStatsRow[]~ 📞RPC
         +batchUpdatePlayersElo(updates[]): Promise~void~
-        +updatePlayer(playerId, updates): Promise~Player~
-        +deletePlayerById(playerId): Promise~void~
-        +recordPlayerEloHistory(...): Promise~void~
-        +getPlayerEloHistory(playerId): Promise~PlayerEloHistoryRow[]~
+        +updatePlayer(playerId, updates): Promise~void~
+        +deletePlayerById(playerId): Promise~void~ ⚠throws
     }
 
     class TeamRepository {
         +normalizePlayerIds(p1, p2): [number, number]
-        +createTeamByPlayerIds(p1, p2, elo?): Promise~Team~
-        +getTeamById(teamId: number): Promise~Team | null~
-        +getTeamByPlayerIds(p1, p2): Promise~Team | null~
-        +getAllTeams(): Promise~TeamWithStatsRow[]~
-        +getTeamsByPlayerId(playerId): Promise~TeamWithStatsRow[]~
-        +getActiveTeamsWithStats(min, days): Promise~TeamWithStatsRow[]~
-        +updateTeamElo(teamId, newElo): Promise~void~
+        +createTeamByPlayerIds(p1, p2, elo?): Promise~number~
+        +getTeamById(teamId: number): Promise~TeamDbRow~ ⚠throws
+        +getTeamByPlayerIds(p1, p2): Promise~TeamDbRow | null~
+        +getAllTeams(limit?, offset?): Promise~TeamWithStatsRow[]~ 📞RPC
+        +getTeamsByPlayerId(playerId): Promise~TeamDbRow[]~
+        +getActiveTeamsWithStats(options?): Promise~TeamWithStatsRow[]~ 📞RPC
+        +updateTeam(teamId, updates): Promise~void~
         +batchUpdateTeamsElo(updates[]): Promise~void~
-        +deleteTeamById(teamId): Promise~void~
-        +recordTeamEloHistory(...): Promise~void~
+        +deleteTeamById(teamId): Promise~void~ ⚠throws
     }
 
     class MatchRepository {
         +createMatchByTeamIds(winner, loser, ...): Promise~number~
-        +getMatchById(matchId: number): Promise~Match | null~
-        +getAllMatches(options?): Promise~any[]~
-        +getMatchesByTeamId(teamId): Promise~any[]~
-        +getMatchesByPlayerId(playerId, limit?, offset?): Promise~Object~
-        +deleteMatchById(matchId): Promise~void~
+        +getMatchById(matchId: number): Promise~MatchDbRow~ ⚠throws
+        +getAllMatches(options?): Promise~MatchWithTeamsRow[]~ 📞RPC
+        +getMatchesByTeamId(teamId, options?): Promise~MatchWithTeamsRow[]~ 📞RPC
+        +getMatchesByPlayerId(playerId, options?): Promise~MatchWithTeamsRow[]~ 📞RPC
+        +deleteMatchById(matchId): Promise~void~ ⚠throws
     }
 
     class StatsRepository {
-        +getPlayerStats(playerId: number): Promise~PlayerStatsRow | null~
-        +getTeamStats(teamId: number): Promise~TeamStatsRow | null~
+        +getPlayerStats(playerId: number): Promise~PlayerStatsRow~ ⚠throws 📞RPC
+        +getTeamStats(teamId: number): Promise~TeamStatsRow~ ⚠throws 📞RPC
     }
 
     class PlayerEloHistoryRepository {
@@ -234,7 +230,24 @@ classDiagram
     StatsRepository ..> SupabaseClient : uses
     PlayerEloHistoryRepository ..> SupabaseClient : uses
     TeamEloHistoryRepository ..> SupabaseClient : uses
+
+    %% Legend annotations
+    note for PlayerRepository "⚠throws: Throws on not-found\n📞RPC: Uses Supabase RPC function"
 ```
+
+**Legend:**
+- `⚠throws`: Method throws exception on entity not found (never returns null)
+- `📞RPC`: Method uses Supabase RPC stored procedure for optimized queries
+
+**RPC Functions Used:**
+- `get_all_players_with_stats_optimized` - PlayerRepository.getAllPlayers()
+- `get_all_teams_with_stats_optimized` - TeamRepository.getAllTeams()
+- `get_active_teams_with_stats_batch` - TeamRepository.getActiveTeamsWithStats()
+- `get_all_matches_with_details` - MatchRepository.getAllMatches()
+- `get_team_match_history` - MatchRepository.getMatchesByTeamId()
+- `get_player_matches_json` - MatchRepository.getMatchesByPlayerId()
+- `get_player_full_stats_optimized` - StatsRepository.getPlayerStats()
+- `get_team_full_stats_optimized` - StatsRepository.getTeamStats()
 
 ---
 
