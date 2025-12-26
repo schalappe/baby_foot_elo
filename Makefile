@@ -146,7 +146,7 @@ supabase-reset:
 # Quality Gate (pre-commit)
 # ============================================================================
 
-quality: lint typecheck test
+quality: lint typecheck test-local
 	@echo ""
 	@echo "$(GREEN)============================================$(NC)"
 	@echo "$(GREEN)✓ All quality checks passed!$(NC)"

@@ -20,6 +20,7 @@ bun run supabase:start
 ```
 
 This command:
+
 - Starts PostgreSQL, PostgREST, Auth, Realtime, and Studio in Docker containers
 - Applies migrations from `supabase/migrations/`
 - Makes services available on localhost ports (default: 54321 for API)
@@ -43,6 +44,7 @@ bun run supabase:stop
 ### `.env` (Development)
 
 Used by `make dev` for the Next.js development server:
+
 ```env
 NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="your-production-anon-key"
@@ -51,6 +53,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY="your-production-anon-key"
 ### `.env.test` (Testing)
 
 Used by `vitest` for running tests:
+
 ```env
 NEXT_PUBLIC_SUPABASE_URL="http://127.0.0.1:54321"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGc..."  # Local Supabase default anon key
@@ -60,15 +63,15 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGc..."  # Local Supabase default anon key
 
 ## Available Scripts
 
-| Command | Description |
-|---------|-------------|
-| `bun run test` | Run tests using local Supabase (must be started first) |
-| `bun run test:run` | Same as `test` (runs once and exits) |
-| `bun run test:local` | Start Supabase, reset DB with migrations, run tests, stop (portable) |
-| `bun run supabase:start` | Start local Supabase containers |
-| `bun run supabase:stop` | Stop local Supabase containers |
-| `bun run supabase:status` | Check status of local Supabase services |
-| `bun run supabase:reset` | Reset database to initial migration state |
+| Command                   | Description                                                          |
+| ------------------------- | -------------------------------------------------------------------- |
+| `bun run test`            | Run tests using local Supabase (must be started first)               |
+| `bun run test:run`        | Same as `test` (runs once and exits)                                 |
+| `bun run test:local`      | Start Supabase, reset DB with migrations, run tests, stop (portable) |
+| `bun run supabase:start`  | Start local Supabase containers                                      |
+| `bun run supabase:stop`   | Stop local Supabase containers                                       |
+| `bun run supabase:status` | Check status of local Supabase services                              |
+| `bun run supabase:reset`  | Reset database to initial migration state                            |
 
 ## Workflow
 
@@ -93,6 +96,7 @@ bun run test:local
 ```
 
 This command is portable and works on any machine with Docker and Supabase CLI installed. It:
+
 1. Starts local Supabase containers
 2. Resets the database and applies all migrations from `supabase/migrations/`
 3. Runs the test suite
@@ -102,14 +106,14 @@ This command is portable and works on any machine with Docker and Supabase CLI i
 
 When running `supabase start`, services are available on:
 
-| Service | Port | Description |
-|---------|------|-------------|
-| API (Kong) | 54321 | Main API gateway (PostgREST) |
-| Database | 54322 | Direct PostgreSQL access |
-| Studio | 54323 | Supabase Studio UI (http://localhost:54323) |
-| Inbucket | 54324 | Email testing |
-| Auth | 54325 | Auth service |
-| Realtime | 54326 | Realtime subscriptions |
+| Service    | Port  | Description                                 |
+| ---------- | ----- | ------------------------------------------- |
+| API (Kong) | 54321 | Main API gateway (PostgREST)                |
+| Database   | 54322 | Direct PostgreSQL access                    |
+| Studio     | 54323 | Supabase Studio UI (http://localhost:54323) |
+| Inbucket   | 54324 | Email testing                               |
+| Auth       | 54325 | Auth service                                |
+| Realtime   | 54326 | Realtime subscriptions                      |
 
 **Studio UI**: Access the local Supabase dashboard at http://localhost:54323 to inspect data, run queries, and manage the schema.
 
@@ -144,11 +148,13 @@ bun run supabase:reset
 **Problem**: Tests fail with connection errors.
 
 **Solution**: Ensure local Supabase is running:
+
 ```bash
 bun run supabase:status
 ```
 
 If not running:
+
 ```bash
 bun run supabase:start
 ```
@@ -164,6 +170,7 @@ bun run supabase:start
 **Problem**: Tests interfere with each other due to leftover data.
 
 **Solution**: Reset the database:
+
 ```bash
 bun run supabase:reset
 ```

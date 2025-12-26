@@ -138,10 +138,13 @@ async function getAllTeamsImpl(
 ): Promise<TeamWithStatsRow[]> {
   const client = getSupabaseClient();
 
-  const { data, error } = await client.rpc("get_all_teams_with_stats", {
-    p_skip: offset,
-    p_limit: limit,
-  });
+  const { data, error } = await client.rpc(
+    "get_all_teams_with_stats_optimized",
+    {
+      p_skip: offset,
+      p_limit: limit,
+    },
+  );
 
   if (error) {
     throw new TeamOperationError(`Failed to get all teams: ${error.message}`);
