@@ -23,11 +23,11 @@ The Baby Foot ELO application uses PostgreSQL (via Supabase) with a normalized r
 │ created_at                  │         │
 │ last_match_at               │         │
 └─────────────────────────────┘         │
-        ▲                                │
-        │                                │
-        │                                │
-        │ FK                             │ FK
-        │                                │
+        ▲                               │
+        │                               │
+        │                               │
+        │ FK                            │ FK
+        │                               │
 ┌───────┴─────────────────────┐         │
 │         teams               │         │
 ├─────────────────────────────┤         │
@@ -38,10 +38,10 @@ The Baby Foot ELO application uses PostgreSQL (via Supabase) with a normalized r
 │ created_at                  │         │
 │ last_match_at               │         │
 └─────────────────────────────┘         │
-        ▲                                │
-        │                                │
-        │ FK                             │
-        │                                │
+        ▲                               │
+        │                               │
+        │ FK                            │
+        │                               │
 ┌───────┴─────────────────────┐         │
 │        matches              │         │
 ├─────────────────────────────┤         │
@@ -52,12 +52,12 @@ The Baby Foot ELO application uses PostgreSQL (via Supabase) with a normalized r
 │ played_at                   │         │
 │ notes                       │         │
 └─────────────────────────────┘         │
-        │                                │
-        │                                │
-        │ FK                             │
-        │                                │
-        ├────────────────────────────────┤
-        │                                │
+        │                               │
+        │                               │
+        │ FK                            │
+        │                               │
+        ├───────────────────────────────┤
+        │                               │
 ┌───────▼─────────────────────┐  ┌──────▼──────────────────────┐
 │    player_history           │  │     team_history            │
 ├─────────────────────────────┤  ├─────────────────────────────┤
@@ -274,7 +274,7 @@ The application uses custom PostgreSQL functions (RPC) for optimized data retrie
 
 **Performance**: 41x faster than previous ORM-based approach using CTEs for pre-aggregation.
 
-**SQL Location**: `supabase/get_all_players_with_stats.sql`
+**SQL Location**: `supabase/functions/get_all_players_with_stats.sql`
 
 **Returns**: Array of player records with:
 - All `players` table columns
@@ -321,7 +321,7 @@ SELECT * FROM aggregated_stats ORDER BY rank;
 
 **Purpose**: Retrieve all teams with computed statistics (wins, losses, win rate, rank).
 
-**SQL Location**: `supabase/get_all_teams_with_stats.sql`
+**SQL Location**: `supabase/functions/get_all_teams_with_stats.sql`
 
 **Returns**: Array of team records with:
 - All `teams` table columns
@@ -340,7 +340,7 @@ SELECT * FROM aggregated_stats ORDER BY rank;
 
 **Purpose**: Retrieve match history for a specific player with ELO changes.
 
-**SQL Location**: `supabase/get_player_matches_json.sql`
+**SQL Location**: `supabase/functions/get_player_matches_json.sql`
 
 **Parameters**:
 - `player_id_param` (INTEGER) - Player to fetch matches for
@@ -382,7 +382,7 @@ ORDER BY m.played_at DESC;
 
 **Purpose**: Retrieve match history for a specific team with ELO changes.
 
-**SQL Location**: `supabase/get_team_match_history.sql`
+**SQL Location**: `supabase/functions/get_team_match_history.sql`
 
 **Parameters**:
 - `team_id_param` (INTEGER) - Team to fetch matches for
@@ -395,7 +395,7 @@ ORDER BY m.played_at DESC;
 
 **Purpose**: Retrieve all matches with full team and player details.
 
-**SQL Location**: `supabase/get_all_matches_with_details.sql` (inferred)
+**SQL Location**: `supabase/functions/get_all_matches_with_details.sql` (inferred)
 
 **Returns**: Match records with nested team/player objects for display.
 
@@ -405,7 +405,7 @@ ORDER BY m.played_at DESC;
 
 **Purpose**: Comprehensive player statistics including ELO progression, streaks, and performance metrics.
 
-**SQL Location**: `supabase/get_player_full_stats.sql`
+**SQL Location**: `supabase/functions/get_player_full_stats.sql`
 
 **Parameters**:
 - `player_id_param` (INTEGER)
@@ -572,4 +572,3 @@ INSERT INTO players (name, global_elo) VALUES
 
 - `01-architecture-overview.md` - System architecture context
 - `03-elo-calculation-system.md` - ELO algorithm details
-- `06-repository-layer.md` - Data access patterns

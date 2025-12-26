@@ -28,8 +28,6 @@ docs/
     └── local-testing.md               # Local testing with Supabase
 ```
 
-**Total**: 13 files, 3,900+ lines of documentation
-
 ---
 
 ## 📚 Quick Navigation
@@ -125,8 +123,6 @@ Guides for deployment, backup, testing, and maintenance.
    # Open http://localhost:3000
    ```
 
-[→ Full Setup Guide](../README.md#installation)
-
 ### Understanding the Codebase (30 minutes)
 
 **Recommended reading order:**
@@ -165,8 +161,6 @@ lib/db/repositories/   # Data access layer
 supabase/              # SQL functions (RPC)
 ```
 
-[→ Detailed Component Reference](./technical/09-component-reference.md) *(coming soon)*
-
 ### Development Workflow
 
 **Working on a feature:**
@@ -194,8 +188,6 @@ git commit -m "feat: add my feature"
 # 7. Push and create PR
 git push origin feature/my-feature
 ```
-
-[→ Contributing Guide](../CONTRIBUTING.md) *(if exists)*
 
 ---
 
@@ -261,8 +253,6 @@ curl -X POST http://localhost:3000/api/v1/matches \
   }
 }
 ```
-
-[→ Full API Reference](./technical/07-api-reference.md) *(coming soon)*
 
 ---
 
