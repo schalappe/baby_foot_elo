@@ -134,31 +134,23 @@ export async function deleteTeam(teamId: number): Promise<void> {
   await deleteTeamById(teamId);
 }
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
 // [>]: Minimum matches required to appear in rankings.
 const MIN_MATCHES_FOR_RANKING = 10;
 
 // [>]: Get active teams for rankings display.
 // Active = has more than MIN_MATCHES_FOR_RANKING matches AND last match within daysSinceLastMatch days.
-// Uses dedicated query that only fetches teams with match history.
+// Filtering is now done in SQL for performance.
 export async function getActiveTeamRankings(options?: {
   daysSinceLastMatch?: number;
 }): Promise<TeamResponse[]> {
   const { daysSinceLastMatch = 180 } = options ?? {};
 
-  // [>]: Fetch only teams that have played matches.
-  const teams = await getActiveTeamsWithStats();
-  const mapped = teams.map(mapToTeamResponse);
-
-  // [>]: Filter by minimum matches and recency.
-  const now = Date.now();
-  const cutoffMs = daysSinceLastMatch * MS_PER_DAY;
-
-  return mapped.filter((team) => {
-    if (team.matches_played <= MIN_MATCHES_FOR_RANKING) return false;
-    if (!team.last_match_at) return false;
-    const lastMatchMs = new Date(team.last_match_at).getTime();
-    return now - lastMatchMs < cutoffMs;
+  // [>]: Fetch pre-filtered teams from optimized batch RPC.
+  // Filtering by minMatches and daysSinceLastMatch is now done in SQL.
+  const teams = await getActiveTeamsWithStats({
+    daysSinceLastMatch,
+    minMatches: MIN_MATCHES_FOR_RANKING,
   });
+
+  return teams.map(mapToTeamResponse);
 }

@@ -85,6 +85,8 @@ ALTER TABLE public.teams_elo_history
 CREATE INDEX idx_matches_winner_team_id ON public.matches USING btree (winner_team_id);
 CREATE INDEX idx_matches_loser_team_id ON public.matches USING btree (loser_team_id);
 CREATE INDEX idx_matches_played_at ON public.matches USING btree (played_at);
+-- [>]: Composite index for OR queries on winner/loser team lookups.
+CREATE INDEX idx_matches_winner_loser_played ON public.matches USING btree (winner_team_id, loser_team_id, played_at DESC);
 
 -- Players indexes
 CREATE INDEX idx_players_name ON public.players USING btree (name);
@@ -98,6 +100,8 @@ CREATE INDEX idx_players_elohist_date ON public.players_elo_history USING btree 
 CREATE INDEX idx_teams_player1_id ON public.teams USING btree (player1_id);
 CREATE INDEX idx_teams_player2_id ON public.teams USING btree (player2_id);
 CREATE UNIQUE INDEX idx_teams_player_pair_order_insensitive ON public.teams USING btree (LEAST(player1_id, player2_id), GREATEST(player1_id, player2_id));
+-- [>]: Composite index for player pair lookups.
+CREATE INDEX idx_teams_players ON public.teams USING btree (player1_id, player2_id);
 
 -- Teams ELO history indexes
 CREATE INDEX idx_teams_elohist_team_id ON public.teams_elo_history USING btree (team_id);
@@ -105,330 +109,419 @@ CREATE INDEX idx_teams_elohist_match_id ON public.teams_elo_history USING btree 
 CREATE INDEX idx_teams_elohist_date ON public.teams_elo_history USING btree (date);
 
 -- ============================================
--- 4. CREATE FUNCTIONS
+-- 4. CREATE FUNCTIONS (Optimized with CTEs)
 -- ============================================
 
--- Helper function to get stats for a single player
-CREATE OR REPLACE FUNCTION public.get_player_stats(p_player_id INTEGER)
+-- Get full stats for a single player (optimized)
+CREATE OR REPLACE FUNCTION public.get_player_full_stats_optimized(p_player_id INTEGER)
 RETURNS jsonb
-LANGUAGE plpgsql
+LANGUAGE sql
+STABLE
 AS $function$
-DECLARE
-  total_matches INTEGER;
-  win_count INTEGER;
-  loss_count INTEGER;
-  win_rate NUMERIC;
-  last_match_date TIMESTAMPTZ;
-BEGIN
-  SELECT COUNT(m.match_id)
-  INTO total_matches
-  FROM matches m
-  INNER JOIN teams winner_team ON m.winner_team_id = winner_team.team_id
-  INNER JOIN teams loser_team ON m.loser_team_id = loser_team.team_id
-  WHERE (winner_team.player1_id = p_player_id OR winner_team.player2_id = p_player_id)
-     OR (loser_team.player1_id = p_player_id OR loser_team.player2_id = p_player_id);
-
-  SELECT COUNT(m.match_id)
-  INTO win_count
-  FROM matches m
-  INNER JOIN teams winner_team ON m.winner_team_id = winner_team.team_id
-  WHERE (winner_team.player1_id = p_player_id OR winner_team.player2_id = p_player_id);
-
-  SELECT COUNT(m.match_id)
-  INTO loss_count
-  FROM matches m
-  INNER JOIN teams loser_team ON m.loser_team_id = loser_team.team_id
-  WHERE (loser_team.player1_id = p_player_id OR loser_team.player2_id = p_player_id);
-
-  SELECT m.played_at
-  INTO last_match_date
-  FROM matches m
-  INNER JOIN teams winner_team ON m.winner_team_id = winner_team.team_id
-  INNER JOIN teams loser_team ON m.loser_team_id = loser_team.team_id
-  WHERE (winner_team.player1_id = p_player_id OR winner_team.player2_id = p_player_id)
-     OR (loser_team.player1_id = p_player_id OR loser_team.player2_id = p_player_id)
-  ORDER BY m.played_at DESC
-  LIMIT 1;
-
-  IF COALESCE(total_matches, 0) > 0 THEN
-    win_rate := win_count::NUMERIC / total_matches::NUMERIC;
-  ELSE
-    win_rate := 0;
-  END IF;
-
-  RETURN jsonb_build_object(
-    'matches_played', COALESCE(total_matches, 0),
-    'wins', COALESCE(win_count, 0),
-    'losses', COALESCE(loss_count, 0),
-    'win_rate', ROUND(COALESCE(win_rate, 0), 4),
-    'last_match_at', last_match_date
-  );
-END;
+  WITH player_stats AS (
+    SELECT
+      COUNT(*) AS matches_played,
+      COUNT(*) FILTER (WHERE is_winner) AS wins,
+      COUNT(*) FILTER (WHERE NOT is_winner) AS losses,
+      MAX(played_at) AS last_match_at
+    FROM (
+      SELECT m.played_at, true AS is_winner
+      FROM matches m
+      JOIN teams t ON t.team_id = m.winner_team_id
+      WHERE t.player1_id = p_player_id OR t.player2_id = p_player_id
+      UNION ALL
+      SELECT m.played_at, false AS is_winner
+      FROM matches m
+      JOIN teams t ON t.team_id = m.loser_team_id
+      WHERE t.player1_id = p_player_id OR t.player2_id = p_player_id
+    ) player_matches
+  )
+  SELECT jsonb_build_object(
+    'player_id', p.player_id,
+    'name', p.name,
+    'global_elo', p.global_elo,
+    'created_at', p.created_at,
+    'matches_played', COALESCE(ps.matches_played, 0),
+    'wins', COALESCE(ps.wins, 0),
+    'losses', COALESCE(ps.losses, 0),
+    'win_rate', CASE WHEN COALESCE(ps.matches_played, 0) > 0
+                     THEN ROUND(ps.wins::NUMERIC / ps.matches_played::NUMERIC, 4)
+                     ELSE 0 END,
+    'last_match_at', ps.last_match_at
+  )
+  FROM players p
+  CROSS JOIN player_stats ps
+  WHERE p.player_id = p_player_id;
 $function$;
 
--- Get full stats for a single player
-CREATE OR REPLACE FUNCTION public.get_player_full_stats(p_player_id INTEGER)
-RETURNS jsonb
-LANGUAGE plpgsql
-AS $function$
-DECLARE
-  v_player_name TEXT;
-  v_global_elo INT;
-  v_created_at TIMESTAMPTZ;
-  v_total_matches INTEGER;
-  v_win_count INTEGER;
-  v_loss_count INTEGER;
-  v_last_match_date TIMESTAMPTZ;
-  v_win_rate NUMERIC;
-BEGIN
-  SELECT name, global_elo, created_at
-  INTO v_player_name, v_global_elo, v_created_at
-  FROM players
-  WHERE player_id = p_player_id;
-
-  SELECT COUNT(m.match_id)
-  INTO v_total_matches
-  FROM matches m
-  INNER JOIN teams winner_team ON m.winner_team_id = winner_team.team_id
-  INNER JOIN teams loser_team ON m.loser_team_id = loser_team.team_id
-  WHERE (winner_team.player1_id = p_player_id OR winner_team.player2_id = p_player_id)
-     OR (loser_team.player1_id = p_player_id OR loser_team.player2_id = p_player_id);
-
-  SELECT COUNT(m.match_id)
-  INTO v_win_count
-  FROM matches m
-  INNER JOIN teams winner_team ON m.winner_team_id = winner_team.team_id
-  WHERE winner_team.player1_id = p_player_id OR winner_team.player2_id = p_player_id;
-
-  SELECT COUNT(m.match_id)
-  INTO v_loss_count
-  FROM matches m
-  INNER JOIN teams loser_team ON m.loser_team_id = loser_team.team_id
-  WHERE loser_team.player1_id = p_player_id OR loser_team.player2_id = p_player_id;
-
-  SELECT m.played_at
-  INTO v_last_match_date
-  FROM matches m
-  INNER JOIN teams winner_team ON m.winner_team_id = winner_team.team_id
-  INNER JOIN teams loser_team ON m.loser_team_id = loser_team.team_id
-  WHERE winner_team.player1_id = p_player_id
-    OR winner_team.player2_id = p_player_id
-    OR loser_team.player1_id = p_player_id
-    OR loser_team.player2_id = p_player_id
-  ORDER BY m.played_at DESC
-  LIMIT 1;
-
-  IF v_total_matches > 0 THEN
-    v_win_rate := (v_win_count::NUMERIC / v_total_matches::NUMERIC) * 100;
-  ELSE
-    v_win_rate := 0;
-  END IF;
-
-  RETURN jsonb_build_object(
-    'player_id', p_player_id,
-    'name', v_player_name,
-    'global_elo', v_global_elo,
-    'created_at', v_created_at,
-    'matches_played', COALESCE(v_total_matches, 0),
-    'wins', COALESCE(v_win_count, 0),
-    'losses', COALESCE(v_loss_count, 0),
-    'last_match_at', v_last_match_date,
-    'win_rate', v_win_rate
-  );
-END;
-$function$;
-
--- Get all players with stats
-CREATE OR REPLACE FUNCTION public.get_all_players_with_stats()
+-- Get all players with stats (optimized)
+CREATE OR REPLACE FUNCTION public.get_all_players_with_stats_optimized()
 RETURNS SETOF jsonb
-LANGUAGE plpgsql
+LANGUAGE sql
+STABLE
 AS $function$
-BEGIN
-  RETURN QUERY
-  SELECT
-    jsonb_build_object(
-      'player_id', p.player_id,
-      'name', p.name,
-      'global_elo', p.global_elo,
-      'created_at', p.created_at
-    ) || get_player_stats(p.player_id)
-  FROM
-    players p
-  ORDER BY
-    p.global_elo DESC;
-END;
+  WITH player_stats AS (
+    SELECT
+      player_id,
+      COUNT(*) AS matches_played,
+      COUNT(*) FILTER (WHERE is_winner) AS wins,
+      COUNT(*) FILTER (WHERE NOT is_winner) AS losses,
+      MAX(played_at) AS last_match_at
+    FROM (
+      SELECT
+        UNNEST(ARRAY[t.player1_id, t.player2_id]) AS player_id,
+        m.played_at,
+        true AS is_winner
+      FROM matches m
+      JOIN teams t ON t.team_id = m.winner_team_id
+      UNION ALL
+      SELECT
+        UNNEST(ARRAY[t.player1_id, t.player2_id]) AS player_id,
+        m.played_at,
+        false AS is_winner
+      FROM matches m
+      JOIN teams t ON t.team_id = m.loser_team_id
+    ) player_matches
+    GROUP BY player_id
+  )
+  SELECT jsonb_build_object(
+    'player_id', p.player_id,
+    'name', p.name,
+    'global_elo', p.global_elo,
+    'created_at', p.created_at,
+    'matches_played', COALESCE(ps.matches_played, 0),
+    'wins', COALESCE(ps.wins, 0),
+    'losses', COALESCE(ps.losses, 0),
+    'win_rate', CASE WHEN COALESCE(ps.matches_played, 0) > 0
+                     THEN ROUND(ps.wins::NUMERIC / ps.matches_played::NUMERIC, 4)
+                     ELSE 0 END,
+    'last_match_at', ps.last_match_at,
+    'rank', RANK() OVER (ORDER BY p.global_elo DESC, p.created_at ASC)
+  )
+  FROM players p
+  LEFT JOIN player_stats ps ON ps.player_id = p.player_id
+  ORDER BY p.global_elo DESC;
 $function$;
 
--- Helper function to get calculated stats for a team
-CREATE OR REPLACE FUNCTION public.get_team_calculated_stats(p_team_id INTEGER)
+-- Get full stats for a team (optimized)
+CREATE OR REPLACE FUNCTION public.get_team_full_stats_optimized(p_team_id INTEGER)
 RETURNS jsonb
-LANGUAGE plpgsql
+LANGUAGE sql
+STABLE
 AS $function$
-DECLARE
-  team_matches_played INTEGER;
-  team_wins INTEGER;
-  team_losses INTEGER;
-  team_win_rate NUMERIC;
-  team_last_match_at TIMESTAMPTZ;
-BEGIN
-  SELECT COUNT(match_id)
-  INTO team_matches_played
-  FROM matches
-  WHERE winner_team_id = p_team_id OR loser_team_id = p_team_id;
-
-  SELECT COUNT(match_id)
-  INTO team_wins
-  FROM matches
-  WHERE winner_team_id = p_team_id;
-
-  SELECT COUNT(match_id)
-  INTO team_losses
-  FROM matches
-  WHERE loser_team_id = p_team_id;
-
-  IF COALESCE(team_matches_played, 0) > 0 THEN
-    team_win_rate := team_wins::NUMERIC / team_matches_played::NUMERIC;
-  ELSE
-    team_win_rate := 0;
-  END IF;
-
-  SELECT MAX(played_at)
-  INTO team_last_match_at
-  FROM matches
-  WHERE winner_team_id = p_team_id OR loser_team_id = p_team_id;
-
-  RETURN jsonb_build_object(
-    'matches_played', COALESCE(team_matches_played, 0),
-    'wins', COALESCE(team_wins, 0),
-    'losses', COALESCE(team_losses, 0),
-    'win_rate', ROUND(COALESCE(team_win_rate, 0), 4),
-    'last_match_at', team_last_match_at
-  );
-END;
+  WITH
+  team_stats AS (
+    SELECT
+      COUNT(*) AS matches_played,
+      COUNT(*) FILTER (WHERE is_winner) AS wins,
+      COUNT(*) FILTER (WHERE NOT is_winner) AS losses,
+      MAX(played_at) AS last_match_at
+    FROM (
+      SELECT played_at, true AS is_winner
+      FROM matches WHERE winner_team_id = p_team_id
+      UNION ALL
+      SELECT played_at, false AS is_winner
+      FROM matches WHERE loser_team_id = p_team_id
+    ) team_matches
+  ),
+  player_stats AS (
+    SELECT
+      player_id,
+      COUNT(*) AS matches_played,
+      COUNT(*) FILTER (WHERE is_winner) AS wins,
+      COUNT(*) FILTER (WHERE NOT is_winner) AS losses,
+      MAX(played_at) AS last_match_at
+    FROM (
+      SELECT
+        UNNEST(ARRAY[t.player1_id, t.player2_id]) AS player_id,
+        m.played_at,
+        true AS is_winner
+      FROM matches m
+      JOIN teams t ON t.team_id = m.winner_team_id
+      UNION ALL
+      SELECT
+        UNNEST(ARRAY[t.player1_id, t.player2_id]) AS player_id,
+        m.played_at,
+        false AS is_winner
+      FROM matches m
+      JOIN teams t ON t.team_id = m.loser_team_id
+    ) player_matches
+    GROUP BY player_id
+  )
+  SELECT jsonb_build_object(
+    'team_id', t.team_id,
+    'player1_id', t.player1_id,
+    'player2_id', t.player2_id,
+    'global_elo', t.global_elo,
+    'created_at', t.created_at,
+    'matches_played', COALESCE(ts.matches_played, 0),
+    'wins', COALESCE(ts.wins, 0),
+    'losses', COALESCE(ts.losses, 0),
+    'win_rate', CASE WHEN COALESCE(ts.matches_played, 0) > 0
+                     THEN ROUND(ts.wins::NUMERIC / ts.matches_played::NUMERIC, 4)
+                     ELSE 0 END,
+    'last_match_at', ts.last_match_at,
+    'player1', jsonb_build_object(
+      'player_id', p1.player_id,
+      'name', p1.name,
+      'global_elo', p1.global_elo,
+      'created_at', p1.created_at,
+      'matches_played', COALESCE(ps1.matches_played, 0),
+      'wins', COALESCE(ps1.wins, 0),
+      'losses', COALESCE(ps1.losses, 0),
+      'win_rate', CASE WHEN COALESCE(ps1.matches_played, 0) > 0
+                       THEN ROUND(ps1.wins::NUMERIC / ps1.matches_played::NUMERIC, 4)
+                       ELSE 0 END,
+      'last_match_at', ps1.last_match_at
+    ),
+    'player2', jsonb_build_object(
+      'player_id', p2.player_id,
+      'name', p2.name,
+      'global_elo', p2.global_elo,
+      'created_at', p2.created_at,
+      'matches_played', COALESCE(ps2.matches_played, 0),
+      'wins', COALESCE(ps2.wins, 0),
+      'losses', COALESCE(ps2.losses, 0),
+      'win_rate', CASE WHEN COALESCE(ps2.matches_played, 0) > 0
+                       THEN ROUND(ps2.wins::NUMERIC / ps2.matches_played::NUMERIC, 4)
+                       ELSE 0 END,
+      'last_match_at', ps2.last_match_at
+    )
+  )
+  FROM teams t
+  CROSS JOIN team_stats ts
+  JOIN players p1 ON p1.player_id = t.player1_id
+  JOIN players p2 ON p2.player_id = t.player2_id
+  LEFT JOIN player_stats ps1 ON ps1.player_id = t.player1_id
+  LEFT JOIN player_stats ps2 ON ps2.player_id = t.player2_id
+  WHERE t.team_id = p_team_id;
 $function$;
 
--- Get full stats for a team
-CREATE OR REPLACE FUNCTION public.get_team_full_stats(p_team_id INTEGER)
-RETURNS jsonb
-LANGUAGE plpgsql
-AS $function$
-DECLARE
-  v_team_id INT;
-  v_player1_id INT;
-  v_player2_id INT;
-  v_global_elo INT;
-  v_created_at TIMESTAMPTZ;
-  v_total_matches INTEGER;
-  v_win_count INTEGER;
-  v_loss_count INTEGER;
-  v_last_match_date TIMESTAMPTZ;
-  v_win_rate NUMERIC;
-BEGIN
-  SELECT team_id, player1_id, player2_id, global_elo, created_at
-  INTO v_team_id, v_player1_id, v_player2_id, v_global_elo, v_created_at
-  FROM teams
-  WHERE team_id = p_team_id;
-
-  SELECT COUNT(m.match_id)
-  INTO v_total_matches
-  FROM matches m
-  WHERE winner_team_id = p_team_id OR loser_team_id = p_team_id;
-
-  SELECT COUNT(m.match_id)
-  INTO v_win_count
-  FROM matches m
-  WHERE winner_team_id = p_team_id;
-
-  SELECT COUNT(m.match_id)
-  INTO v_loss_count
-  FROM matches m
-  WHERE loser_team_id = p_team_id;
-
-  SELECT m.played_at
-  INTO v_last_match_date
-  FROM matches m
-  WHERE winner_team_id = p_team_id OR loser_team_id = p_team_id
-  ORDER BY m.played_at DESC
-  LIMIT 1;
-
-  IF v_total_matches > 0 THEN
-    v_win_rate := (v_win_count::NUMERIC / v_total_matches::NUMERIC) * 100;
-  ELSE
-    v_win_rate := 0;
-  END IF;
-
-  RETURN jsonb_build_object(
-    'team_id', v_team_id,
-    'player1_id', v_player1_id,
-    'player2_id', v_player2_id,
-    'player1', COALESCE(get_player_full_stats(v_player1_id), '{}'::jsonb),
-    'player2', COALESCE(get_player_full_stats(v_player2_id), '{}'::jsonb),
-    'global_elo', v_global_elo,
-    'created_at', v_created_at,
-    'matches_played', COALESCE(v_total_matches, 0),
-    'wins', COALESCE(v_win_count, 0),
-    'losses', COALESCE(v_loss_count, 0),
-    'last_match_at', v_last_match_date,
-    'win_rate', v_win_rate
-  );
-END;
-$function$;
-
--- Get all teams with stats
-CREATE OR REPLACE FUNCTION public.get_all_teams_with_stats(p_skip INTEGER DEFAULT 0, p_limit INTEGER DEFAULT 100)
+-- Get all teams with stats (optimized)
+CREATE OR REPLACE FUNCTION public.get_all_teams_with_stats_optimized(p_skip INTEGER DEFAULT 0, p_limit INTEGER DEFAULT 100)
 RETURNS SETOF jsonb
-LANGUAGE plpgsql
+LANGUAGE sql
+STABLE
 AS $function$
-BEGIN
-  RETURN QUERY
-  WITH ranked_teams AS (
+  WITH
+  team_stats AS (
+    SELECT
+      team_id,
+      COUNT(*) AS matches_played,
+      COUNT(*) FILTER (WHERE is_winner) AS wins,
+      COUNT(*) FILTER (WHERE NOT is_winner) AS losses,
+      MAX(played_at) AS last_match_at
+    FROM (
+      SELECT winner_team_id AS team_id, played_at, true AS is_winner FROM matches
+      UNION ALL
+      SELECT loser_team_id AS team_id, played_at, false AS is_winner FROM matches
+    ) team_matches
+    GROUP BY team_id
+  ),
+  player_stats AS (
+    SELECT
+      player_id,
+      COUNT(*) AS matches_played,
+      COUNT(*) FILTER (WHERE is_winner) AS wins,
+      COUNT(*) FILTER (WHERE NOT is_winner) AS losses,
+      MAX(played_at) AS last_match_at
+    FROM (
+      SELECT
+        UNNEST(ARRAY[t.player1_id, t.player2_id]) AS player_id,
+        m.played_at,
+        true AS is_winner
+      FROM matches m
+      JOIN teams t ON t.team_id = m.winner_team_id
+      UNION ALL
+      SELECT
+        UNNEST(ARRAY[t.player1_id, t.player2_id]) AS player_id,
+        m.played_at,
+        false AS is_winner
+      FROM matches m
+      JOIN teams t ON t.team_id = m.loser_team_id
+    ) player_matches
+    GROUP BY player_id
+  ),
+  ranked_teams AS (
     SELECT
       t.team_id,
       t.player1_id,
       t.player2_id,
-      t.global_elo AS team_global_elo,
-      t.created_at AS team_created_at,
-      RANK() OVER (ORDER BY t.global_elo DESC, t.created_at ASC) AS team_rank
+      t.global_elo,
+      t.created_at,
+      COALESCE(ts.matches_played, 0) AS matches_played,
+      COALESCE(ts.wins, 0) AS wins,
+      COALESCE(ts.losses, 0) AS losses,
+      ts.last_match_at,
+      CASE WHEN COALESCE(ts.matches_played, 0) > 0
+           THEN ROUND(ts.wins::NUMERIC / ts.matches_played::NUMERIC, 4)
+           ELSE 0 END AS win_rate,
+      RANK() OVER (ORDER BY t.global_elo DESC, t.created_at ASC) AS rank
     FROM teams t
+    LEFT JOIN team_stats ts ON ts.team_id = t.team_id
   )
-  SELECT
-    jsonb_build_object(
-      'team_id', rt.team_id,
-      'global_elo', rt.team_global_elo,
-      'created_at', rt.team_created_at,
-      'player1_id', rt.player1_id,
-      'player2_id', rt.player2_id,
-      'rank', rt.team_rank
-    ) || get_team_calculated_stats(rt.team_id)
-      || jsonb_build_object(
-        'player1', COALESCE(
-            (SELECT jsonb_build_object(
-                        'player_id', p1.player_id,
-                        'name', p1.name,
-                        'global_elo', p1.global_elo,
-                        'created_at', p1.created_at
-                     ) || get_player_stats(p1.player_id)
-             FROM players p1 WHERE p1.player_id = rt.player1_id),
-            'null'::jsonb
-        ),
-        'player2', COALESCE(
-            (SELECT jsonb_build_object(
-                        'player_id', p2.player_id,
-                        'name', p2.name,
-                        'global_elo', p2.global_elo,
-                        'created_at', p2.created_at
-                     ) || get_player_stats(p2.player_id)
-             FROM players p2 WHERE p2.player_id = rt.player2_id),
-            'null'::jsonb
-        )
-      )
-  FROM
-    ranked_teams rt
-  ORDER BY
-    rt.team_rank ASC, rt.team_id ASC
+  SELECT jsonb_build_object(
+    'team_id', rt.team_id,
+    'player1_id', rt.player1_id,
+    'player2_id', rt.player2_id,
+    'global_elo', rt.global_elo,
+    'created_at', rt.created_at,
+    'matches_played', rt.matches_played,
+    'wins', rt.wins,
+    'losses', rt.losses,
+    'win_rate', rt.win_rate,
+    'last_match_at', rt.last_match_at,
+    'rank', rt.rank,
+    'player1', jsonb_build_object(
+      'player_id', p1.player_id,
+      'name', p1.name,
+      'global_elo', p1.global_elo,
+      'created_at', p1.created_at,
+      'matches_played', COALESCE(ps1.matches_played, 0),
+      'wins', COALESCE(ps1.wins, 0),
+      'losses', COALESCE(ps1.losses, 0),
+      'win_rate', CASE WHEN COALESCE(ps1.matches_played, 0) > 0
+                       THEN ROUND(ps1.wins::NUMERIC / ps1.matches_played::NUMERIC, 4)
+                       ELSE 0 END,
+      'last_match_at', ps1.last_match_at
+    ),
+    'player2', jsonb_build_object(
+      'player_id', p2.player_id,
+      'name', p2.name,
+      'global_elo', p2.global_elo,
+      'created_at', p2.created_at,
+      'matches_played', COALESCE(ps2.matches_played, 0),
+      'wins', COALESCE(ps2.wins, 0),
+      'losses', COALESCE(ps2.losses, 0),
+      'win_rate', CASE WHEN COALESCE(ps2.matches_played, 0) > 0
+                       THEN ROUND(ps2.wins::NUMERIC / ps2.matches_played::NUMERIC, 4)
+                       ELSE 0 END,
+      'last_match_at', ps2.last_match_at
+    )
+  )
+  FROM ranked_teams rt
+  JOIN players p1 ON p1.player_id = rt.player1_id
+  JOIN players p2 ON p2.player_id = rt.player2_id
+  LEFT JOIN player_stats ps1 ON ps1.player_id = rt.player1_id
+  LEFT JOIN player_stats ps2 ON ps2.player_id = rt.player2_id
+  ORDER BY rt.rank ASC, rt.team_id ASC
   OFFSET p_skip
   LIMIT p_limit;
-END;
+$function$;
+
+-- Get active teams with stats (batch - replaces N+1 pattern)
+CREATE OR REPLACE FUNCTION public.get_active_teams_with_stats_batch(
+  p_days_since_last_match INTEGER DEFAULT 180,
+  p_min_matches INTEGER DEFAULT 10
+)
+RETURNS SETOF jsonb
+LANGUAGE sql
+STABLE
+AS $function$
+  WITH
+  team_stats AS (
+    SELECT
+      team_id,
+      COUNT(*) AS matches_played,
+      COUNT(*) FILTER (WHERE is_winner) AS wins,
+      COUNT(*) FILTER (WHERE NOT is_winner) AS losses,
+      MAX(played_at) AS last_match_at
+    FROM (
+      SELECT winner_team_id AS team_id, played_at, true AS is_winner FROM matches
+      UNION ALL
+      SELECT loser_team_id AS team_id, played_at, false AS is_winner FROM matches
+    ) team_matches
+    GROUP BY team_id
+  ),
+  player_stats AS (
+    SELECT
+      player_id,
+      COUNT(*) AS matches_played,
+      COUNT(*) FILTER (WHERE is_winner) AS wins,
+      COUNT(*) FILTER (WHERE NOT is_winner) AS losses,
+      MAX(played_at) AS last_match_at
+    FROM (
+      SELECT
+        UNNEST(ARRAY[t.player1_id, t.player2_id]) AS player_id,
+        m.played_at,
+        true AS is_winner
+      FROM matches m
+      JOIN teams t ON t.team_id = m.winner_team_id
+      UNION ALL
+      SELECT
+        UNNEST(ARRAY[t.player1_id, t.player2_id]) AS player_id,
+        m.played_at,
+        false AS is_winner
+      FROM matches m
+      JOIN teams t ON t.team_id = m.loser_team_id
+    ) player_matches
+    GROUP BY player_id
+  ),
+  active_teams AS (
+    SELECT
+      t.team_id,
+      t.player1_id,
+      t.player2_id,
+      t.global_elo,
+      t.created_at,
+      ts.matches_played,
+      ts.wins,
+      ts.losses,
+      ts.last_match_at,
+      CASE WHEN ts.matches_played > 0
+           THEN ROUND(ts.wins::NUMERIC / ts.matches_played::NUMERIC, 4)
+           ELSE 0 END AS win_rate,
+      RANK() OVER (ORDER BY t.global_elo DESC, t.created_at ASC) AS rank
+    FROM teams t
+    JOIN team_stats ts ON ts.team_id = t.team_id
+    WHERE ts.matches_played >= p_min_matches
+      AND ts.last_match_at >= NOW() - (p_days_since_last_match || ' days')::INTERVAL
+  )
+  SELECT jsonb_build_object(
+    'team_id', at.team_id,
+    'player1_id', at.player1_id,
+    'player2_id', at.player2_id,
+    'global_elo', at.global_elo,
+    'created_at', at.created_at,
+    'matches_played', at.matches_played,
+    'wins', at.wins,
+    'losses', at.losses,
+    'win_rate', at.win_rate,
+    'last_match_at', at.last_match_at,
+    'rank', at.rank,
+    'player1', jsonb_build_object(
+      'player_id', p1.player_id,
+      'name', p1.name,
+      'global_elo', p1.global_elo,
+      'created_at', p1.created_at,
+      'matches_played', COALESCE(ps1.matches_played, 0),
+      'wins', COALESCE(ps1.wins, 0),
+      'losses', COALESCE(ps1.losses, 0),
+      'win_rate', CASE WHEN COALESCE(ps1.matches_played, 0) > 0
+                       THEN ROUND(ps1.wins::NUMERIC / ps1.matches_played::NUMERIC, 4)
+                       ELSE 0 END,
+      'last_match_at', ps1.last_match_at
+    ),
+    'player2', jsonb_build_object(
+      'player_id', p2.player_id,
+      'name', p2.name,
+      'global_elo', p2.global_elo,
+      'created_at', p2.created_at,
+      'matches_played', COALESCE(ps2.matches_played, 0),
+      'wins', COALESCE(ps2.wins, 0),
+      'losses', COALESCE(ps2.losses, 0),
+      'win_rate', CASE WHEN COALESCE(ps2.matches_played, 0) > 0
+                       THEN ROUND(ps2.wins::NUMERIC / ps2.matches_played::NUMERIC, 4)
+                       ELSE 0 END,
+      'last_match_at', ps2.last_match_at
+    )
+  )
+  FROM active_teams at
+  JOIN players p1 ON p1.player_id = at.player1_id
+  JOIN players p2 ON p2.player_id = at.player2_id
+  LEFT JOIN player_stats ps1 ON ps1.player_id = at.player1_id
+  LEFT JOIN player_stats ps2 ON ps2.player_id = at.player2_id
+  ORDER BY at.global_elo DESC, at.rank ASC;
 $function$;
 
 -- Get all matches with details
@@ -446,8 +539,8 @@ BEGIN
       'notes', m.notes,
       'winner_team_id', m.winner_team_id,
       'loser_team_id', m.loser_team_id,
-      'winner_team', get_team_full_stats(m.winner_team_id),
-      'loser_team', get_team_full_stats(m.loser_team_id)
+      'winner_team', get_team_full_stats_optimized(m.winner_team_id),
+      'loser_team', get_team_full_stats_optimized(m.loser_team_id)
     )
   FROM
     matches m
@@ -490,8 +583,8 @@ BEGIN
                     'difference', teh.difference
                 )
             ),
-            'winner_team', get_team_full_stats(m.winner_team_id),
-            'loser_team', get_team_full_stats(m.loser_team_id)
+            'winner_team', get_team_full_stats_optimized(m.winner_team_id),
+            'loser_team', get_team_full_stats_optimized(m.loser_team_id)
         )
     FROM
         teams_elo_history teh
