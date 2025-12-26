@@ -1,20 +1,19 @@
 /**
  * matchService.ts
  *
- * Provides API functions for fetching, creating, and retrieving matches from the backend.
- * Uses axios for HTTP requests. Used throughout the app for match-related data.
+ * Frontend API client for match-related operations.
+ * Uses axios for HTTP requests to Next.js API routes.
  *
  * Exports:
  *   - getMatches: Fetch all matches
  *   - createMatch: Create a new match
  */
-// frontend/services/matchService.ts
 import axios from "axios";
 import {
   Match,
   BackendMatchCreatePayload,
   BackendMatchWithEloResponse,
-} from "../types/index";
+} from "@/types/index";
 
 // [>]: Use relative URL to call Next.js API routes (same-origin).
 const API_URL = "/api/v1";

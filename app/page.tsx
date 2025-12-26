@@ -14,7 +14,7 @@
 import { useState, useEffect } from "react";
 import useSWR, { mutate } from "swr";
 import { Player } from "@/types/player.types";
-import { getPlayerRankings } from "../services/playerService";
+import { getPlayerRankings } from "@/lib/api/client/playerService";
 import { PlayerRankingsDisplay } from "../components/rankings/PlayerRankingsDisplay";
 import { Button } from "../components/ui/button";
 import {

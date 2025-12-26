@@ -22,7 +22,7 @@ import {
   FormMessage,
 } from "../ui/form";
 import { Input } from "../ui/input";
-import { createPlayer } from "../../services/playerService";
+import { createPlayer } from "@/lib/api/client/playerService";
 import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
