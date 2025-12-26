@@ -17,9 +17,7 @@ import {
   DELETE as playerDelete,
 } from "@/app/api/v1/players/[playerId]/route";
 import { GET as teamsGet, POST as teamsPost } from "@/app/api/v1/teams/route";
-import {
-  GET as teamGet,
-} from "@/app/api/v1/teams/[teamId]/route";
+import { GET as teamGet } from "@/app/api/v1/teams/[teamId]/route";
 import {
   GET as matchesGet,
   POST as matchesPost,
