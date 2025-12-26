@@ -131,15 +131,15 @@ export function TeamRankingsDisplay({
         />
       )}
 
-      {/* Other Teams - List */}
+      {/* Other Teams - Clean List */}
       {otherTeams.length > 0 && (
-        <Card className="shadow-lg border-2">
-          <CardHeader className="border-b-2 rounded-t-md">
-            <CardTitle className="text-xl font-bold tracking-tight text-primary">
+        <Card className="shadow-lg border-2 overflow-hidden">
+          <CardHeader className="py-5 px-6">
+            <CardTitle className="text-xl font-bold tracking-tight text-primary text-center">
               Autres Équipes
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             <TeamRankingTable
               data={otherTeams}
               isLoading={false}

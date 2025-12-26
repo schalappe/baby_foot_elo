@@ -1,9 +1,8 @@
 /**
  * RankingTable.tsx
  *
- * Displays a sortable, paginated ranking table for entities (players, teams, etc).
- * Built on top of TanStack Table and ShadCN UI table components.
- * Used for leaderboard and ranking pages.
+ * Championship-styled sortable, paginated ranking table for entities.
+ * Features enhanced row hover effects, better sorting indicators, and visual hierarchy.
  *
  * Exports:
  *   - RankingTable: Generic React.FC for ranking tables.
@@ -32,18 +31,11 @@ import {
 } from "../ui/table";
 import { Skeleton } from "../ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { Button } from "../ui/button";
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 
 /**
  * Props for the RankingTable component.
- *
- * @template T - Entity type for the table rows
- * @property data - Array of entities to display
- * @property columns - Column definitions for TanStack Table
- * @property isLoading - Whether the table is in loading state
- * @property error - Error object if loading failed
  */
 export interface RankingTableProps<T> {
   data: T[];
@@ -53,14 +45,7 @@ export interface RankingTableProps<T> {
 }
 
 /**
- * RankingTable component for displaying sortable, paginated rankings of entities.
- *
- * @template T - Entity type for the table rows
- * @param data - Array of entities to display
- * @param columns - Column definitions for TanStack Table
- * @param isLoading - Whether the table is in loading state
- * @param error - Error object if loading failed
- * @returns The rendered ranking table component
+ * Championship-styled ranking table for entities.
  */
 export function RankingTable<T>({
   data,
@@ -93,18 +78,23 @@ export function RankingTable<T>({
     globalFilterFn: "includesString",
   });
 
-  // Skeleton rows for loading
   const skeletonRows = Array.from({ length: 5 });
 
   return (
     <div className="w-full">
-      <div className="rounded-md border">
+      <div className="overflow-hidden">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow
+                key={headerGroup.id}
+                className="border-b hover:bg-transparent"
+              >
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="text-center">
+                  <TableHead
+                    key={header.id}
+                    className="text-center font-semibold text-muted-foreground py-4 bg-transparent"
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -119,10 +109,10 @@ export function RankingTable<T>({
           <TableBody>
             {isLoading ? (
               skeletonRows.map((_, idx) => (
-                <TableRow key={idx}>
+                <TableRow key={idx} className="border-b">
                   {columns.map((col, i) => (
-                    <TableCell key={i}>
-                      <Skeleton className="h-4 w-full" />
+                    <TableCell key={i} className="py-4">
+                      <Skeleton className="h-5 w-full" />
                     </TableCell>
                   ))}
                 </TableRow>
@@ -130,7 +120,7 @@ export function RankingTable<T>({
             ) : error ? (
               <TableRow>
                 <TableCell colSpan={columns.length}>
-                  <Alert variant="destructive">
+                  <Alert variant="destructive" className="my-2">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Erreur</AlertTitle>
                     <AlertDescription>
@@ -141,15 +131,24 @@ export function RankingTable<T>({
               </TableRow>
             ) : table.getRowModel().rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="text-center py-8 text-muted-foreground"
+                >
                   Aucun résultat trouvé.
                 </TableCell>
               </TableRow>
             ) : (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+              table.getRowModel().rows.map((row, rowIndex) => (
+                <TableRow
+                  key={row.id}
+                  className="ranking-table-row border-b last:border-b-0 hover:bg-accent/50"
+                  style={{
+                    animationDelay: `${rowIndex * 30}ms`,
+                  }}
+                >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="text-center">
+                    <TableCell key={cell.id} className="text-center py-4">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),
@@ -162,24 +161,34 @@ export function RankingTable<T>({
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          <ChevronLeftIcon />
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          <ChevronRightIcon />
-        </Button>
-      </div>
+
+      {/* Pagination controls */}
+      {table.getPageCount() > 1 && (
+        <div className="flex items-center justify-end gap-2 py-4 px-4 border-t">
+          <span className="text-sm text-muted-foreground mr-2">
+            Page {table.getState().pagination.pageIndex + 1} sur{" "}
+            {table.getPageCount()}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+            className="h-8 w-8 p-0"
+          >
+            <ChevronLeftIcon className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+            className="h-8 w-8 p-0"
+          >
+            <ChevronRightIcon className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

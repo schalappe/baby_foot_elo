@@ -1,11 +1,8 @@
 /**
  * page.tsx
  *
- * Main landing page for player rankings in the Baby Foot ELO app.
- *
- * - Displays player rankings and registration dialog.
- * - Fetches player ranking data from the backend.
- * - Allows users to register new players.
+ * Main landing page for player rankings in the Baby Foot ELO Championship app.
+ * Features championship-styled header with trophy icon.
  *
  * Usage: This file is routed to '/' by Next.js.
  */
@@ -27,6 +24,7 @@ import {
 import { PlayerRegistrationForm } from "../components/players/PlayerRegistrationForm";
 import { toast } from "sonner";
 import { NewMatchDialog } from "../components/matches/NewMatchDialog";
+import { UserPlus, Swords, Trophy } from "lucide-react";
 
 const PLAYERS_API_ENDPOINT = "/api/v1/players/rankings?limit=100";
 
@@ -57,23 +55,45 @@ export default function Home() {
 
   return (
     <main className="container mx-auto p-4 md:p-8">
-      <div className="flex flex-col md:flex-row justify-between items-center mb-6 md:mb-10">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-4 md:mb-0">
-          Classement des Joueurs
-        </h1>
-        <div className="flex space-x-2">
+      {/* Championship Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 md:mb-12 gap-4">
+        <div className="flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 shadow-lg">
+            <Trophy className="h-8 w-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl md:text-4xl font-black tracking-tight text-foreground">
+              Classement des Joueurs
+            </h1>
+            <p className="text-muted-foreground text-sm md:text-base mt-1">
+              Championnat Baby Foot BMIF
+            </p>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex gap-3 w-full md:w-auto">
           <Dialog
             open={isAddPlayerDialogOpen}
             onOpenChange={setIsAddPlayerDialogOpen}
           >
             <DialogTrigger asChild>
-              <Button variant="default" size="lg">
-                Ajouter un Joueur
+              <Button
+                variant="outline"
+                size="lg"
+                className="flex-1 md:flex-none gap-2 border-2 hover:border-primary hover:bg-primary/5 transition-all"
+              >
+                <UserPlus className="h-5 w-5" />
+                <span className="hidden sm:inline">Ajouter un Joueur</span>
+                <span className="sm:hidden">Joueur</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle>Enregistrer un nouveau joueur</DialogTitle>
+                <DialogTitle className="flex items-center gap-2">
+                  <UserPlus className="h-5 w-5 text-primary" />
+                  Enregistrer un nouveau joueur
+                </DialogTitle>
               </DialogHeader>
               <PlayerRegistrationForm
                 onPlayerRegistered={handlePlayerRegistered}
@@ -81,9 +101,22 @@ export default function Home() {
             </DialogContent>
           </Dialog>
 
-          <NewMatchDialog />
+          <NewMatchDialog
+            trigger={
+              <Button
+                size="lg"
+                className="flex-1 md:flex-none gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all"
+              >
+                <Swords className="h-5 w-5" />
+                <span className="hidden sm:inline">Ajouter une Partie</span>
+                <span className="sm:hidden">Partie</span>
+              </Button>
+            }
+          />
         </div>
       </div>
+
+      {/* Rankings Display */}
       <PlayerRankingsDisplay
         players={players || []}
         isLoading={playersLoading}

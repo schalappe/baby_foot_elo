@@ -1,8 +1,8 @@
 /**
  * PodiumGrid.tsx
  *
- * Displays a podium for the top 3 entities (player, team, etc) in a grid layout.
- * Used for ranking displays and highlights on leaderboard pages.
+ * Displays a championship-style podium for the top 3 entities (player, team, etc).
+ * Features medal-themed cards with gold/silver/bronze gradients, animations, and trophy icons.
  *
  * Exports:
  *   - PodiumGrid: Generic React.FC for podium display.
@@ -10,8 +10,8 @@
  */
 import React from "react";
 import { Card, CardTitle } from "../ui/card";
-import { Badge } from "../ui/badge";
 import Link from "next/link";
+import { Trophy, Medal, Award } from "lucide-react";
 
 /**
  * PodiumGridProps
@@ -34,6 +34,37 @@ export interface PodiumGridProps<T> {
   renderExtra?: (item: T) => React.ReactNode;
 }
 
+// [>]: Medal configuration for each podium position.
+const PODIUM_CONFIG = [
+  {
+    cardClass: "podium-gold podium-champion",
+    rankClass: "rank-gold",
+    badgeClass: "medal-badge",
+    badgeBg: "bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500",
+    Icon: Trophy,
+    label: "Champion",
+    scale: "md:scale-105 md:z-10",
+  },
+  {
+    cardClass: "podium-silver",
+    rankClass: "rank-silver",
+    badgeClass: "medal-badge",
+    badgeBg: "bg-gradient-to-r from-slate-300 via-gray-400 to-slate-400",
+    Icon: Medal,
+    label: "2nd",
+    scale: "",
+  },
+  {
+    cardClass: "podium-bronze",
+    rankClass: "rank-bronze",
+    badgeClass: "medal-badge",
+    badgeBg: "bg-gradient-to-r from-orange-400 via-amber-600 to-orange-500",
+    Icon: Award,
+    label: "3rd",
+    scale: "",
+  },
+];
+
 export function PodiumGrid<T>({
   items,
   getKey,
@@ -43,54 +74,70 @@ export function PodiumGrid<T>({
   getWinrate,
   renderExtra,
 }: PodiumGridProps<T>) {
-  const borderColors = [
-    "border-yellow-500",
-    "border-blue-400",
-    "border-rose-500",
-  ];
-  const rankColors = ["text-yellow-400", "text-blue-400", "text-rose-500"];
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 md:items-end">
       {items.map((item, index) => {
-        const borderColor = borderColors[index] || borderColors[0];
-        const rankColor = rankColors[index] || rankColors[0];
-        const scale = index === 0 ? "scale-105 z-10" : "";
+        const config = PODIUM_CONFIG[index] || PODIUM_CONFIG[0];
+        const { cardClass, rankClass, badgeBg, Icon, scale } = config;
+
         return (
           <Card
             key={getKey(item, index)}
-            className={`relative flex flex-col justify-between p-6 shadow-xl border-2 ${borderColor} ${scale} min-h-[300px]`}
-            style={{ background: "var(--color-podium-card)" }}
+            className={`podium-card relative flex flex-col justify-between p-6 border-2 min-h-[280px] md:min-h-[320px] ${cardClass} ${scale}`}
           >
-            {/* Rank and Winrate Row */}
-            <div className="flex justify-between items-start w-full mb-2">
-              <span
-                className={`text-4xl font-extrabold ${rankColor} drop-shadow-sm`}
+            {/* Top row: Rank number and Winrate badge */}
+            <div className="flex justify-between items-start w-full mb-4">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`text-5xl md:text-6xl font-black ${rankClass} elo-score`}
+                >
+                  {index + 1}
+                </span>
+                <Icon
+                  className={`trophy-icon w-6 h-6 md:w-8 md:h-8 ${rankClass}`}
+                />
+              </div>
+              <div
+                className={`${badgeBg} text-xs md:text-sm font-bold px-3 py-1.5 rounded-full shadow-lg`}
               >
-                {index + 1}
-              </span>
-              <Badge className="text-xs font-semibold px-2 py-1 rounded-lg ml-auto">
-                {getWinrate(item)}
-              </Badge>
+                <span className="text-white drop-shadow-sm">
+                  {getWinrate(item)}
+                </span>
+              </div>
             </div>
-            {/* Name */}
-            <Link href={getLink(item)} className="block text-center">
+
+            {/* Name - Centered and prominent */}
+            <Link
+              href={getLink(item)}
+              className="block text-center group flex-grow flex flex-col justify-center"
+            >
               <CardTitle
-                className={`text-lg md:text-xl font-bold ${rankColor} mb-1 truncate`}
+                className={`text-xl md:text-2xl font-bold ${rankClass} mb-3 truncate group-hover:scale-105 transition-transform duration-200`}
               >
                 {getName(item)}
               </CardTitle>
+
+              {/* ELO Score - The hero number */}
+              <div className="flex flex-col items-center">
+                <span
+                  className={`text-4xl md:text-5xl font-black ${rankClass} elo-score tracking-tight`}
+                >
+                  {getElo(item)}
+                </span>
+                <span
+                  className={`text-sm md:text-base font-semibold ${rankClass} opacity-80 tracking-widest uppercase mt-1`}
+                >
+                  ELO
+                </span>
+              </div>
             </Link>
-            {/* ELO */}
-            <div className="flex flex-col items-center my-2">
-              <span
-                className={`text-3xl md:text-4xl font-extrabold ${rankColor} tracking-wide`}
-              >
-                {getElo(item)}{" "}
-                <span className={`text-lg font-medium ${rankColor}`}>ELO</span>
-              </span>
-            </div>
-            {/* Extra (W-L, matches, etc) */}
-            {renderExtra && <div className="mt-2">{renderExtra(item)}</div>}
+
+            {/* Extra content (W-L, matches, etc) */}
+            {renderExtra && (
+              <div className="mt-4 pt-4 border-t border-current/10">
+                {renderExtra(item)}
+              </div>
+            )}
           </Card>
         );
       })}

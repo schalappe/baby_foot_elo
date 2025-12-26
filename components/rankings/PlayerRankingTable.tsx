@@ -37,7 +37,7 @@ export const columns: ColumnDef<Player>[] = [
         <div className="text-center">
           <Link
             href={`/players/${playerId}`}
-            className="text-primary underline focus:outline-none"
+            className="text-primary font-bold text-base hover:opacity-80 transition-opacity"
           >
             {playerName}
           </Link>

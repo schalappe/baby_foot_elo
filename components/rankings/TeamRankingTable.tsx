@@ -41,7 +41,7 @@ export const columns: ColumnDef<Team>[] = [
         <div className="text-center">
           <Link
             href={`/teams/${teamId}`}
-            className="text-primary underline focus:outline-none"
+            className="text-primary font-bold text-base hover:opacity-80 transition-opacity"
           >
             {teamName}
           </Link>
