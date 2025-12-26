@@ -309,33 +309,46 @@ The application uses custom PostgreSQL functions (RPC) for optimized data retrie
 
 **Query Structure**:
 ```sql
-WITH matches_as_winner AS (
-  -- Aggregate wins per player
-  SELECT player1_id, player2_id, COUNT(*) as wins
-  FROM matches m
-  JOIN teams t ON m.winner_team_id = t.team_id
-  GROUP BY player1_id, player2_id
-),
-matches_as_loser AS (
-  -- Aggregate losses per player
-  SELECT player1_id, player2_id, COUNT(*) as losses
-  FROM matches m
-  JOIN teams t ON m.loser_team_id = t.team_id
-  GROUP BY player1_id, player2_id
-),
-aggregated_stats AS (
+WITH player_stats AS (
   SELECT
-    p.*,
-    COALESCE(w.wins, 0) + COALESCE(l.losses, 0) as matches_played,
-    CASE WHEN matches_played > 0
-         THEN (COALESCE(w.wins, 0)::DECIMAL / matches_played * 100)
-         ELSE 0 END as win_rate,
-    ROW_NUMBER() OVER (ORDER BY p.global_elo DESC) as rank
-  FROM players p
-  LEFT JOIN matches_as_winner w ...
-  LEFT JOIN matches_as_loser l ...
+    player_id,
+    COUNT(*) AS matches_played,
+    -- Use FILTER clause for conditional aggregation
+    COUNT(*) FILTER (WHERE is_winner) AS wins,
+    COUNT(*) FILTER (WHERE NOT is_winner) AS losses,
+    MAX(played_at) AS last_match_at
+  FROM (
+    -- UNNEST team player arrays to expand winning team players
+    SELECT
+      UNNEST(ARRAY[t.player1_id, t.player2_id]) AS player_id,
+      m.played_at,
+      true AS is_winner
+    FROM matches m
+    JOIN teams t ON t.team_id = m.winner_team_id
+    UNION ALL
+    -- UNNEST losing team players
+    SELECT
+      UNNEST(ARRAY[t.player1_id, t.player2_id]) AS player_id,
+      m.played_at,
+      false AS is_winner
+    FROM matches m
+    JOIN teams t ON t.team_id = m.loser_team_id
+  ) player_matches
+  GROUP BY player_id
 )
-SELECT * FROM aggregated_stats ORDER BY rank;
+SELECT jsonb_build_object(
+  'player_id', p.player_id,
+  'name', p.name,
+  'global_elo', p.global_elo,
+  'wins', COALESCE(ps.wins, 0),
+  'losses', COALESCE(ps.losses, 0),
+  'win_rate', ROUND(ps.wins::NUMERIC / ps.matches_played::NUMERIC, 4),
+  -- Use RANK() to allow ties, ordered by ELO DESC
+  'rank', RANK() OVER (ORDER BY p.global_elo DESC, p.created_at ASC)
+)
+FROM players p
+LEFT JOIN player_stats ps ON ps.player_id = p.player_id
+ORDER BY p.global_elo DESC;
 ```
 
 ---
