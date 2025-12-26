@@ -15,8 +15,8 @@ BEGIN
       'notes', m.notes,
       'winner_team_id', m.winner_team_id,
       'loser_team_id', m.loser_team_id,
-      'winner_team', get_team_full_stats(m.winner_team_id),
-      'loser_team', get_team_full_stats(m.loser_team_id)
+      'winner_team', get_team_full_stats_optimized(m.winner_team_id),
+      'loser_team', get_team_full_stats_optimized(m.loser_team_id)
     )
   FROM
     matches m

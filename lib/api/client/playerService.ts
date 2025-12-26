@@ -1,8 +1,8 @@
 /**
  * playerService.ts
  *
- * Provides API functions for fetching, creating, and retrieving player data from the backend.
- * Uses axios for HTTP requests. Used throughout the app for player-related data.
+ * Frontend API client for player-related operations.
+ * Uses axios for HTTP requests to Next.js API routes.
  *
  * Exports:
  *   - getPlayers: Fetch all players (with optional filters)
@@ -12,13 +12,12 @@
  *   - getPlayerStats: Fetch player statistics
  *   - getPlayerMatches: Fetch matches for a player
  */
-// frontend/services/playerService.ts
 import axios from "axios";
-import { Player, PlayerStats, GetPlayersParams } from "../types/index";
+import { Player, PlayerStats, GetPlayersParams } from "@/types/index";
 import {
   BackendMatchWithEloResponse,
   GetPlayerMatchesParams,
-} from "../types/match.types";
+} from "@/types/match.types";
 
 // [>]: Use relative URL to call Next.js API routes (same-origin).
 const API_URL = "/api/v1";
@@ -62,10 +61,7 @@ export const getPlayerById = async (playerId: number): Promise<Player> => {
     const response = await axios.get(`${API_URL}/players/${playerId}`);
     return response.data;
   } catch (error) {
-    console.error(
-      `Échec de la récupération du joueur avec l'ID ${playerId}:`,
-      error,
-    );
+    console.error(`Failed to fetch player with ID ${playerId}:`, error);
     throw error;
   }
 };
@@ -82,7 +78,7 @@ export const createPlayer = async (name: string): Promise<Player> => {
     const response = await axios.post(`${API_URL}/players`, { name });
     return response.data;
   } catch (error) {
-    console.error("Échec de la création du joueur:", error);
+    console.error("Failed to create player:", error);
     throw error;
   }
 };
@@ -102,7 +98,7 @@ export const getPlayerRankings = async (): Promise<Player[]> => {
     });
     return response.data;
   } catch (error) {
-    console.error("Échec de la récupération des joueurs:", error);
+    console.error("Failed to fetch player rankings:", error);
     throw error;
   }
 };
@@ -124,7 +120,7 @@ export const getPlayerStats = async (
     return response.data;
   } catch (error) {
     console.error(
-      `Échec de la récupération des statistiques du joueur avec l'ID ${playerId}:`,
+      `Failed to fetch stats for player with ID ${playerId}:`,
       error,
     );
     throw error;

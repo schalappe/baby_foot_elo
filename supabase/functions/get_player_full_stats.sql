@@ -1,76 +1,47 @@
-CREATE OR REPLACE FUNCTION get_player_full_stats(p_player_id INTEGER)
+-- ============================================================================
+-- get_player_full_stats_optimized
+-- ============================================================================
+-- Returns a single player's comprehensive stats using a CTE.
+-- Reduces 4 separate queries to 1 aggregated query.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION get_player_full_stats_optimized(p_player_id INTEGER)
 RETURNS jsonb
-LANGUAGE plpgsql
+LANGUAGE sql
+STABLE
 AS $$
-DECLARE
-  v_player_name TEXT;
-  v_global_elo INT;
-  v_created_at TIMESTAMPTZ;
-  v_total_matches INTEGER;
-  v_win_count INTEGER;
-  v_loss_count INTEGER;
-  v_last_match_date TIMESTAMPTZ;
-  v_win_rate NUMERIC;
-BEGIN
-  -- Get player details
-  SELECT name, global_elo, created_at
-  INTO v_player_name, v_global_elo, v_created_at
-  FROM players
-  WHERE player_id = p_player_id;
-
-  -- Calculate total matches
-  SELECT COUNT(m.match_id)
-  INTO v_total_matches
-  FROM matches m
-  INNER JOIN teams winner_team ON m.winner_team_id = winner_team.team_id
-  INNER JOIN teams loser_team ON m.loser_team_id = loser_team.team_id
-  WHERE (winner_team.player1_id = p_player_id OR winner_team.player2_id = p_player_id)
-     OR (loser_team.player1_id = p_player_id OR loser_team.player2_id = p_player_id);
-
-  -- Calculate win count
-  SELECT COUNT(m.match_id)
-  INTO v_win_count
-  FROM matches m
-  INNER JOIN teams winner_team ON m.winner_team_id = winner_team.team_id
-  WHERE winner_team.player1_id = p_player_id OR winner_team.player2_id = p_player_id;
-
-  -- Calculate loss count
-  SELECT COUNT(m.match_id)
-  INTO v_loss_count
-  FROM matches m
-  INNER JOIN teams loser_team ON m.loser_team_id = loser_team.team_id
-  WHERE loser_team.player1_id = p_player_id OR loser_team.player2_id = p_player_id;
-
-  -- Get last match date
-  SELECT m.played_at
-  INTO v_last_match_date
-  FROM matches m
-  INNER JOIN teams winner_team ON m.winner_team_id = winner_team.team_id
-  INNER JOIN teams loser_team ON m.loser_team_id = loser_team.team_id
-  WHERE winner_team.player1_id = p_player_id
-    OR winner_team.player2_id = p_player_id
-    OR loser_team.player1_id = p_player_id
-    OR loser_team.player2_id = p_player_id
-  ORDER BY m.played_at DESC
-  LIMIT 1;
-
-  -- Calculate win rate as decimal (0.0 to 1.0)
-  IF v_total_matches > 0 THEN
-    v_win_rate := v_win_count::NUMERIC / v_total_matches::NUMERIC;
-  ELSE
-    v_win_rate := 0;
-  END IF;
-
-  RETURN jsonb_build_object(
-    'player_id', p_player_id,
-    'name', v_player_name,
-    'global_elo', v_global_elo,
-    'created_at', v_created_at,
-    'matches_played', COALESCE(v_total_matches, 0),
-    'wins', COALESCE(v_win_count, 0),
-    'losses', COALESCE(v_loss_count, 0),
-    'last_match_at', v_last_match_date,
-    'win_rate', ROUND(COALESCE(v_win_rate, 0), 4)
-  );
-END;
+  WITH player_stats AS (
+    SELECT
+      COUNT(*) AS matches_played,
+      COUNT(*) FILTER (WHERE is_winner) AS wins,
+      COUNT(*) FILTER (WHERE NOT is_winner) AS losses,
+      MAX(played_at) AS last_match_at
+    FROM (
+      SELECT m.played_at, true AS is_winner
+      FROM matches m
+      JOIN teams t ON t.team_id = m.winner_team_id
+      WHERE t.player1_id = p_player_id OR t.player2_id = p_player_id
+      UNION ALL
+      SELECT m.played_at, false AS is_winner
+      FROM matches m
+      JOIN teams t ON t.team_id = m.loser_team_id
+      WHERE t.player1_id = p_player_id OR t.player2_id = p_player_id
+    ) player_matches
+  )
+  SELECT jsonb_build_object(
+    'player_id', p.player_id,
+    'name', p.name,
+    'global_elo', p.global_elo,
+    'created_at', p.created_at,
+    'matches_played', COALESCE(ps.matches_played, 0),
+    'wins', COALESCE(ps.wins, 0),
+    'losses', COALESCE(ps.losses, 0),
+    'win_rate', CASE WHEN COALESCE(ps.matches_played, 0) > 0
+                     THEN ROUND(ps.wins::NUMERIC / ps.matches_played::NUMERIC, 4)
+                     ELSE 0 END,
+    'last_match_at', ps.last_match_at
+  )
+  FROM players p
+  CROSS JOIN player_stats ps
+  WHERE p.player_id = p_player_id;
 $$;

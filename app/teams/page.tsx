@@ -13,7 +13,7 @@
 import { useEffect } from "react";
 import useSWR from "swr";
 import { Team } from "@/types/team.types";
-import { getTeamRankings } from "../../services/teamService";
+import { getTeamRankings } from "@/lib/api/client/teamService";
 import { TeamRankingsDisplay } from "../../components/rankings/TeamRankingsDisplay";
 import { toast } from "sonner";
 import { NewMatchDialog } from "../../components/matches/NewMatchDialog";

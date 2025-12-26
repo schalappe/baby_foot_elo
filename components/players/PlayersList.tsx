@@ -28,7 +28,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Player } from "@/types/player.types";
-import { getPlayers } from "../../services/playerService";
+import { getPlayers } from "@/lib/api/client/playerService";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import {
   Dialog,

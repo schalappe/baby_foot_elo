@@ -5,7 +5,7 @@
 # Usage: make <target>
 # ============================================================================
 
-.PHONY: help install dev build start format lint typecheck test test-watch quality clean
+.PHONY: help install dev build start format lint typecheck test test-watch test-local supabase-start supabase-stop supabase-status supabase-reset quality clean
 
 # Colors for terminal output
 CYAN := \033[0;36m
@@ -39,6 +39,13 @@ help:
 	@echo "$(GREEN)Testing:$(NC)"
 	@echo "  test                 Run tests once (vitest)"
 	@echo "  test-watch           Run tests in watch mode"
+	@echo "  test-local           Run tests with local Supabase (all-in-one)"
+	@echo ""
+	@echo "$(GREEN)Supabase Local:$(NC)"
+	@echo "  supabase-start       Start local Supabase instance"
+	@echo "  supabase-stop        Stop local Supabase instance"
+	@echo "  supabase-status      Check local Supabase status"
+	@echo "  supabase-reset       Reset local database"
 	@echo ""
 	@echo "$(GREEN)Quality Gate:$(NC)"
 	@echo "  quality              Run lint, typecheck, and tests (pre-commit)"
@@ -107,11 +114,39 @@ test-watch:
 	@echo "$(CYAN)Running tests in watch mode...$(NC)"
 	bun run test
 
+test-local:
+	@echo "$(CYAN)Running tests with local Supabase...$(NC)"
+	bun run test:local
+	@echo "$(GREEN)✓ Tests passed$(NC)"
+
+# ============================================================================
+# Supabase Local Development
+# ============================================================================
+
+supabase-start:
+	@echo "$(CYAN)Starting local Supabase...$(NC)"
+	bun run supabase:start
+	@echo "$(GREEN)✓ Supabase started$(NC)"
+
+supabase-stop:
+	@echo "$(CYAN)Stopping local Supabase...$(NC)"
+	bun run supabase:stop
+	@echo "$(GREEN)✓ Supabase stopped$(NC)"
+
+supabase-status:
+	@echo "$(CYAN)Checking Supabase status...$(NC)"
+	bun run supabase:status
+
+supabase-reset:
+	@echo "$(YELLOW)Resetting local Supabase database...$(NC)"
+	bun run supabase:reset
+	@echo "$(GREEN)✓ Database reset$(NC)"
+
 # ============================================================================
 # Quality Gate (pre-commit)
 # ============================================================================
 
-quality: lint typecheck test
+quality: lint typecheck test-local
 	@echo ""
 	@echo "$(GREEN)============================================$(NC)"
 	@echo "$(GREEN)✓ All quality checks passed!$(NC)"

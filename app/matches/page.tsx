@@ -14,8 +14,8 @@
 import React, { useState } from "react";
 import { Match } from "@/types/match.types";
 import { Player } from "@/types/player.types";
-import { getMatches } from "../../services/matchService";
-import { getPlayers } from "../../services/playerService";
+import { getMatches } from "@/lib/api/client/matchService";
+import { getPlayers } from "@/lib/api/client/playerService";
 import { DateRange } from "react-day-picker";
 import useSWR from "swr";
 import MatchHistoryUI from "../../components/matches/MatchHistoryUI";

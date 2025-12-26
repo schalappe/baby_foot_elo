@@ -1,8 +1,8 @@
 /**
  * teamService.ts
  *
- * Provides API functions for fetching, creating, and retrieving team data from the backend.
- * Uses axios for HTTP requests. Used throughout the app for team-related data.
+ * Frontend API client for team-related operations.
+ * Uses axios for HTTP requests to Next.js API routes.
  *
  * Exports:
  *   - getTeamRankings: Fetch team rankings
@@ -11,7 +11,6 @@
  *   - getTeamStatistics: Fetch team statistics
  *   - getTeamMatches: Fetch matches for a team
  */
-// frontend/services/teamService.ts
 import axios from "axios";
 import { Team, TeamStatistics, TeamMatchWithElo } from "@/types/team.types";
 
@@ -33,7 +32,7 @@ export const getTeamRankings = async (): Promise<Team[]> => {
     });
     return response.data;
   } catch (error) {
-    console.error("Échec de la récupération des équipes:", error);
+    console.error("Failed to fetch team rankings:", error);
     throw error;
   }
 };
@@ -58,7 +57,7 @@ export const findOrCreateTeam = async (
     return response.data;
   } catch (error) {
     console.error(
-      `Échec de la recherche ou de la création de l'équipe pour les joueurs ${player1_id} et ${player2_id}:`,
+      `Failed to find or create team for players ${player1_id} and ${player2_id}:`,
       error,
     );
     throw error;
@@ -67,8 +66,6 @@ export const findOrCreateTeam = async (
 
 /**
  * Fetches detailed information about a specific team by ID, including player details.
- *
- * Calls the backend endpoint `/teams/{team_id}` and returns a Team object with nested player1 and player2.
  *
  * @param teamId - The ID of the team to fetch.
  * @returns A promise that resolves to the Team object with player details.
@@ -79,15 +76,13 @@ export const getTeamById = async (teamId: number): Promise<Team> => {
     const response = await axios.get<Team>(`${API_URL}/teams/${teamId}`);
     return response.data;
   } catch (error) {
-    console.error(`Échec de la récupération de l'équipe ${teamId}:`, error);
+    console.error(`Failed to fetch team ${teamId}:`, error);
     throw error;
   }
 };
 
 /**
  * Fetches detailed statistics for a specific team by ID.
- *
- * Calls the backend endpoint `/teams/{team_id}/statistics` and returns a TeamStatistics object.
  *
  * @param team_id - The ID of the team to fetch statistics for.
  * @returns A promise that resolves to the TeamStatistics object.
@@ -102,18 +97,13 @@ export const getTeamStatistics = async (
     );
     return response.data;
   } catch (error) {
-    console.error(
-      `Échec de la récupération des statistiques pour l'équipe ${team_id}:`,
-      error,
-    );
+    console.error(`Failed to fetch statistics for team ${team_id}:`, error);
     throw error;
   }
 };
 
 /**
  * Fetches matches for a specific team by team ID, with pagination.
- *
- * Calls the backend endpoint `/teams/{team_id}/matches?skip=&limit=` and returns a TeamMatchWithElo[] array.
  *
  * @param teamId - The ID of the team to fetch matches for.
  * @param params - Optional pagination parameters: skip (number), limit (number).

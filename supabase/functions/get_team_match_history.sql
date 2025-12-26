@@ -27,8 +27,8 @@ BEGIN
                     'difference', teh.difference
                 )
             ),
-            'winner_team', get_team_full_stats(m.winner_team_id),
-            'loser_team', get_team_full_stats(m.loser_team_id)
+            'winner_team', get_team_full_stats_optimized(m.winner_team_id),
+            'loser_team', get_team_full_stats_optimized(m.loser_team_id)
         )
     FROM
         teams_elo_history teh

@@ -48,12 +48,12 @@ interface TeamStatsRow {
   } | null;
 }
 
-// [>]: Get full stats for a single player (RPC: get_player_full_stats).
+// [>]: Get full stats for a single player using optimized RPC.
 // Throws PlayerNotFoundError if player does not exist.
 async function getPlayerStatsImpl(playerId: number): Promise<PlayerStatsRow> {
   const client = getSupabaseClient();
 
-  const { data, error } = await client.rpc("get_player_full_stats", {
+  const { data, error } = await client.rpc("get_player_full_stats_optimized", {
     p_player_id: playerId,
   });
 
@@ -70,12 +70,12 @@ async function getPlayerStatsImpl(playerId: number): Promise<PlayerStatsRow> {
   return data;
 }
 
-// [>]: Get full stats for a single team (RPC: get_team_full_stats).
+// [>]: Get full stats for a single team using optimized RPC.
 // Throws TeamNotFoundError if team does not exist.
 async function getTeamStatsImpl(teamId: number): Promise<TeamStatsRow> {
   const client = getSupabaseClient();
 
-  const { data, error } = await client.rpc("get_team_full_stats", {
+  const { data, error } = await client.rpc("get_team_full_stats_optimized", {
     p_team_id: teamId,
   });
 
