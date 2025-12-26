@@ -60,17 +60,17 @@ const TeamDetail: React.FC<TeamDetailProps> = ({ teamId }) => {
       .then((data) => {
         if (!isMounted) return;
         setStats(data);
-        // If the API returns the team object, set it; otherwise, fetch separately if needed
+        // [>]: Build team object from statistics response.
         setTeam({
           team_id: data.team_id,
           global_elo: data.global_elo,
           player1_id: data.player1_id,
-          player2_id: data.player1_id,
+          player2_id: data.player2_id,
           created_at: data.created_at,
           player1: data.player1,
           player2: data.player2,
           last_match_at: data.last_match_at,
-          matches_played: 0,
+          matches_played: data.matches_played,
           wins: data.wins,
           losses: data.losses,
           win_rate: data.win_rate,

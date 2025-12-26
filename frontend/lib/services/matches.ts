@@ -117,6 +117,26 @@ export async function getMatchesByPlayer(
   return matchesData.map(mapToMatchWithEloResponse);
 }
 
+// [>]: Get matches for a specific team with team ELO changes.
+// [>]: Used by team detail page to display match history with ELO changes.
+export async function getMatchesWithTeamElo(
+  teamId: number,
+  options: Omit<MatchQueryOptions, "teamId"> = {},
+): Promise<MatchWithEloResponse[]> {
+  const { skip = 0, limit = 100, startDate, endDate, isFanny } = options;
+
+  const matchesData = await getMatchesByTeamIdRepo(teamId, {
+    limit,
+    offset: skip,
+    startDate,
+    endDate,
+    isFanny,
+  });
+
+  // [>]: RPC already includes elo_changes keyed by team_id.
+  return matchesData.map(mapToMatchWithEloResponse);
+}
+
 // [>]: Create a new match with full ELO processing.
 // Orchestration steps:
 // 1. Validate winner !== loser

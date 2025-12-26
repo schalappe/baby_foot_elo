@@ -12,6 +12,8 @@ import { getTeamEloHistory } from "@/lib/db/repositories/team-elo-history";
 
 type TeamRouteContext = RouteContext<"teamId">;
 
+const RECENT_MATCHES_COUNT = 10;
+
 // [>]: GET /api/v1/teams/[teamId]/statistics - get detailed team stats.
 export const GET = handleApiRequest(
   async (_request: NextRequest, context?: TeamRouteContext) => {
@@ -22,6 +24,7 @@ export const GET = handleApiRequest(
     const team = await getTeam(id);
 
     // [>]: Get ELO history for computing additional stats.
+    // [>]: History is ordered by date DESC (most recent first).
     const history = await getTeamEloHistory(id, { limit: 1000 });
 
     // [>]: Calculate additional statistics.
@@ -29,14 +32,38 @@ export const GET = handleApiRequest(
     let lowestElo = team.global_elo;
     let totalEloChange = 0;
 
+    // [>]: Build arrays for charts (history is DESC, so reverse for chronological order).
+    const eloValues: number[] = [];
+    const eloDifference: number[] = [];
+
     for (const entry of history) {
       if (entry.new_elo > highestElo) highestElo = entry.new_elo;
       if (entry.new_elo < lowestElo) lowestElo = entry.new_elo;
       totalEloChange += entry.difference;
+      eloValues.push(entry.new_elo);
+      eloDifference.push(entry.difference);
     }
 
     const averageEloChange =
       history.length > 0 ? Math.trunc(totalEloChange / history.length) : 0;
+
+    // [>]: Calculate recent stats (last N matches).
+    const recentHistory = history.slice(0, RECENT_MATCHES_COUNT);
+    const recentWins = recentHistory.filter((h) => h.difference > 0).length;
+    const recentLosses = recentHistory.filter((h) => h.difference < 0).length;
+    const recentMatchesPlayed = recentHistory.length;
+    const recentWinRate =
+      recentMatchesPlayed > 0
+        ? Math.round((recentWins / recentMatchesPlayed) * 100)
+        : 0;
+    const recentTotalChange = recentHistory.reduce(
+      (sum, h) => sum + h.difference,
+      0,
+    );
+    const recentAverageEloChange =
+      recentMatchesPlayed > 0
+        ? Math.trunc(recentTotalChange / recentMatchesPlayed)
+        : 0;
 
     return NextResponse.json({
       team_id: team.team_id,
@@ -45,13 +72,26 @@ export const GET = handleApiRequest(
       player1: team.player1,
       player2: team.player2,
       global_elo: team.global_elo,
+      total_matches: team.matches_played,
       matches_played: team.matches_played,
       wins: team.wins,
       losses: team.losses,
       win_rate: team.win_rate,
+      elo_values: eloValues,
+      elo_difference: eloDifference,
       average_elo_change: averageEloChange,
       highest_elo: highestElo,
       lowest_elo: lowestElo,
+      created_at: team.created_at,
+      last_match_at: team.last_match_at,
+      recent: {
+        matches_played: recentMatchesPlayed,
+        wins: recentWins,
+        losses: recentLosses,
+        win_rate: recentWinRate,
+        average_elo_change: recentAverageEloChange,
+        elo_changes: recentHistory.map((h) => h.difference),
+      },
     });
   },
 );

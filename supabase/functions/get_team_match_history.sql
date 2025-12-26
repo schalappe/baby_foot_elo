@@ -2,7 +2,7 @@ CREATE OR REPLACE FUNCTION get_team_match_history(
     p_team_id INTEGER,
     p_start_date TIMESTAMPTZ DEFAULT NULL,
     p_end_date TIMESTAMPTZ DEFAULT NULL,
-    p_is_fanny BOOLEAN DEFAULT FALSE,
+    p_is_fanny BOOLEAN DEFAULT NULL,
     p_limit INTEGER DEFAULT 100,
     p_offset INTEGER DEFAULT 0
 )
@@ -38,7 +38,7 @@ BEGIN
         teh.team_id = p_team_id
         AND (p_start_date IS NULL OR m.played_at >= p_start_date)
         AND (p_end_date IS NULL OR m.played_at <= p_end_date)
-        AND (p_is_fanny = FALSE OR m.is_fanny = TRUE)
+        AND (p_is_fanny IS NULL OR m.is_fanny = p_is_fanny)
     ORDER BY
         m.played_at DESC
     LIMIT

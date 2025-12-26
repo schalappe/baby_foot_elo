@@ -8,12 +8,12 @@ import {
   getNumericParam,
   type RouteContext,
 } from "@/lib/api/handle-request";
-import { getMatches } from "@/lib/services/matches";
+import { getMatchesWithTeamElo } from "@/lib/services/matches";
 import { getTeam } from "@/lib/services/teams";
 
 type TeamRouteContext = RouteContext<"teamId">;
 
-// [>]: GET /api/v1/teams/[teamId]/matches - get team's match history.
+// [>]: GET /api/v1/teams/[teamId]/matches - get team's match history with ELO changes.
 export const GET = handleApiRequest(
   async (request: NextRequest, context?: TeamRouteContext) => {
     const { teamId } = await context!.params;
@@ -26,11 +26,8 @@ export const GET = handleApiRequest(
     // [>]: Verify team exists (throws TeamNotFoundError if not).
     await getTeam(id);
 
-    const matches = await getMatches({
-      teamId: id,
-      skip,
-      limit,
-    });
+    // [>]: Get matches with team ELO changes for the match history display.
+    const matches = await getMatchesWithTeamElo(id, { skip, limit });
 
     return NextResponse.json(matches);
   },
