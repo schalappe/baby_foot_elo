@@ -34,8 +34,7 @@ This project implements an ELO rating system for baby foot (foosball) matches. I
 ### Prerequisites
 
 - Python 3.9+
-- Node.js 18+
-- npm or yarn
+- Bun 1.x (or Node.js 18+ with npm)
 
 ### Backend Setup
 
@@ -77,16 +76,25 @@ This project implements an ELO rating system for baby foot (foosball) matches. I
 2. Install dependencies:
 
    ```bash
-   npm install
+   bun install
    ```
 
 3. Start the development server:
 
    ```bash
-   npm run dev
+   bun run dev
    ```
 
    The frontend application will be available at `http://localhost:3000`.
+
+### Quick Start (Full Stack)
+
+From the root directory, you can run both frontend and backend concurrently:
+
+```bash
+bun install          # Install root dependencies
+bun run dev          # Start both servers
+```
 
 ## Project Structure
 

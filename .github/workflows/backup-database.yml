@@ -1,0 +1,126 @@
+name: Database Backup
+
+on:
+  # Run daily at 2:00 AM UTC
+  schedule:
+    - cron: "0 2 * * *"
+
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Create backup directory
+        run: mkdir -p backups
+
+      - name: Backup Supabase data
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          BACKUP_PATH="backups/${TIMESTAMP}"
+          mkdir -p "$BACKUP_PATH"
+
+          # Supabase REST API limits responses to 1000 rows by default
+          PAGE_SIZE=1000
+
+          TABLES=("players" "teams" "matches" "players_elo_history" "teams_elo_history")
+
+          # Fetch all records from a table with pagination
+          fetch_all_records() {
+            local table=$1
+            local offset=0
+            local all_records="[]"
+
+            while true; do
+              response=$(curl -s -w "\n%{http_code}" \
+                "${SUPABASE_URL}/rest/v1/${table}?select=*&limit=${PAGE_SIZE}&offset=${offset}" \
+                -H "apikey: ${SUPABASE_KEY}" \
+                -H "Authorization: Bearer ${SUPABASE_KEY}")
+
+              http_code=$(echo "$response" | tail -n1)
+              body=$(echo "$response" | sed '$d')
+
+              if [ "$http_code" -ne 200 ]; then
+                echo "ERROR:${http_code}:${body}"
+                return 1
+              fi
+
+              page_records=$(echo "$body" | jq 'length')
+
+              if [ "$page_records" -eq 0 ]; then
+                break
+              fi
+
+              all_records=$(echo "$all_records" "$body" | jq -s 'add')
+
+              if [ "$page_records" -lt "$PAGE_SIZE" ]; then
+                break
+              fi
+
+              offset=$((offset + PAGE_SIZE))
+            done
+
+            echo "$all_records"
+          }
+
+          echo "Starting backup..."
+
+          for table in "${TABLES[@]}"; do
+            echo "Backing up table: ${table}"
+
+            result=$(fetch_all_records "$table")
+
+            if [[ "$result" == ERROR:* ]]; then
+              http_code=$(echo "$result" | cut -d: -f2)
+              echo "ERROR: Failed to backup ${table} (HTTP ${http_code})"
+              exit 1
+            else
+              echo "$result" > "${BACKUP_PATH}/${table}.json"
+              record_count=$(echo "$result" | jq 'length')
+              echo "  -> ${record_count} records saved"
+            fi
+          done
+
+          # Create metadata
+          cat > "${BACKUP_PATH}/metadata.json" << EOF
+          {
+            "timestamp": "${TIMESTAMP}",
+            "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "tables": ["players", "teams", "matches", "players_elo_history", "teams_elo_history"]
+          }
+          EOF
+
+          # Create archive
+          tar -czf "backups/backup_${TIMESTAMP}.tar.gz" -C "backups" "${TIMESTAMP}"
+          rm -rf "$BACKUP_PATH"
+
+          echo "BACKUP_FILE=backup_${TIMESTAMP}.tar.gz" >> $GITHUB_ENV
+          echo "Backup complete!"
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-backup-${{ github.run_id }}
+          path: backups/*.tar.gz
+          retention-days: 30
+
+      - name: Summary
+        run: |
+          echo "## Backup Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **File:** ${{ env.BACKUP_FILE }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Date:** $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Retention:** 30 days" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download from the Artifacts section below." >> $GITHUB_STEP_SUMMARY
