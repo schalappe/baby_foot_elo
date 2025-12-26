@@ -42,10 +42,10 @@ GitHub Secrets store your Supabase credentials securely.
 
 Add the following secrets:
 
-| Secret Name    | Value                                      | Where to Find                                                     |
-| -------------- | ------------------------------------------ | ----------------------------------------------------------------- |
-| `SUPABASE_URL` | `https://rdjdjscjgozpvbtjjzrf.supabase.co` | Supabase Dashboard → Project Settings → API                       |
-| `SUPABASE_KEY` | Your anon/public key                       | Supabase Dashboard → Project Settings → API → `anon` `public` key |
+| Secret Name    | Value                                      | Where to Find                                                            |
+| -------------- | ------------------------------------------ | ------------------------------------------------------------------------ |
+| `SUPABASE_URL` | `https://rdjdjscjgozpvbtjjzrf.supabase.co` | Supabase Dashboard → Project Settings → API                              |
+| `SUPABASE_KEY` | Your publishable key (`sb_publishable_...`) | Supabase Dashboard → Project Settings → API → API Keys → Publishable key |
 
 **Steps**:
 
@@ -127,9 +127,9 @@ You can create backups locally using the provided script.
 ```bash
 cd /Users/schalappe/Documents/Lab/Engineer/Projects/baby_foot_elo
 
-# Set credentials (get these from backend/.env)
+# Set credentials (get these from .env)
 export SUPABASE_URL="https://rdjdjscjgozpvbtjjzrf.supabase.co"
-export SUPABASE_KEY="your-anon-key-here"
+export SUPABASE_KEY="sb_publishable_..."  # Your publishable key
 
 # Run backup
 ./scripts/backup_supabase.sh
@@ -336,8 +336,8 @@ Check that your data was restored correctly:
 
 **Solution**:
 
-1. Go to Supabase Dashboard → Project Settings → API
-2. Copy the current `anon` `public` key
+1. Go to Supabase Dashboard → Project Settings → API → API Keys
+2. Copy the publishable key (`sb_publishable_...`)
 3. Update the `SUPABASE_KEY` secret in GitHub
 4. Re-run the workflow
 
@@ -453,7 +453,8 @@ The script should reset sequences automatically. If IDs are still wrong:
 **For Backups:**
 
 - ✅ **DO**: Store credentials in GitHub Secrets
-- ✅ **DO**: Use the `anon` public key (not service role) for REST API access
+- ✅ **DO**: Use the publishable key (`sb_publishable_...`) for REST API access
+- ❌ **DON'T**: Use the secret key (`sb_secret_...`) - it bypasses RLS
 - ❌ **DON'T**: Commit credentials to the repository
 - ❌ **DON'T**: Share backup files publicly (they contain your data)
 
@@ -587,10 +588,10 @@ The restore script uses `psql` (direct PostgreSQL connection) instead of the Sup
 
 ### Backup vs Restore Methods
 
-| Operation   | Method            | Authentication    | Why?                                                    |
-| ----------- | ----------------- | ----------------- | ------------------------------------------------------- |
-| **Backup**  | Supabase REST API | `anon` key        | Read-only, no special privileges needed                 |
-| **Restore** | Direct PostgreSQL | Database password | Requires `OVERRIDING SYSTEM VALUE` for identity columns |
+| Operation   | Method            | Authentication     | Why?                                                    |
+| ----------- | ----------------- | ------------------ | ------------------------------------------------------- |
+| **Backup**  | Supabase REST API | Publishable key    | Read-only, no special privileges needed                 |
+| **Restore** | Direct PostgreSQL | Database password  | Requires `OVERRIDING SYSTEM VALUE` for identity columns |
 
 ## Alternative Backup Methods
 

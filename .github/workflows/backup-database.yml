@@ -23,6 +23,7 @@ jobs:
         run: mkdir -p backups
 
       - name: Backup Supabase data
+        # [>]: SUPABASE_KEY should be the publishable key (sb_publishable_...) for production.
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}

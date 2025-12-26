@@ -5,6 +5,7 @@
 set -e
 
 # Configuration - these will be overridden by environment variables
+# ##>: Use publishable key (sb_publishable_...) for production, anon key for local.
 SUPABASE_URL="${SUPABASE_URL:-}"
 SUPABASE_KEY="${SUPABASE_KEY:-}"
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
