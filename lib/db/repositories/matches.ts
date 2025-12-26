@@ -112,16 +112,19 @@ async function getMatchByIdImpl(matchId: number): Promise<MatchDbRow> {
   return data;
 }
 
-// [>]: Get all matches with pagination (uses RPC for joined data).
+// [>]: Get all matches with pagination and optional filters (uses RPC for joined data).
 async function getAllMatchesImpl(
-  limit: number = 100,
-  offset: number = 0,
+  options: MatchQueryOptions = {},
 ): Promise<MatchWithTeamsRow[]> {
+  const { limit = 100, offset = 0, startDate, endDate, isFanny } = options;
   const client = getSupabaseClient();
 
   const { data, error } = await client.rpc("get_all_matches_with_details", {
     p_limit: limit,
     p_offset: offset,
+    p_start_date: startDate ?? null,
+    p_end_date: endDate ?? null,
+    p_is_fanny: isFanny ?? null,
   });
 
   if (error) {

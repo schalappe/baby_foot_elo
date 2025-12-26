@@ -5,7 +5,7 @@
  * Uses axios for HTTP requests to Next.js API routes.
  *
  * Exports:
- *   - getMatches: Fetch all matches
+ *   - getMatches: Fetch all matches with optional filters
  *   - createMatch: Create a new match
  */
 import axios from "axios";
@@ -18,15 +18,36 @@ import {
 // [>]: Use relative URL to call Next.js API routes (same-origin).
 const API_URL = "/api/v1";
 
+// [>]: Filter options for fetching matches.
+export interface MatchFilterOptions {
+  startDate?: string;
+  endDate?: string;
+  isFanny?: boolean;
+}
+
 /**
- * Fetches all matches from the backend.
+ * Fetches matches from the backend with optional date filtering.
  *
+ * @param options - Optional filter parameters (startDate, endDate, isFanny).
  * @returns A promise that resolves to an array of Match objects.
  * @throws {Error} If the API request fails.
  */
-export const getMatches = async (): Promise<Match[]> => {
+export const getMatches = async (
+  options: MatchFilterOptions = {},
+): Promise<Match[]> => {
   try {
-    const response = await axios.get(`${API_URL}/matches`);
+    const params = new URLSearchParams();
+    if (options.startDate) params.append("start_date", options.startDate);
+    if (options.endDate) params.append("end_date", options.endDate);
+    if (options.isFanny !== undefined)
+      params.append("is_fanny", String(options.isFanny));
+
+    const queryString = params.toString();
+    const url = queryString
+      ? `${API_URL}/matches?${queryString}`
+      : `${API_URL}/matches`;
+
+    const response = await axios.get(url);
     return response.data as Match[];
   } catch (error) {
     console.error("Error fetching matches:", error);

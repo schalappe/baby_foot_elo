@@ -92,7 +92,14 @@ export async function getMatches(
       isFanny,
     });
   } else {
-    matchesData = await getAllMatchesRepo(limit, skip);
+    // [>]: Pass all filter options to repository for server-side filtering.
+    matchesData = await getAllMatchesRepo({
+      limit,
+      offset: skip,
+      startDate,
+      endDate,
+      isFanny,
+    });
   }
 
   // [>]: Map to response format (RPC already includes team data).

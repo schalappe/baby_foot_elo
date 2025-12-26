@@ -38,7 +38,7 @@ import {
   Skull,
   MessageSquareText,
 } from "lucide-react";
-import { format, startOfDay, endOfDay } from "date-fns";
+import { format } from "date-fns";
 import { NewMatchDialog } from "./NewMatchDialog";
 
 import { DateRange } from "react-day-picker";
@@ -183,24 +183,16 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
   const PAGE_SIZE = 30; // Number of matches per page
 
   /**
-   * Memoized filtered matches based on date range, player, and outcome filters.
+   * Memoized filtered matches based on player and outcome filters.
+   * Date filtering is now done server-side for better scalability.
    */
   const filteredMatches = useMemo(() => {
     let tempMatches = matches || [];
 
-    if (dateRangeFilter && dateRangeFilter.from) {
-      const fromDate = startOfDay(dateRangeFilter.from);
-      const toDate = dateRangeFilter.to
-        ? endOfDay(dateRangeFilter.to)
-        : endOfDay(dateRangeFilter.from);
-      tempMatches = tempMatches.filter((match) => {
-        const matchDate = new Date(match.played_at);
-        return matchDate >= fromDate && matchDate <= toDate;
-      });
-    }
+    // [>]: Date filtering now happens server-side via API query params.
 
     if (selectedPlayerIdFilter) {
-      const playerIdNum = parseInt(selectedPlayerIdFilter, 20);
+      const playerIdNum = parseInt(selectedPlayerIdFilter, 10);
       tempMatches = tempMatches.filter((match) => {
         const teamAPlayerIds = [
           match.winner_team.player1.player_id,
@@ -217,13 +209,12 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
       });
     }
 
-    // Apply match outcome filter (enabled when allPlayers is fulfilled)
+    // [>]: Apply match outcome filter (enabled when allPlayers is fulfilled).
     if (allPlayers && allPlayers.length > 0 && matchOutcomeFilter) {
       const playerIdNum = selectedPlayerIdFilter
-        ? parseInt(selectedPlayerIdFilter, 20)
+        ? parseInt(selectedPlayerIdFilter, 10)
         : null;
       tempMatches = tempMatches.filter((match) => {
-        // Ensure player ID is valid before checking outcome
         if (playerIdNum === null) return true;
 
         const isWinner =
@@ -239,18 +230,12 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
         if (matchOutcomeFilter === "loss") {
           return isLoser;
         }
-        return true; // Should not reach here if outcome is win/loss
+        return true;
       });
     }
 
     return tempMatches;
-  }, [
-    matches,
-    dateRangeFilter,
-    selectedPlayerIdFilter,
-    matchOutcomeFilter,
-    allPlayers,
-  ]);
+  }, [matches, selectedPlayerIdFilter, matchOutcomeFilter, allPlayers]);
 
   // Pagination logic
   const totalPages = Math.ceil((filteredMatches || []).length / PAGE_SIZE);
@@ -316,33 +301,23 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
     );
   }
 
-  if (
-    (filteredMatches || []).length === 0 &&
-    !matchesLoading &&
-    !playersLoading
-  ) {
-    return (
-      <div className="container mx-auto py-8 px-4 md:px-6 lg:px-8">
-        <CardHeader className="px-0">
-          <CardTitle>Historique des matches</CardTitle>
-          <CardDescription>
-            No matches found with the current filters.
-          </CardDescription>
-        </CardHeader>
-      </div>
-    );
-  }
+  // [>]: Check if no matches found (show message but keep filter controls visible).
+  const noMatchesFound =
+    (filteredMatches || []).length === 0 && !matchesLoading && !playersLoading;
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 lg:px-8">
       <CardHeader className="px-0 space-y-2 text-center">
         <CardTitle className="text-center">Historique des matches</CardTitle>
         <CardDescription className="text-center">
-          Consultez les résultats des matches passés.
+          {noMatchesFound
+            ? "Aucun match trouvé avec les filtres actuels."
+            : "Consultez les résultats des matches passés."}
         </CardDescription>
       </CardHeader>
       <div className="mb-6 flex flex-col md:flex-row gap-4 justify-center items-center">
         <DateRangePicker
+          value={dateRangeFilter}
           onUpdateFilter={handleDateRangeChange}
           className="w-full md:w-auto"
         />
@@ -398,7 +373,16 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
         </Select>
         <NewMatchDialog />
       </div>
-      <Card>
+
+      {/* [>]: Show empty state or match table based on results. */}
+      {noMatchesFound ? (
+        <Card>
+          <CardContent className="p-8 text-center text-muted-foreground">
+            Aucun match ne correspond aux critères de recherche.
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -569,8 +553,10 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
           </Table>
         </CardContent>
       </Card>
+      )}
+
       {/* Pagination Controls */}
-      {totalPages > 1 && (
+      {!noMatchesFound && totalPages > 1 && (
         <div className="flex justify-center mt-4">
           <Pagination>
             <PaginationContent>
