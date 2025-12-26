@@ -26,9 +26,9 @@ export default function TeamRankingsPage() {
     error: teamsError,
     isLoading: teamsLoading,
   } = useSWR<Team[]>(TEAMS_API_ENDPOINT, getTeamRankings, {
-    revalidateOnFocus: true,
+    revalidateOnFocus: false,
     revalidateOnMount: true,
-    refreshInterval: 5000, // Refresh every 5 seconds
+    refreshInterval: 30000, // [>]: Reduced from 5s to 30s - rankings don't change frequently.
   });
 
   useEffect(() => {

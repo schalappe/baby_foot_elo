@@ -37,9 +37,9 @@ const MatchHistoryPage = () => {
     error: matchesError,
     isLoading: matchesLoading,
   } = useSWR<Match[]>("/api/v1/matches", getMatches, {
-    revalidateOnFocus: true,
+    revalidateOnFocus: false,
     revalidateOnMount: true,
-    refreshInterval: 5000, // Refresh every 5 seconds
+    refreshInterval: 30000, // [>]: Reduced from 5s to 30s - match history is rarely updated.
   });
 
   const {
@@ -47,9 +47,9 @@ const MatchHistoryPage = () => {
     error: playersError,
     isLoading: playersLoading,
   } = useSWR<Player[]>("/api/v1/players", getPlayers, {
-    revalidateOnFocus: true,
+    revalidateOnFocus: false,
     revalidateOnMount: true,
-    refreshInterval: 5000, // Refresh every 5 seconds
+    refreshInterval: 30000, // [>]: Reduced from 5s to 30s - player list is stable.
   });
 
   return (
