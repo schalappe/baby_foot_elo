@@ -187,7 +187,7 @@ const PlayersList: React.FC = () => {
           <DialogTrigger asChild>
             <Button>Ajouter un Joueur</Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-106.25">
             <DialogHeader>
               <DialogTitle>Nouveau Joueur</DialogTitle>
               <DialogDescription>

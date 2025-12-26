@@ -132,12 +132,12 @@ const PlayerMatchesSection: React.FC<PlayerMatchesSectionProps> = ({
               return (
                 <div
                   key={match.match_id}
-                  className="relative border-2 shadow-lg rounded-xl overflow-hidden transition-colors min-h-[72px] w-full"
+                  className="relative border-2 shadow-lg rounded-xl overflow-hidden transition-colors min-h-18 w-full"
                   style={cardStyle}
                 >
                   <div className="flex flex-row items-center justify-between gap-2 px-4 py-3">
                     {/* ELO Change */}
-                    <div className="flex flex-col items-center min-w-[70px]">
+                    <div className="flex flex-col items-center min-w-17.5">
                       <span
                         className="font-extrabold text-3xl leading-none"
                         style={{
@@ -199,7 +199,7 @@ const PlayerMatchesSection: React.FC<PlayerMatchesSectionProps> = ({
                       </div>
                     </div>
                     {/* Outcome: Only show Fanny icon if relevant */}
-                    <div className="flex flex-col items-end min-w-[90px]">
+                    <div className="flex flex-col items-end min-w-22.5">
                       {isFanny && !isWinner && (
                         <SkullIcon
                           className="w-8 h-8"

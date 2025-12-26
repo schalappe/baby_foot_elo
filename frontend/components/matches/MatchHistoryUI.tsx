@@ -264,7 +264,12 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [dateRangeFilter, selectedPlayerIdFilter, matchOutcomeFilter]);
+  }, [
+    dateRangeFilter,
+    selectedPlayerIdFilter,
+    matchOutcomeFilter,
+    setCurrentPage,
+  ]);
 
   /**
    * Renders the player's name, handling cases where player info might be missing.
@@ -345,7 +350,7 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
           onValueChange={handlePlayerFilterChange}
           value={selectedPlayerIdFilter || "all"}
         >
-          <SelectTrigger className="w-full md:w-[280px]">
+          <SelectTrigger className="w-full md:w-70">
             <UserSearch className="mr-2 h-4 w-4 text-muted-foreground" />
             <SelectValue placeholder="Filtrer par joueur..." />
           </SelectTrigger>
@@ -378,7 +383,7 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
           value={matchOutcomeFilter || "any"}
           disabled={(allPlayers || []).length === 0}
         >
-          <SelectTrigger className="w-full md:w-[280px]">
+          <SelectTrigger className="w-full md:w-70">
             <Trophy className="mr-2 h-4 w-4 text-muted-foreground" />
             <SelectValue placeholder="Résultat du match..." />
           </SelectTrigger>
@@ -546,7 +551,7 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
                       <TableCell className="max-w-xs w-full overflow-hidden text-ellipsis text-center">
                         {match.notes?.trim() && (
                           <div className="flex items-center justify-center text-sm text-slate-600 dark:text-slate-300">
-                            <MessageSquareText className="h-4 w-2 mr-2 flex-shrink-0" />
+                            <MessageSquareText className="h-4 w-2 mr-2 shrink-0" />
                             <span
                               className="truncate italic"
                               title={match.notes}
