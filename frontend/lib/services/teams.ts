@@ -4,6 +4,7 @@
 import {
   createTeamByPlayerIds,
   getAllTeams,
+  getActiveTeamsWithStats,
   getTeamsByPlayerId as getTeamsByPlayerIdRepo,
   updateTeam,
   deleteTeamById,
@@ -131,4 +132,29 @@ export async function deleteTeam(teamId: number): Promise<void> {
 
   // [>]: Delete the team.
   await deleteTeamById(teamId);
+}
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+// [>]: Get active teams for rankings display.
+// Active = has matches AND last match within daysSinceLastMatch days.
+// Uses dedicated query that only fetches teams with match history.
+export async function getActiveTeamRankings(options?: {
+  daysSinceLastMatch?: number;
+}): Promise<TeamResponse[]> {
+  const { daysSinceLastMatch = 180 } = options ?? {};
+
+  // [>]: Fetch only teams that have played matches.
+  const teams = await getActiveTeamsWithStats();
+  const mapped = teams.map(mapToTeamResponse);
+
+  // [>]: Filter by recency.
+  const now = Date.now();
+  const cutoffMs = daysSinceLastMatch * MS_PER_DAY;
+
+  return mapped.filter((team) => {
+    if (!team.last_match_at) return false;
+    const lastMatchMs = new Date(team.last_match_at).getTime();
+    return now - lastMatchMs <= cutoffMs;
+  });
 }

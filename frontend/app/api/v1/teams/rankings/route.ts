@@ -3,8 +3,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { handleApiRequest, getNumericParam } from "@/lib/api/handle-request";
-import { filterActiveEntities, rankByElo } from "@/lib/api/ranking";
-import { getAllTeamsWithStats } from "@/lib/services/teams";
+import { rankByElo } from "@/lib/api/ranking";
+import { getActiveTeamRankings } from "@/lib/services/teams";
 
 // [>]: GET /api/v1/teams/rankings - teams sorted by ELO.
 // Filters to active teams (played within days_since_last_match days).
@@ -17,8 +17,10 @@ export const GET = handleApiRequest(async (request: NextRequest) => {
     180,
   );
 
-  const teams = await getAllTeamsWithStats();
-  const activeTeams = filterActiveEntities(teams, daysSinceLastMatch);
+  // [>]: Fetch active teams with filtering done at service layer.
+  const activeTeams = await getActiveTeamRankings({
+    daysSinceLastMatch,
+  });
   const ranked = rankByElo(activeTeams, limit);
 
   return NextResponse.json(ranked);

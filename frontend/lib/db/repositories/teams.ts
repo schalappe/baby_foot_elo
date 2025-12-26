@@ -257,6 +257,48 @@ async function deleteTeamByIdImpl(teamId: number): Promise<void> {
   }
 }
 
+// [>]: Get all teams that have played at least one match.
+// Queries matches table to find active team IDs, then fetches their full stats.
+async function getActiveTeamsWithStatsImpl(): Promise<TeamWithStatsRow[]> {
+  const client = getSupabaseClient();
+
+  // [>]: Get unique team IDs from matches table.
+  const { data: matchData, error: matchError } = await client
+    .from("matches")
+    .select("winner_team_id, loser_team_id");
+
+  if (matchError) {
+    throw new TeamOperationError(
+      `Failed to get active teams: ${matchError.message}`,
+    );
+  }
+
+  // [>]: Collect unique team IDs.
+  const teamIds = new Set<number>();
+  for (const match of matchData ?? []) {
+    if (match.winner_team_id) teamIds.add(match.winner_team_id);
+    if (match.loser_team_id) teamIds.add(match.loser_team_id);
+  }
+
+  if (teamIds.size === 0) {
+    return [];
+  }
+
+  // [>]: Fetch full stats for each active team using RPC.
+  const results: TeamWithStatsRow[] = [];
+  for (const teamId of teamIds) {
+    const { data, error } = await client.rpc("get_team_full_stats", {
+      p_team_id: teamId,
+    });
+
+    if (!error && data) {
+      results.push(data);
+    }
+  }
+
+  return results;
+}
+
 // [>]: Export wrapped functions with retry logic.
 export const createTeamByPlayerIds = withRetry(createTeamByPlayerIdsImpl);
 export const getTeamById = withRetry(getTeamByIdImpl);
@@ -266,6 +308,7 @@ export const getTeamsByPlayerId = withRetry(getTeamsByPlayerIdImpl);
 export const updateTeam = withRetry(updateTeamImpl);
 export const batchUpdateTeamsElo = withRetry(batchUpdateTeamsEloImpl);
 export const deleteTeamById = withRetry(deleteTeamByIdImpl);
+export const getActiveTeamsWithStats = withRetry(getActiveTeamsWithStatsImpl);
 
 // [>]: Export types for use in services.
 export type { TeamDbRow, TeamWithStatsRow };
