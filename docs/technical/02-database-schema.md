@@ -276,13 +276,36 @@ The application uses custom PostgreSQL functions (RPC) for optimized data retrie
 
 **SQL Location**: `supabase/functions/get_all_players_with_stats.sql`
 
-**Returns**: Array of player records with:
-- All `players` table columns
-- `wins` (INTEGER) - Total wins across all teams
-- `losses` (INTEGER) - Total losses across all teams
-- `matches_played` (INTEGER) - Total matches played
-- `win_rate` (DECIMAL) - Win percentage (0-100)
-- `rank` (INTEGER) - Rank by ELO (1 = highest)
+**Returns**: `SETOF jsonb` - Array of JSON objects (not SQL record rows). Each JSON object contains:
+
+```json
+{
+  "player_id": 1,
+  "name": "Alice",
+  "global_elo": 1620,
+  "created_at": "2025-01-15T10:30:00Z",
+  "last_match_at": "2025-12-26T14:25:00Z",
+  "wins": 45,
+  "losses": 32,
+  "matches_played": 77,
+  "win_rate": 58.44,
+  "rank": 1
+}
+```
+
+**JSON Keys**:
+- `player_id` (number) - Unique player identifier
+- `name` (string) - Player display name
+- `global_elo` (number) - Current ELO rating
+- `created_at` (string, ISO 8601) - Registration timestamp
+- `last_match_at` (string, ISO 8601 | null) - Most recent match timestamp
+- `wins` (number) - Total wins across all teams
+- `losses` (number) - Total losses across all teams
+- `matches_played` (number) - Total matches played
+- `win_rate` (number) - Win percentage (0-100, decimal)
+- `rank` (number) - Rank by ELO (1 = highest)
+
+**Note**: Callers receive JSON-formatted objects, not traditional SQL record columns. Access fields using JSON key syntax (e.g., `result->>'name'` in SQL or `result.name` in application code after parsing).
 
 **Query Structure**:
 ```sql
