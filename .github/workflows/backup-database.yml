@@ -1,0 +1,90 @@
+name: Database Backup
+
+on:
+  # Run daily at 2:00 AM UTC
+  schedule:
+    - cron: '0 2 * * *'
+
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Create backup directory
+        run: mkdir -p backups
+
+      - name: Backup Supabase data
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          BACKUP_PATH="backups/${TIMESTAMP}"
+          mkdir -p "$BACKUP_PATH"
+
+          TABLES=("players" "teams" "matches" "players_elo_history" "teams_elo_history")
+
+          echo "Starting backup..."
+
+          for table in "${TABLES[@]}"; do
+            echo "Backing up table: ${table}"
+
+            response=$(curl -s -w "\n%{http_code}" \
+              "${SUPABASE_URL}/rest/v1/${table}?select=*" \
+              -H "apikey: ${SUPABASE_KEY}" \
+              -H "Authorization: Bearer ${SUPABASE_KEY}")
+
+            http_code=$(echo "$response" | tail -n1)
+            body=$(echo "$response" | sed '$d')
+
+            if [ "$http_code" -eq 200 ]; then
+              echo "$body" > "${BACKUP_PATH}/${table}.json"
+              record_count=$(echo "$body" | jq 'length')
+              echo "  -> ${record_count} records saved"
+            else
+              echo "ERROR: Failed to backup ${table} (HTTP ${http_code})"
+              exit 1
+            fi
+          done
+
+          # Create metadata
+          cat > "${BACKUP_PATH}/metadata.json" << EOF
+          {
+            "timestamp": "${TIMESTAMP}",
+            "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "tables": ["players", "teams", "matches", "players_elo_history", "teams_elo_history"]
+          }
+          EOF
+
+          # Create archive
+          tar -czf "backups/backup_${TIMESTAMP}.tar.gz" -C "backups" "${TIMESTAMP}"
+          rm -rf "$BACKUP_PATH"
+
+          echo "BACKUP_FILE=backup_${TIMESTAMP}.tar.gz" >> $GITHUB_ENV
+          echo "Backup complete!"
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-backup-${{ github.run_id }}
+          path: backups/*.tar.gz
+          retention-days: 30
+
+      - name: Summary
+        run: |
+          echo "## Backup Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **File:** ${{ env.BACKUP_FILE }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Date:** $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Retention:** 30 days" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download from the Artifacts section below." >> $GITHUB_STEP_SUMMARY
