@@ -13,8 +13,11 @@ interface HasElo {
 
 interface HasActivityAndElo extends HasActivity, HasElo {}
 
-// [>]: Filter entities to those with recent activity.
-// Entities with 0 matches or no last_match_at are excluded.
+// [>]: Minimum matches required to appear in rankings.
+const MIN_MATCHES_FOR_RANKING = 10;
+
+// [>]: Filter entities to those with recent activity and sufficient matches.
+// Entities with fewer than MIN_MATCHES_FOR_RANKING or no last_match_at are excluded.
 export function filterActiveEntities<T extends HasActivityAndElo>(
   entities: T[],
   daysSinceLastMatch: number,
@@ -23,10 +26,10 @@ export function filterActiveEntities<T extends HasActivityAndElo>(
   const cutoffMs = daysSinceLastMatch * MS_PER_DAY;
 
   return entities.filter((entity) => {
-    if (entity.matches_played === 0) return false;
+    if (entity.matches_played <= MIN_MATCHES_FOR_RANKING) return false;
     if (!entity.last_match_at) return false;
     const lastMatchMs = new Date(entity.last_match_at).getTime();
-    return now - lastMatchMs <= cutoffMs;
+    return now - lastMatchMs < cutoffMs;
   });
 }
 
