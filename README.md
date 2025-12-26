@@ -1,124 +1,110 @@
 # Baby Foot ELO
 
-This project implements an ELO rating system for baby foot (foosball) matches. It provides a backend API for managing players, teams, and matches, and a frontend application for visualizing rankings and match history.
+A web application for tracking foosball championships with a hybrid ELO rating system. Players form teams of two, and individual ELO changes are calculated based on each player's rating and team performance.
+
+## Quick Start
+
+```bash
+# Install
+git clone <repository-url>
+cd baby_foot_elo
+bun install
+
+# Configure (get credentials from Supabase Dashboard → Project Settings → API)
+cp .env.example .env
+# Edit .env: add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+
+# Run
+bun run dev
+# Open http://localhost:3000
+```
 
 ## Features
 
-- Player and Team management
-- ELO rating calculation for matches
-- Historical ELO tracking
-- Player and Team rankings
-- RESTful API
-- Web-based user interface
+- **Hybrid ELO System**: Individual player and team ratings tracked independently
+- **Zero-Sum Pool Correction**: Fair ELO economy with no rating inflation
+- **K-Factor Tiers**: Fast progression for beginners (K=200), stable ratings for experts (K=50)
+- **Real-Time Rankings**: Live leaderboards for players and teams
+- **Match History**: ELO changes tracked per match for all participants
 
-## Technologies Used
+## Tech Stack
 
-### Backend
+| Layer | Technology |
+|-------|------------|
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind, ShadCN UI |
+| Backend | Next.js API Routes, Supabase (PostgreSQL) |
+| Infrastructure | Vercel, GitHub Actions (daily backups) |
 
-- **Python**: Programming language
-- **FastAPI**: Web framework for building APIs
-- **DuckDB**: In-process SQL OLAP database management system
-- **Loguru**: Logging library
-- **Pydantic**: Data validation and settings management
-
-### Frontend
-
-- **TypeScript**: Programming language
-- **React**: JavaScript library for building user interfaces
-- **Next.js**: React framework for production
-- **ShadCN UI**: Reusable components for React
-- **Recharts**: Composable charting library built on React components
-
-## Setup and Installation
-
-### Prerequisites
-
-- Python 3.9+
-- Bun 1.x (or Node.js 18+ with npm)
-
-### Backend Setup
-
-1. Navigate to the `backend` directory:
-
-   ```bash
-   cd backend
-   ```
-
-2. Create a virtual environment and activate it:
-
-   ```bash
-   python -m venv venv
-   source venv/bin/activate
-   ```
-
-3. Install dependencies:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Run database migrations and start the application:
-
-   ```bash
-   python -m uvicorn app.main:app --reload
-   ```
-
-   The API will be available at `http://localhost:8000`.
-
-### Frontend Setup
-
-1. Navigate to the `frontend` directory:
-
-   ```bash
-   cd frontend
-   ```
-
-2. Install dependencies:
-
-   ```bash
-   bun install
-   ```
-
-3. Start the development server:
-
-   ```bash
-   bun run dev
-   ```
-
-   The frontend application will be available at `http://localhost:3000`.
-
-### Quick Start (Full Stack)
-
-From the root directory, you can run both frontend and backend concurrently:
+## Development
 
 ```bash
-bun install          # Install root dependencies
-bun run dev          # Start both servers
+bun run dev          # Start dev server
+bun run build        # Production build
+bun run test:local   # Run tests with local Supabase
+bun run lint         # ESLint
+bun run typecheck    # TypeScript check
+```
+
+### Local Testing
+
+```bash
+bun run supabase:start   # Start local Supabase (requires Docker)
+bun run test             # Run tests
+bun run supabase:stop    # Stop when done
 ```
 
 ## Project Structure
 
-```bash
-.
-├── backend/
-│   ├── app/
-│   │   ├── api/             # API endpoints
-│   │   ├── db/              # Database initialization and repositories
-│   │   ├── models/          # Pydantic models for data validation
-│   │   └── main.py          # FastAPI application entry point
-│   ├── tests/               # Backend tests
-│   ├── requirements.txt     # Python dependencies
-│   └── pyproject.toml       # Project metadata and dependencies (Poetry)
-├── frontend/
-│   ├── public/              # Static assets
-│   ├── src/
-│   │   ├── app/             # Next.js app directory
-│   │   ├── components/      # React components
-│   │   ├── lib/             # Utility functions
-│   │   ├── services/        # API service integrations
-│   │   └── styles/          # Global styles
-│   ├── tests/               # Frontend tests
-│   ├── package.json         # Node.js dependencies
-│   └── tsconfig.json        # TypeScript configuration
-└── README.md
+```text
+app/                    # Next.js pages + API routes (/api/v1/)
+components/             # React components
+lib/
+├── services/           # Business logic (ELO, matches, players)
+├── db/repositories/    # Data access layer
+└── api/client/         # Frontend API client
+docs/                   # Comprehensive documentation
 ```
+
+## API
+
+```bash
+# Players
+GET  /api/v1/players/rankings
+POST /api/v1/players
+
+# Teams
+GET  /api/v1/teams/rankings
+POST /api/v1/teams
+
+# Matches
+GET  /api/v1/matches
+POST /api/v1/matches
+```
+
+**Example**: Record a match
+```bash
+curl -X POST http://localhost:3000/api/v1/matches \
+  -H "Content-Type: application/json" \
+  -d '{"winner_team_id": 5, "loser_team_id": 3, "is_fanny": false}'
+```
+
+## Documentation
+
+Detailed documentation available in `docs/`:
+
+- **[Documentation Hub](./docs/README.md)** - Main navigation
+- **[Technical Docs](./docs/technical/README.md)** - Architecture, database schema, ELO algorithm
+- **[Operations](./docs/operations/README.md)** - Backup system, local testing
+- **[Product](./docs/product/README.md)** - Mission, roadmap
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Port 3000 in use | `lsof -ti:3000 \| xargs kill -9` |
+| DB connection fails | Check `.env` credentials |
+| Tests fail | Run `bun run supabase:start` first |
+
+## License
+
+MIT

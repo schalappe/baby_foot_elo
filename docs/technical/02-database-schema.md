@@ -1,0 +1,693 @@
+# Database Schema
+
+## Document Information
+
+- **Document Type**: Database Design Reference
+- **Target Audience**: Database Administrators, Backend Developers
+- **Last Updated**: 2025-12-26
+- **Maintainer**: Development Team
+
+## Overview
+
+The Baby Foot ELO application uses PostgreSQL (via Supabase) with a normalized relational schema optimized for ELO tracking and match history. The schema consists of 5 core tables with referential integrity enforced through foreign keys.
+
+## Entity Relationship Diagram
+
+```text
+┌─────────────────────────────┐
+│         players             │
+├─────────────────────────────┤
+│ player_id (PK)              │ ◄───────┐
+│ name (UNIQUE)               │         │
+│ global_elo                  │         │
+│ created_at                  │         │
+│ last_match_at               │         │
+└─────────────────────────────┘         │
+        ▲                               │
+        │                               │
+        │                               │
+        │ FK                            │ FK
+        │                               │
+┌───────┴─────────────────────┐         │
+│         teams               │         │
+├─────────────────────────────┤         │
+│ team_id (PK)                │         │
+│ player1_id (FK) ────────────┼─────────┘
+│ player2_id (FK) ────────────┼─────────┐
+│ global_elo                  │         │
+│ created_at                  │         │
+│ last_match_at               │         │
+└─────────────────────────────┘         │
+        ▲                               │
+        │                               │
+        │ FK                            │
+        │                               │
+┌───────┴─────────────────────┐         │
+│        matches              │         │
+├─────────────────────────────┤         │
+│ match_id (PK)               │         │
+│ winner_team_id (FK)         │         │
+│ loser_team_id (FK)          │         │
+│ is_fanny                    │         │
+│ played_at                   │         │
+│ notes                       │         │
+└─────────────────────────────┘         │
+        │                               │
+        │                               │
+        │ FK                            │
+        │                               │
+        ├───────────────────────────────┤
+        │                               │
+┌───────▼─────────────────────┐  ┌──────▼──────────────────────┐
+│    player_history           │  │     team_history            │
+├─────────────────────────────┤  ├─────────────────────────────┤
+│ history_id (PK)             │  │ history_id (PK)             │
+│ player_id (FK) ─────────────┼──┤ team_id (FK)                │
+│ match_id (FK)               │  │ match_id (FK)               │
+│ old_elo                     │  │ old_elo                     │
+│ new_elo                     │  │ new_elo                     │
+│ date                        │  │ date                        │
+└─────────────────────────────┘  └─────────────────────────────┘
+```
+
+## Table Definitions
+
+### `players`
+
+**Purpose**: Stores individual player information and current global ELO rating.
+
+**Columns**:
+
+| Column Name | Type | Constraints | Description |
+|------------|------|-------------|-------------|
+| `player_id` | `INTEGER` | `PRIMARY KEY`, `AUTO_INCREMENT` | Unique identifier for each player |
+| `name` | `VARCHAR(255)` | `NOT NULL`, `UNIQUE` | Player's display name (case-sensitive) |
+| `global_elo` | `INTEGER` | `NOT NULL`, `DEFAULT 1000` | Current ELO rating (starting at 1000) |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | `NOT NULL`, `DEFAULT NOW()` | Player registration timestamp |
+| `last_match_at` | `TIMESTAMP WITH TIME ZONE` | `NULL` | Timestamp of most recent match |
+
+**Indexes**:
+- Primary key on `player_id`
+- Unique index on `name`
+- Index on `global_elo` (for ranking queries)
+
+**Business Rules**:
+- Player names must be unique (case-sensitive comparison)
+- Starting ELO is always 1000
+- `last_match_at` updated automatically when player participates in a match
+- Players cannot be deleted if they have match history (CASCADE rules prevent orphaned data)
+
+**Example Row**:
+```sql
+INSERT INTO players (name, global_elo, created_at, last_match_at)
+VALUES ('Alice', 1620, '2025-01-15 10:30:00+00', '2025-12-26 14:25:00+00');
+```
+
+---
+
+### `teams`
+
+**Purpose**: Stores team pairings of two players with their combined ELO rating.
+
+**Columns**:
+
+| Column Name | Type | Constraints | Description |
+|------------|------|-------------|-------------|
+| `team_id` | `INTEGER` | `PRIMARY KEY`, `AUTO_INCREMENT` | Unique identifier for each team |
+| `player1_id` | `INTEGER` | `NOT NULL`, `FOREIGN KEY → players(player_id)` | First player in the team |
+| `player2_id` | `INTEGER` | `NOT NULL`, `FOREIGN KEY → players(player_id)` | Second player in the team |
+| `global_elo` | `INTEGER` | `NOT NULL`, `DEFAULT 1000` | Current team ELO rating |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | `NOT NULL`, `DEFAULT NOW()` | Team creation timestamp |
+| `last_match_at` | `TIMESTAMP WITH TIME ZONE` | `NULL` | Timestamp of team's most recent match |
+
+**Indexes**:
+- Primary key on `team_id`
+- Composite index on `(player1_id, player2_id)` (for uniqueness check)
+- Index on `global_elo` (for ranking queries)
+- Foreign key indexes on `player1_id` and `player2_id`
+
+**Constraints**:
+- `player1_id` and `player2_id` must reference existing players
+- `player1_id` ≠ `player2_id` (enforced at application level)
+- No duplicate teams (same pair of players)
+
+**Business Rules**:
+- Starting team ELO is average of both players' current ELOs at creation time
+- Team ELO evolves independently from player ELOs after creation
+- `last_match_at` updated when team plays a match
+- Teams are auto-created when new players join (one team per existing player)
+
+**Example Row**:
+```sql
+INSERT INTO teams (player1_id, player2_id, global_elo, created_at, last_match_at)
+VALUES (1, 2, 1514, '2025-01-15 10:35:00+00', '2025-12-26 14:25:00+00');
+```
+
+---
+
+### `matches`
+
+**Purpose**: Records individual matches between two teams with outcome and metadata.
+
+**Columns**:
+
+| Column Name | Type | Constraints | Description |
+|------------|------|-------------|-------------|
+| `match_id` | `INTEGER` | `PRIMARY KEY`, `AUTO_INCREMENT` | Unique identifier for each match |
+| `winner_team_id` | `INTEGER` | `NOT NULL`, `FOREIGN KEY → teams(team_id)` | Team that won the match |
+| `loser_team_id` | `INTEGER` | `NOT NULL`, `FOREIGN KEY → teams(team_id)` | Team that lost the match |
+| `is_fanny` | `BOOLEAN` | `NOT NULL`, `DEFAULT FALSE` | True if losing team scored 0 points (fanny) |
+| `played_at` | `TIMESTAMP WITH TIME ZONE` | `NOT NULL`, `DEFAULT NOW()` | When the match was played |
+| `notes` | `TEXT` | `NULL` | Optional match notes or comments |
+
+**Indexes**:
+- Primary key on `match_id`
+- Index on `winner_team_id`
+- Index on `loser_team_id`
+- Index on `played_at` (for chronological queries)
+- Composite index on `(winner_team_id, played_at)` (for team match history)
+- Composite index on `(loser_team_id, played_at)` (for team match history)
+
+**Constraints**:
+- `winner_team_id` and `loser_team_id` must reference existing teams
+- `winner_team_id` ≠ `loser_team_id` (enforced at application level)
+
+**Business Rules**:
+- Match creation triggers ELO recalculation for all 4 players and 2 teams
+- `played_at` can be backdated for historical data entry
+- `is_fanny` flag may affect future ELO calculations (currently no impact)
+- Deleting a match does NOT reverse ELO changes (soft delete behavior)
+
+**Example Row**:
+```sql
+INSERT INTO matches (winner_team_id, loser_team_id, is_fanny, played_at, notes)
+VALUES (5, 3, FALSE, '2025-12-26 14:25:00+00', 'Championship final match');
+```
+
+---
+
+### `players_elo_history`
+
+**Purpose**: Audit trail of player ELO changes per match for historical analysis.
+
+**Columns**:
+
+| Column Name | Type | Constraints | Description |
+|------------|------|-------------|-------------|
+| `history_id` | `INTEGER` | `PRIMARY KEY`, `AUTO_INCREMENT` | Unique identifier for history entry |
+| `player_id` | `INTEGER` | `NOT NULL`, `FOREIGN KEY → players(player_id)` | Player whose ELO changed |
+| `match_id` | `INTEGER` | `NOT NULL`, `FOREIGN KEY → matches(match_id)` | Match that caused the ELO change |
+| `old_elo` | `INTEGER` | `NOT NULL` | Player's ELO before the match |
+| `new_elo` | `INTEGER` | `NOT NULL` | Player's ELO after the match |
+| `date` | `TIMESTAMP WITH TIME ZONE` | `NOT NULL` | When the change occurred (matches `played_at`) |
+
+**Indexes**:
+- Primary key on `history_id`
+- Index on `player_id` (for player ELO progression queries)
+- Index on `match_id` (for match impact analysis)
+- Composite index on `(player_id, date)` (for chronological player history)
+
+**Constraints**:
+- `player_id` must reference an existing player
+- `match_id` must reference an existing match
+- `old_elo` and `new_elo` must be positive integers
+
+**Business Rules**:
+- One entry created per player per match (4 entries total per match)
+- ELO difference: `new_elo - old_elo` can be positive or negative
+- Used for ELO trend charts and historical analysis
+- Preserved even if match is deleted (for audit purposes)
+
+**Example Row**:
+```sql
+INSERT INTO players_elo_history (player_id, match_id, old_elo, new_elo, date)
+VALUES (1, 42, 1600, 1620, '2025-12-26 14:25:00+00');
+```
+
+---
+
+### `teams_elo_history`
+
+**Purpose**: Audit trail of team ELO changes per match for historical analysis.
+
+**Columns**:
+
+| Column Name | Type | Constraints | Description |
+|------------|------|-------------|-------------|
+| `history_id` | `INTEGER` | `PRIMARY KEY`, `AUTO_INCREMENT` | Unique identifier for history entry |
+| `team_id` | `INTEGER` | `NOT NULL`, `FOREIGN KEY → teams(team_id)` | Team whose ELO changed |
+| `match_id` | `INTEGER` | `NOT NULL`, `FOREIGN KEY → matches(match_id)` | Match that caused the ELO change |
+| `old_elo` | `INTEGER` | `NOT NULL` | Team's ELO before the match |
+| `new_elo` | `INTEGER` | `NOT NULL` | Team's ELO after the match |
+| `date` | `TIMESTAMP WITH TIME ZONE` | `NOT NULL` | When the change occurred (matches `played_at`) |
+
+**Indexes**:
+- Primary key on `history_id`
+- Index on `team_id` (for team ELO progression queries)
+- Index on `match_id` (for match impact analysis)
+- Composite index on `(team_id, date)` (for chronological team history)
+
+**Constraints**:
+- `team_id` must reference an existing team
+- `match_id` must reference an existing match
+- `old_elo` and `new_elo` must be positive integers
+
+**Business Rules**:
+- One entry created per team per match (2 entries total per match)
+- ELO difference: `new_elo - old_elo` can be positive or negative
+- Used for team ELO trend analysis
+- Preserved even if match is deleted
+
+**Example Row**:
+```sql
+INSERT INTO teams_elo_history (team_id, match_id, old_elo, new_elo, date)
+VALUES (5, 42, 1500, 1514, '2025-12-26 14:25:00+00');
+```
+
+## RPC Functions (PostgreSQL)
+
+The application uses custom PostgreSQL functions (RPC) for optimized data retrieval with pre-aggregated statistics. These functions are located in the `supabase/` directory and called via Supabase RPC.
+
+### `get_all_players_with_stats_optimized`
+
+**Purpose**: Retrieve all players with computed statistics (wins, losses, win rate, rank).
+
+**Performance**: 41x faster than previous ORM-based approach using CTEs for pre-aggregation.
+
+**SQL Location**: `supabase/functions/get_all_players_with_stats.sql`
+
+**Returns**: `SETOF jsonb` - Array of JSON objects (not SQL record rows). Each JSON object contains:
+
+```json
+{
+  "player_id": 1,
+  "name": "Alice",
+  "global_elo": 1620,
+  "created_at": "2025-01-15T10:30:00Z",
+  "last_match_at": "2025-12-26T14:25:00Z",
+  "wins": 45,
+  "losses": 32,
+  "matches_played": 77,
+  "win_rate": 58.44,
+  "rank": 1
+}
+```
+
+**JSON Keys**:
+- `player_id` (number) - Unique player identifier
+- `name` (string) - Player display name
+- `global_elo` (number) - Current ELO rating
+- `created_at` (string, ISO 8601) - Registration timestamp
+- `last_match_at` (string, ISO 8601 | null) - Most recent match timestamp
+- `wins` (number) - Total wins across all teams
+- `losses` (number) - Total losses across all teams
+- `matches_played` (number) - Total matches played
+- `win_rate` (number) - Win percentage (0-100, decimal)
+- `rank` (number) - Rank by ELO (1 = highest)
+
+**Note**: Callers receive JSON-formatted objects, not traditional SQL record columns. Access fields using JSON key syntax (e.g., `result->>'name'` in SQL or `result.name` in application code after parsing).
+
+**Query Structure**:
+```sql
+WITH player_stats AS (
+  SELECT
+    player_id,
+    COUNT(*) AS matches_played,
+    -- Use FILTER clause for conditional aggregation
+    COUNT(*) FILTER (WHERE is_winner) AS wins,
+    COUNT(*) FILTER (WHERE NOT is_winner) AS losses,
+    MAX(played_at) AS last_match_at
+  FROM (
+    -- UNNEST team player arrays to expand winning team players
+    SELECT
+      UNNEST(ARRAY[t.player1_id, t.player2_id]) AS player_id,
+      m.played_at,
+      true AS is_winner
+    FROM matches m
+    JOIN teams t ON t.team_id = m.winner_team_id
+    UNION ALL
+    -- UNNEST losing team players
+    SELECT
+      UNNEST(ARRAY[t.player1_id, t.player2_id]) AS player_id,
+      m.played_at,
+      false AS is_winner
+    FROM matches m
+    JOIN teams t ON t.team_id = m.loser_team_id
+  ) player_matches
+  GROUP BY player_id
+)
+SELECT jsonb_build_object(
+  'player_id', p.player_id,
+  'name', p.name,
+  'global_elo', p.global_elo,
+  'wins', COALESCE(ps.wins, 0),
+  'losses', COALESCE(ps.losses, 0),
+  'win_rate', ROUND(ps.wins::NUMERIC / ps.matches_played::NUMERIC, 4),
+  -- Use RANK() to allow ties, ordered by ELO DESC
+  'rank', RANK() OVER (ORDER BY p.global_elo DESC, p.created_at ASC)
+)
+FROM players p
+LEFT JOIN player_stats ps ON ps.player_id = p.player_id
+ORDER BY p.global_elo DESC;
+```
+
+---
+
+### `get_all_teams_with_stats`
+
+**Purpose**: Retrieve all teams with computed statistics (wins, losses, win rate, rank).
+
+**SQL Location**: `supabase/functions/get_all_teams_with_stats.sql`
+
+**Returns**: Array of team records with:
+- All `teams` table columns
+- Player objects (nested): `player1` and `player2` with full details
+- `wins` (INTEGER)
+- `losses` (INTEGER)
+- `matches_played` (INTEGER)
+- `win_rate` (DECIMAL)
+- `rank` (INTEGER)
+
+**Query Structure**: Similar CTE pattern to player stats with JOINs to embed player data.
+
+---
+
+### `get_player_matches_json`
+
+**Purpose**: Retrieve match history for a specific player with ELO changes.
+
+**SQL Location**: `supabase/functions/get_player_matches_json.sql`
+
+**Parameters**:
+- `player_id_param` (INTEGER) - Player to fetch matches for
+
+**Returns**: JSON array of matches with:
+- Match details (teams, date, outcome)
+- Player's ELO change for that match
+- Team composition (partner's name)
+- Win/loss indicator
+
+**Query Structure**:
+```sql
+SELECT json_build_object(
+  'match_id', m.match_id,
+  'played_at', m.played_at,
+  'is_fanny', m.is_fanny,
+  'player_elo_change', (
+    SELECT new_elo - old_elo
+    FROM player_history
+    WHERE player_id = player_id_param AND match_id = m.match_id
+  ),
+  'team', json_build_object(...),
+  'opponent_team', json_build_object(...),
+  'result', CASE WHEN ... THEN 'WIN' ELSE 'LOSS' END
+) as match_data
+FROM matches m
+JOIN teams winner_team ON ...
+JOIN teams loser_team ON ...
+WHERE winner_team.player1_id = player_id_param
+   OR winner_team.player2_id = player_id_param
+   OR loser_team.player1_id = player_id_param
+   OR loser_team.player2_id = player_id_param
+ORDER BY m.played_at DESC;
+```
+
+---
+
+### `get_team_match_history`
+
+**Purpose**: Retrieve match history for a specific team with ELO changes.
+
+**SQL Location**: `supabase/functions/get_team_match_history.sql`
+
+**Parameters**:
+- `team_id_param` (INTEGER) - Team to fetch matches for
+
+**Returns**: Similar structure to player matches, but focused on team ELO changes.
+
+---
+
+### `get_all_matches_with_details`
+
+**Purpose**: Retrieve all matches with full team and player details.
+
+**SQL Location**: `supabase/functions/get_all_matches_with_details.sql` (inferred)
+
+**Returns**: Match records with nested team/player objects for display.
+
+---
+
+### `get_player_full_stats`
+
+**Purpose**: Comprehensive player statistics including ELO progression, streaks, and performance metrics.
+
+**SQL Location**: `supabase/functions/get_player_full_stats.sql`
+
+**Parameters**:
+- `player_id_param` (INTEGER)
+
+**Returns**: Single object with:
+- Player details
+- Total wins, losses, matches
+- Current win streak
+- Longest win streak
+- Average ELO gain per win
+- Average ELO loss per loss
+- Recent form (last 10 matches)
+- All-time high ELO
+
+---
+
+### `get_team_full_stats_optimized`
+
+**Purpose**: Retrieve comprehensive statistics for a single team with nested player data.
+
+**Performance**: Reduces multiple separate queries to a single aggregated query using CTEs.
+
+**SQL Location**: `supabase/functions/get_team_full_stats.sql`
+
+**Parameters**:
+- `p_team_id` (INTEGER) - Team to fetch comprehensive stats for
+
+**Returns**: Single JSONB object with:
+- All `teams` table columns (`team_id`, `player1_id`, `player2_id`, `global_elo`, `created_at`)
+- Team stats: `wins`, `losses`, `matches_played`, `win_rate`, `last_match_at`
+- `player1` (nested JSONB): Player details with individual stats (`player_id`, `name`, `global_elo`, `created_at`, `wins`, `losses`, `matches_played`, `win_rate`, `last_match_at`)
+- `player2` (nested JSONB): Same structure as `player1`
+
+**Query Structure**:
+```sql
+WITH team_stats AS (
+  -- Aggregate team wins/losses using UNION ALL and FILTER
+  SELECT COUNT(*) as matches_played,
+         COUNT(*) FILTER (WHERE is_winner) as wins,
+         COUNT(*) FILTER (WHERE NOT is_winner) as losses
+  FROM (winner matches UNION ALL loser matches)
+),
+player_stats AS (
+  -- Aggregate individual player stats using UNNEST and UNION ALL
+  SELECT player_id, wins, losses, matches_played
+  FROM (winner matches UNION ALL loser matches)
+  GROUP BY player_id
+)
+SELECT jsonb_build_object(
+  -- Build nested JSON with team + both players' full stats
+) FROM teams JOIN players JOIN team_stats JOIN player_stats;
+```
+
+---
+
+### `get_active_teams_with_stats_batch`
+
+**Purpose**: Retrieve all active teams (minimum matches and recent activity) with comprehensive stats in a single batch query.
+
+**Performance**: 50x faster than previous N+1 query pattern (replaced per-team RPC calls with single aggregated query).
+
+**SQL Location**: `supabase/functions/get_active_teams_with_stats_batch.sql`
+
+**Parameters**:
+- `p_days_since_last_match` (INTEGER, optional) - Only include teams active within this many days (default: 180)
+- `p_min_matches` (INTEGER, optional) - Minimum number of matches required (default: 10)
+
+**Returns**: SETOF JSONB (array of team objects) with:
+- All `teams` table columns
+- Team stats: `wins`, `losses`, `matches_played`, `win_rate`, `last_match_at`, `rank` (by ELO)
+- `player1` (nested JSONB): Player details with individual stats
+- `player2` (nested JSONB): Player details with individual stats
+
+**Query Structure**:
+```sql
+WITH team_stats AS (
+  -- Pre-aggregate all team stats in single pass (UNION ALL winner/loser matches)
+  SELECT team_id, wins, losses, matches_played, last_match_at
+  GROUP BY team_id
+),
+player_stats AS (
+  -- Pre-aggregate all player stats using UNNEST for efficiency
+  SELECT player_id, wins, losses, matches_played
+  GROUP BY player_id
+),
+active_teams AS (
+  -- Filter teams by minimum matches and recency criteria
+  -- Apply RANK() OVER (ORDER BY global_elo DESC) for rankings
+  WHERE matches_played >= p_min_matches
+    AND last_match_at >= NOW() - p_days_since_last_match
+)
+SELECT jsonb_build_object(
+  -- Build nested JSON with team + both players' stats
+) FROM active_teams JOIN players JOIN player_stats
+ORDER BY global_elo DESC, rank ASC;
+```
+
+## Data Integrity Constraints
+
+### Foreign Key Relationships
+
+**Teams → Players**:
+```sql
+ALTER TABLE teams
+ADD CONSTRAINT fk_player1 FOREIGN KEY (player1_id) REFERENCES players(player_id) ON DELETE CASCADE,
+ADD CONSTRAINT fk_player2 FOREIGN KEY (player2_id) REFERENCES players(player_id) ON DELETE CASCADE;
+```
+
+**Matches → Teams**:
+```sql
+ALTER TABLE matches
+ADD CONSTRAINT fk_winner_team FOREIGN KEY (winner_team_id) REFERENCES teams(team_id) ON DELETE RESTRICT,
+ADD CONSTRAINT fk_loser_team FOREIGN KEY (loser_team_id) REFERENCES teams(team_id) ON DELETE RESTRICT;
+```
+
+**History → Players/Teams/Matches**:
+```sql
+ALTER TABLE player_history
+ADD CONSTRAINT fk_player FOREIGN KEY (player_id) REFERENCES players(player_id) ON DELETE RESTRICT,
+ADD CONSTRAINT fk_match FOREIGN KEY (match_id) REFERENCES matches(match_id) ON DELETE RESTRICT;
+
+ALTER TABLE team_history
+ADD CONSTRAINT fk_team FOREIGN KEY (team_id) REFERENCES teams(team_id) ON DELETE RESTRICT,
+ADD CONSTRAINT fk_match FOREIGN KEY (match_id) REFERENCES matches(match_id) ON DELETE RESTRICT;
+```
+
+### Cascade Behavior
+
+- **DELETE player**: Restricted if referenced by `teams` or `player_history` (cannot delete players with team associations or match history - preserves audit trail)
+- **DELETE team**: Restricted if referenced by `matches` or `team_history` (cannot delete team with match history - preserves audit trail)
+- **DELETE match**: Restricted if referenced by `player_history` or `team_history` (cannot delete matches with existing history records - preserves audit trail)
+
+### Unique Constraints
+
+- `players.name` - No duplicate player names
+- Implicit unique on `(teams.player1_id, teams.player2_id)` - No duplicate team pairings (enforced at application level)
+
+## Query Performance
+
+### Optimized Queries
+
+1. **Player Rankings**:
+```sql
+SELECT * FROM get_all_players_with_stats_optimized() ORDER BY rank LIMIT 100;
+```
+**Performance**: O(n log n) due to CTE aggregation + sorting
+**Index Usage**: Uses `players.global_elo` index
+
+2. **Team Rankings**:
+```sql
+SELECT * FROM get_all_teams_with_stats() ORDER BY rank LIMIT 100;
+```
+**Performance**: Similar to player rankings
+
+3. **Match History (Filtered by Date)**:
+```sql
+SELECT * FROM matches
+WHERE played_at >= '2025-01-01' AND played_at < '2026-01-01'
+ORDER BY played_at DESC
+LIMIT 50;
+```
+**Performance**: O(log n) due to `played_at` index + LIMIT
+
+4. **Player ELO Trend**:
+```sql
+SELECT old_elo, new_elo, date
+FROM player_history
+WHERE player_id = $1
+ORDER BY date ASC;
+```
+**Performance**: O(m log m) where m = player's matches (uses composite index)
+
+### Index Coverage
+
+All foreign keys are indexed for JOIN performance:
+- `teams.player1_id`, `teams.player2_id`
+- `matches.winner_team_id`, `matches.loser_team_id`
+- `player_history.player_id`, `player_history.match_id`
+- `team_history.team_id`, `team_history.match_id`
+
+Frequently queried columns:
+- `players.global_elo` (rankings)
+- `teams.global_elo` (rankings)
+- `matches.played_at` (chronological queries)
+
+## Migration Strategy
+
+### Schema Changes
+
+**Location**: `supabase/migrations`
+
+**Process**:
+1. Create migration SQL in Supabase dashboard
+2. Test on development database
+3. Apply to production with zero downtime (Supabase handles)
+
+### Backwards Compatibility
+
+- Adding columns: Use `DEFAULT` values or `NULL` to avoid breaking existing queries
+- Removing columns: Deprecate in application code first, remove after 1+ deployment
+- Changing RPC functions: Version them (`get_all_players_with_stats_v2`) or use optional parameters
+
+### Data Seeding
+
+**Initial Data**:
+- Minimum 2 players required for functionality
+- Teams auto-created when players added
+
+**Example Seed**:
+```sql
+INSERT INTO players (name, global_elo) VALUES
+  ('Alice', 1000),
+  ('Bob', 1000);
+
+-- Team auto-created by application when players registered
+```
+
+## Maintenance Notes
+
+### When to Update This Document
+
+- Table schema changes (new columns, constraints)
+- New RPC functions added
+- Index strategy changes
+- Foreign key relationship modifications
+
+### Performance Monitoring
+
+**Slow Query Candidates**:
+- Match history without date filter (full table scan)
+- Player stats without RPC (N+1 queries)
+
+**Optimization Checklist**:
+- [ ] All foreign keys indexed
+- [ ] Frequently filtered columns indexed
+- [ ] RPC functions use CTEs for aggregation
+- [ ] LIMIT clauses on large result sets
+- [ ] Composite indexes on `(entity_id, date)` patterns
+
+### Backup Strategy
+
+- Supabase automatic backups (daily)
+- Point-in-time recovery available
+- Export critical data via CSV for local backup
+
+## Related Documentation
+
+- `01-architecture-overview.md` - System architecture context
+- `03-elo-calculation-system.md` - ELO algorithm details
