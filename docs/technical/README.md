@@ -39,7 +39,7 @@ This directory contains comprehensive technical documentation for the Baby Foot 
    - Win probability calculation
    - Worked examples with step-by-step math
 
-5. **[Service Layer Documentation](./05-service-layer.md)** ⚙️ **NEW**
+5. **[Service Layer Documentation](./05-service-layer.md)** ⚙️
    - Complete class reference for all services
    - ELO Service: Pure calculation functions with formulas
    - Match Service: Match orchestration and ELO application (9-step flow)
@@ -48,7 +48,7 @@ This directory contains comprehensive technical documentation for the Baby Foot 
    - Function signatures, parameters, return types, examples
    - Design patterns and testing strategies
 
-6. **[Repository Layer](./06-repository-layer.md)** 💾 **NEW**
+6. **[Repository Layer](./06-repository-layer.md)** 💾
    - Complete class reference for all repositories
    - Player Repository: CRUD operations and ELO history
    - Team Repository: Player ID normalization pattern
@@ -58,7 +58,7 @@ This directory contains comprehensive technical documentation for the Baby Foot 
    - Batch operations and performance optimization
    - Testing patterns for integration tests
 
-7. **[Class Diagrams and Relationships](./07-class-diagrams.md)** 📊 **NEW**
+7. **[Class Diagrams and Relationships](./07-class-diagrams.md)** 📊
    - System-wide architecture diagram (all layers)
    - Service layer class diagram with dependencies
    - Repository layer class diagram
@@ -75,35 +75,26 @@ This directory contains comprehensive technical documentation for the Baby Foot 
 ### API Documentation
 
 8. **[API Reference](./08-api-reference.md)** 🔌
-   - Complete REST API endpoint documentation
-   - Request/response schemas
-   - Error codes and handling
-   - Rate limiting and caching
-   - Authentication (future)
+   - Complete REST API endpoint documentation (22 endpoints)
+   - Request/response schemas for all entities
+   - Error codes and handling patterns
+   - Code examples (JavaScript, Python, cURL)
+   - Pagination and filtering strategies
 
 ### Frontend Architecture
 
 9. **[Frontend Architecture](./09-frontend-architecture.md)** 🎨
-   - Component hierarchy and organization
-   - SWR data fetching patterns
-   - State management strategy
-   - UI component library (ShadCN)
-   - Performance optimizations
+   - Component hierarchy (5 layers: Layout → Pages → Features → Generic → UI)
+   - Direct Axios data fetching (no SWR)
+   - Local state management patterns
+   - Design system (ShadCN UI + Tailwind)
+   - Performance optimizations and patterns
 
-10. **[Component Documentation](./10-component-reference.md)** 🧩
-    - Individual component documentation
-    - Props and interfaces
-    - Usage examples
-    - Reusable patterns
-
-### Deployment & Operations
-
-11. **[Deployment Guide](./11-deployment-guide.md)** 🚀
-    - Environment setup
-    - Vercel deployment configuration
-    - Supabase configuration
-    - Environment variables
-    - Monitoring and logging
+10. **[Component Reference](./10-component-reference.md)** 🧩
+    - Individual component documentation (31 components)
+    - Props, features, and implementation details
+    - Usage examples with code
+    - Generic wrapper pattern documentation
 
 ## Quick Start for Developers
 
@@ -139,86 +130,6 @@ This directory contains comprehensive technical documentation for the Baby Foot 
 - [Class Diagrams](./07-class-diagrams.md#elo-calculation-flow-diagram) - Visual flow
 - [Sequence Diagrams](./03-sequence-diagrams.md) (Match Creation Flow)
 
-**Deployment & DevOps**:
-- [Deployment Guide](./11-deployment-guide.md)
-- [API Reference](./08-api-reference.md) (for endpoint configuration)
-
-## Documentation Standards
-
-### Maintenance
-
-Each document includes:
-- **Document Information**: Type, audience, last updated, maintainer
-- **Maintenance Notes**: When to update the document
-- **Related Documentation**: Links to related docs
-
-### When to Update
-
-Update documentation when:
-- Adding new features or components
-- Changing architecture or design patterns
-- Modifying database schema
-- Updating API endpoints
-- Refactoring major code sections
-
-### How to Update
-
-1. Read the document's "Maintenance Notes" section
-2. Update relevant sections with clear, concise changes
-3. Update "Last Updated" date
-4. Add links to related documentation if needed
-5. Commit with message: `docs: update [document-name] for [feature/change]`
-
-## Diagrams and Visual Aids
-
-### ASCII Diagrams
-
-All diagrams use ASCII art for:
-- Portability (viewable in any text editor)
-- Version control friendly (git diff works)
-- No external tools required
-- Fast to update
-
-### Code Examples
-
-All code examples:
-- Use actual code from the codebase (not pseudo-code)
-- Include file path references
-- Show complete, runnable snippets where possible
-
-## Contributing to Documentation
-
-### Style Guide
-
-- **Be Concise**: Short sentences, active voice
-- **Be Specific**: Reference actual files (lib/services/elo.ts:45)
-- **Be Clear**: Explain "why" not just "what"
-- **Be Visual**: Use tables, diagrams, code blocks
-
-### Example Documentation Pattern
-
-```markdown
-## Component Name
-
-**Purpose**: Brief one-line description
-
-**Location**: `path/to/file.ts`
-
-**Key Functions**:
-- `functionName()` - Description
-- `anotherFunction()` - Description
-
-**Example Usage**:
-```typescript
-// Actual code example
-const result = functionName(params);
-```
-
-**Dependencies**:
-- DependencyA (what it does)
-- DependencyB (what it does)
-```
-
 ## Related Resources
 
 ### External Documentation
@@ -229,40 +140,9 @@ const result = functionName(params);
 
 ### Internal Documentation
 - [Project README](../../README.md) - Setup and getting started
-- [CLAUDE.md](../../CLAUDE.md) - Project overview for Claude Code
 - [Product Documentation](../product/) - Product specs and roadmap
 
-## Document Status
-
-| Document | Status | Coverage | Lines |
-|----------|--------|----------|-------|
-| 01-architecture-overview.md | ✅ Complete | 100% | 521 |
-| 02-database-schema.md | ✅ Complete | 100% | 575 |
-| 03-sequence-diagrams.md | ✅ Complete | 100% | 644 |
-| 04-elo-calculation-system.md | ✅ Complete | 100% | 682 |
-| 05-service-layer.md | ✅ Complete | 100% | 1,328 |
-| 06-repository-layer.md | ✅ Complete | 100% | 1,127 |
-| 07-class-diagrams.md | ✅ Complete | 100% | 867 |
-| 08-api-reference.md | 📝 Planned | 0% | - |
-| 09-frontend-architecture.md | 📝 Planned | 0% | - |
-| 10-component-reference.md | 📝 Planned | 0% | - |
-| 11-deployment-guide.md | 📝 Planned | 0% | - |
-
-**Total Documentation**: 5,744+ lines across 7 comprehensive documents
-
 ---
-
-## Documentation Metrics
-
-**Coverage by Layer**:
-- ✅ Architecture & Design: 100% (Architecture, Class Diagrams, Sequence Diagrams)
-- ✅ Database Layer: 100% (Schema, RPC Functions)
-- ✅ Repository Layer: 100% (Complete class reference)
-- ✅ Service Layer: 100% (Complete class reference)
-- ✅ Business Logic: 100% (ELO Calculation System)
-- 🚧 API Layer: Planned (API Reference)
-- 🚧 Frontend Layer: Planned (Frontend Architecture, Component Reference)
-- 🚧 Operations: Planned (Deployment Guide)
 
 **Documentation Quality**:
 - All code examples reference actual file paths

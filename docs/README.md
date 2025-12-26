@@ -50,56 +50,6 @@ docs/
 
 ---
 
-## 📖 Documentation Categories
-
-### 🎯 Product Documentation
-**Location**: `docs/product/`
-
-Defines what we're building and why.
-
-| Document | Description |
-|----------|-------------|
-| [Mission](./product/mission.md) | Product vision, target users, and key differentiators |
-| [Roadmap](./product/roadmap.md) | Feature roadmap and development priorities |
-| [Tech Stack](./product/tech-stack.md) | Technology choices and rationale |
-
-[→ Product Documentation Index](./product/README.md)
-
----
-
-### 🔧 Technical Documentation
-**Location**: `docs/technical/`
-
-Comprehensive technical architecture and implementation details.
-
-| Document | Description | Lines |
-|----------|-------------|-------|
-| [Architecture Overview](./technical/01-architecture-overview.md) | High-level system design and patterns | 521 |
-| [Database Schema](./technical/02-database-schema.md) | Complete database structure with ERD | 575 |
-| [Sequence Diagrams](./technical/03-sequence-diagrams.md) | Key flow diagrams (match creation, rankings, etc.) | 644 |
-| [ELO Calculation System](./technical/04-elo-calculation-system.md) | Algorithm details with worked examples | 682 |
-| [Service Layer Reference](./technical/05-service-layer.md) ⭐ **NEW** | Complete class documentation for all services | 1,328 |
-| [Repository Layer Reference](./technical/06-repository-layer.md) ⭐ **NEW** | Complete class documentation for all repositories | 1,127 |
-| [Class Diagrams & Relationships](./technical/07-class-diagrams.md) ⭐ **NEW** | 13 comprehensive Mermaid diagrams of system architecture | 867 |
-
-**Total**: 5,744+ lines of technical documentation (138% increase!)
-
-[→ Technical Documentation Index](./technical/README.md)
-
----
-
-### ⚙️ Operations Documentation
-**Location**: `docs/operations/`
-
-Guides for deployment, backup, testing, and maintenance.
-
-| Document | Description |
-|----------|-------------|
-| [Database Backup](./operations/database-backup.md) | Automated backup system with GitHub Actions |
-| [Local Testing](./operations/local-testing.md) | Running tests with local Supabase |
-
----
-
 ## 🚀 Developer Onboarding
 
 ### First-Time Setup (5 minutes)
@@ -135,7 +85,7 @@ Guides for deployment, backup, testing, and maintenance.
    - Learn design patterns (Service, Repository, Mapper)
    - See technology stack
 
-2. **[Class Diagrams](./technical/07-class-diagrams.md)** ⭐ **NEW** (15 min)
+2. **[Class Diagrams](./technical/07-class-diagrams.md)** (15 min)
    - Visual system architecture with all layers
    - Component hierarchy and data flow
    - 13 comprehensive Mermaid diagrams
@@ -149,7 +99,7 @@ Guides for deployment, backup, testing, and maintenance.
    - Focus on "Match Creation Flow" (9-step process)
    - See how components interact
 
-5. **Deep Dive - Service & Repository Layers** ⭐ **NEW** (15 min)
+5. **Deep Dive - Service & Repository Layers** (15 min)
    - **[Service Layer Reference](./technical/05-service-layer.md)** - Complete class documentation
      - All service functions with signatures, parameters, examples
      - ELO Service: Pure calculation functions
@@ -341,7 +291,7 @@ tests/
 
 ### Modifying ELO Calculation
 
-**⚠️ CRITICAL**: The ELO system is a direct port from Python. Changes must maintain:
+**⚠️ CRITICAL** - Changes must maintain:
 - Zero-sum property (pool correction)
 - K-factor tiers (200/100/50)
 - Mathematical equivalence with Python implementation
@@ -368,29 +318,6 @@ tests/
 
 ---
 
-## 📝 Documentation Standards
-
-### When to Update Documentation
-
-| Change | Documents to Update |
-|--------|---------------------|
-| New feature | Architecture overview, relevant technical docs, API reference |
-| Database schema change | Database schema, migration notes |
-| ELO algorithm change | ELO calculation system, test cases |
-| New API endpoint | API reference, sequence diagrams (if complex flow) |
-| Architecture change | Architecture overview, affected component docs |
-
-### Documentation Style
-
-- **Be concise**: Short sentences, active voice
-- **Be specific**: Reference actual files with line numbers
-- **Be visual**: Use ASCII diagrams, tables, code blocks
-- **Be current**: Update "Last Updated" date when editing
-
-[→ Documentation Guidelines](./technical/README.md#documentation-standards)
-
----
-
 ## 🔍 Troubleshooting
 
 ### Common Issues
@@ -412,46 +339,6 @@ tests/
 
 ---
 
-## 📊 Project Statistics
-
-| Metric | Count |
-|--------|-------|
-| **Documentation Files** | 18 |
-| **Total Documentation Lines** | 7,300+ |
-| **Technical Diagrams** | 39+ (13 new Mermaid diagrams!) |
-| **Class References** | 2 complete layers (Service + Repository) |
-| **API Endpoints** | 20+ |
-| **Database Tables** | 5 |
-| **React Components** | 40+ |
-| **RPC Functions** | 6 |
-| **Service Functions Documented** | 24 |
-| **Repository Functions Documented** | 40+ |
-
----
-
-## 🎯 Roadmap & Future Documentation
-
-### Planned Documentation
-
-- [ ] **API Reference** (`technical/07-api-reference.md`) - OpenAPI-style endpoint docs
-- [ ] **Frontend Architecture** (`technical/08-frontend-architecture.md`) - Component hierarchy, SWR patterns
-- [ ] **Component Reference** (`technical/09-component-reference.md`) - Individual component docs
-- [ ] **Deployment Guide** (`technical/10-deployment-guide.md`) - Vercel + Supabase setup
-- [ ] **Service Layer Deep Dive** (`technical/05-service-layer.md`) - Detailed service documentation
-- [ ] **Repository Layer Guide** (`technical/06-repository-layer.md`) - Data access patterns
-
-### Contributing to Documentation
-
-We welcome documentation improvements! When contributing:
-
-1. Follow existing structure and style
-2. Add examples and diagrams where helpful
-3. Update cross-references in this README
-4. Test all code examples
-5. Update "Last Updated" date
-
----
-
 ## 📚 External Resources
 
 ### Technology Documentation
@@ -467,14 +354,6 @@ We welcome documentation improvements! When contributing:
 - [K-Factor in ELO](https://en.wikipedia.org/wiki/Elo_rating_system#Most_accurate_K-factor)
 - [Next.js App Router](https://nextjs.org/docs/app)
 - [PostgreSQL RPC Functions](https://www.postgresql.org/docs/current/sql-createfunction.html)
-
----
-
-## 📞 Contact & Support
-
-- **Project Repository**: [GitHub](https://github.com/your-org/baby-foot-elo) *(update with actual URL)*
-- **Issues**: Report bugs and request features via GitHub Issues
-- **Discussions**: Technical discussions and questions
 
 ---
 

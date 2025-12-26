@@ -125,7 +125,7 @@ You can create backups locally using the provided script.
 ### Run Manual Backup
 
 ```bash
-cd /Users/schalappe/Documents/Lab/Engineer/Projects/baby_foot_elo
+cd baby_foot_elo
 
 # Set credentials (get these from .env)
 export SUPABASE_URL="https://rdjdjscjgozpvbtjjzrf.supabase.co"
@@ -225,7 +225,7 @@ Extract the `.zip` (if from GitHub) to get the `.tar.gz` file.
 ### Step 3: Run Restore Script
 
 ```bash
-cd /Users/schalappe/Documents/Lab/Engineer/Projects/baby_foot_elo
+cd baby_foot_elo
 
 # Set database connection string
 export DATABASE_URL="postgresql://postgres:your-password@db.xxx.supabase.co:5432/postgres"
