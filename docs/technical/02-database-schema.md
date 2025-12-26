@@ -560,19 +560,19 @@ ADD CONSTRAINT fk_loser_team FOREIGN KEY (loser_team_id) REFERENCES teams(team_i
 **History → Players/Teams/Matches**:
 ```sql
 ALTER TABLE player_history
-ADD CONSTRAINT fk_player FOREIGN KEY (player_id) REFERENCES players(player_id) ON DELETE CASCADE,
-ADD CONSTRAINT fk_match FOREIGN KEY (match_id) REFERENCES matches(match_id) ON DELETE CASCADE;
+ADD CONSTRAINT fk_player FOREIGN KEY (player_id) REFERENCES players(player_id) ON DELETE RESTRICT,
+ADD CONSTRAINT fk_match FOREIGN KEY (match_id) REFERENCES matches(match_id) ON DELETE RESTRICT;
 
 ALTER TABLE team_history
-ADD CONSTRAINT fk_team FOREIGN KEY (team_id) REFERENCES teams(team_id) ON DELETE CASCADE,
-ADD CONSTRAINT fk_match FOREIGN KEY (match_id) REFERENCES matches(match_id) ON DELETE CASCADE;
+ADD CONSTRAINT fk_team FOREIGN KEY (team_id) REFERENCES teams(team_id) ON DELETE RESTRICT,
+ADD CONSTRAINT fk_match FOREIGN KEY (match_id) REFERENCES matches(match_id) ON DELETE RESTRICT;
 ```
 
 ### Cascade Behavior
 
-- **DELETE player**: Cascades to `teams` and `player_history` (removes all player data)
-- **DELETE team**: Restricted if referenced by `matches` (cannot delete team with match history)
-- **DELETE match**: Cascades to `player_history` and `team_history` (preserves audit trail decision made at application level)
+- **DELETE player**: Restricted if referenced by `teams` or `player_history` (cannot delete players with team associations or match history - preserves audit trail)
+- **DELETE team**: Restricted if referenced by `matches` or `team_history` (cannot delete team with match history - preserves audit trail)
+- **DELETE match**: Restricted if referenced by `player_history` or `team_history` (cannot delete matches with existing history records - preserves audit trail)
 
 ### Unique Constraints
 
