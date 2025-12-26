@@ -85,14 +85,14 @@ After pushing:
 
 ```text
 ┌─────────────────────────────────────┐
-│         Workflow Run Details         │
+│         Workflow Run Details        │
 ├─────────────────────────────────────┤
-│ ...                                  │
-│                                      │
-│ Artifacts                            │
+│ ...                                 │
+│                                     │
+│ Artifacts                           │
 │ ──────────────────────────────────  │
 │ database-backup-12345678    12 KB   │
-│                          [Download]  │
+│                          [Download] │
 └─────────────────────────────────────┘
 ```
 
