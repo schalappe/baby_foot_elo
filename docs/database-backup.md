@@ -42,9 +42,9 @@ GitHub Secrets store your Supabase credentials securely.
 
 Add the following secrets:
 
-| Secret Name    | Value                                      | Where to Find                                                            |
-| -------------- | ------------------------------------------ | ------------------------------------------------------------------------ |
-| `SUPABASE_URL` | `https://rdjdjscjgozpvbtjjzrf.supabase.co` | Supabase Dashboard → Project Settings → API                              |
+| Secret Name    | Value                                       | Where to Find                                                            |
+| -------------- | ------------------------------------------- | ------------------------------------------------------------------------ |
+| `SUPABASE_URL` | `https://rdjdjscjgozpvbtjjzrf.supabase.co`  | Supabase Dashboard → Project Settings → API                              |
 | `SUPABASE_KEY` | Your publishable key (`sb_publishable_...`) | Supabase Dashboard → Project Settings → API → API Keys → Publishable key |
 
 **Steps**:
@@ -588,10 +588,10 @@ The restore script uses `psql` (direct PostgreSQL connection) instead of the Sup
 
 ### Backup vs Restore Methods
 
-| Operation   | Method            | Authentication     | Why?                                                    |
-| ----------- | ----------------- | ------------------ | ------------------------------------------------------- |
-| **Backup**  | Supabase REST API | Publishable key    | Read-only, no special privileges needed                 |
-| **Restore** | Direct PostgreSQL | Database password  | Requires `OVERRIDING SYSTEM VALUE` for identity columns |
+| Operation   | Method            | Authentication    | Why?                                                    |
+| ----------- | ----------------- | ----------------- | ------------------------------------------------------- |
+| **Backup**  | Supabase REST API | Publishable key   | Read-only, no special privileges needed                 |
+| **Restore** | Direct PostgreSQL | Database password | Requires `OVERRIDING SYSTEM VALUE` for identity columns |
 
 ## Alternative Backup Methods
 
