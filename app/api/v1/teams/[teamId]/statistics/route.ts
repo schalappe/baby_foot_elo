@@ -23,9 +23,9 @@ export const GET = handleApiRequest(
     // [>]: Get team with basic stats.
     const team = await getTeam(id);
 
-    // [>]: Get ELO history for computing additional stats.
+    // [>]: Get ELO history for chart display (last 100 matches).
     // [>]: History is ordered by date DESC (most recent first).
-    const history = await getTeamEloHistory(id, { limit: 1000 });
+    const history = await getTeamEloHistory(id, { limit: 100 });
 
     // [>]: Calculate additional statistics.
     let highestElo = team.global_elo;

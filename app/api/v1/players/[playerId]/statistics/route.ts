@@ -20,9 +20,9 @@ export const GET = handleApiRequest(
     // [>]: Get player with basic stats.
     const player = await getPlayer(id);
 
-    // [>]: Get ELO history for computing additional stats.
-    // History is ordered by date DESC (newest first).
-    const history = await getPlayerEloHistory(id, { limit: 1000 });
+    // [>]: Get ELO history for chart display (last 100 matches).
+    // [>]: History is ordered by date DESC (newest first).
+    const history = await getPlayerEloHistory(id, { limit: 100 });
 
     // [>]: Extract ELO values and differences from history.
     const eloValues = history.map((entry) => entry.new_elo);
