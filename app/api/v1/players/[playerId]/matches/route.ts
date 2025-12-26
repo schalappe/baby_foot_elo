@@ -21,7 +21,7 @@ export const GET = handleApiRequest(
     const { searchParams } = new URL(request.url);
 
     const limit = getNumericParam(searchParams, "limit", 10);
-    const skip = getNumericParam(searchParams, "skip", 0);
+    const offset = getNumericParam(searchParams, "offset", 0);
     const startDate = searchParams.get("start_date") ?? undefined;
     const endDate = searchParams.get("end_date") ?? undefined;
 
@@ -30,7 +30,7 @@ export const GET = handleApiRequest(
 
     const matches = await getMatchesByPlayer(id, {
       limit,
-      skip,
+      skip: offset,
       startDate,
       endDate,
     });
