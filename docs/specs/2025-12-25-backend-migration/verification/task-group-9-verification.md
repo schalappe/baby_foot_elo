@@ -29,21 +29,25 @@ Task Group 9 has been successfully completed. Frontend services now use relative
 ## Code Quality
 
 ### Simplicity/DRY
+
 - Changes are minimal and focused
 - No code duplication introduced
 - Unused methods removed from matchService
 
 ### Correctness
+
 - All API URLs correctly updated to relative paths
 - Missing team statistics route created
 - All function signatures preserved
 
 ### Conventions
+
 - Code follows project commenting standards (`// [>]:` prefix)
 - Consistent with existing route handler patterns
 - Type imports properly maintained
 
 ### Issues Found and Fixed
+
 1. **Critical:** Missing `/api/v1/teams/[teamId]/statistics` route — **Fixed**
 2. Unused methods in matchService — **Removed**
 
@@ -55,15 +59,15 @@ Task Group 9 has been successfully completed. Frontend services now use relative
 
 ### Test Distribution
 
-| Category | Tests |
-|----------|-------|
-| Unit (retry) | 3 |
-| Unit (errors) | 12 |
-| Unit (schemas) | 10 |
-| Unit (ELO) | 22 |
-| Integration (repositories) | 12 |
-| Integration (services) | 6 |
-| Integration (API routes) | 18 |
+| Category                   | Tests |
+| -------------------------- | ----- |
+| Unit (retry)               | 3     |
+| Unit (errors)              | 12    |
+| Unit (schemas)             | 10    |
+| Unit (ELO)                 | 22    |
+| Integration (repositories) | 12    |
+| Integration (services)     | 6     |
+| Integration (API routes)   | 18    |
 
 ### Failed Tests
 
@@ -71,12 +75,12 @@ None
 
 ## Acceptance Criteria Verification
 
-| Criteria | Status |
-|----------|--------|
-| Frontend works with new API routes | ✅ |
-| No CORS errors (same-origin) | ✅ |
-| All tests pass (~35 total) | ✅ (83 tests) |
-| Key user flows work | ✅ |
+| Criteria                           | Status        |
+| ---------------------------------- | ------------- |
+| Frontend works with new API routes | ✅            |
+| No CORS errors (same-origin)       | ✅            |
+| All tests pass (~35 total)         | ✅ (83 tests) |
+| Key user flows work                | ✅            |
 
 ## Next Steps
 

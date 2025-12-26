@@ -12,6 +12,7 @@ Successfully ported the Python ELO calculation service to TypeScript. The implem
 **Selected:** Minimal Changes approach
 
 **Rationale:**
+
 - Single file (`lib/services/elo.ts`) mirrors Python's single module structure
 - Direct port of all 8 functions from `backend/app/services/elo.py`
 - No external dependencies beyond existing error classes
@@ -30,11 +31,11 @@ None - this was a new implementation.
 
 ### K-Factor Configuration
 
-| ELO Range | K-Factor | Purpose |
-|-----------|----------|---------|
-| < 1200 | 200 | Fast progression for new players |
-| 1200-1799 | 100 | Moderate for intermediate players |
-| >= 1800 | 50 | Stable for established players |
+| ELO Range | K-Factor | Purpose                           |
+| --------- | -------- | --------------------------------- |
+| < 1200    | 200      | Fast progression for new players  |
+| 1200-1799 | 100      | Moderate for intermediate players |
+| >= 1800   | 50       | Stable for established players    |
 
 ### Functions Implemented
 
@@ -78,6 +79,7 @@ Due to integer truncation, the total may be off by ±1-2 points, which is accept
 ## Testing Notes
 
 25 unit tests cover:
+
 - Basic calculations (team ELO, win probability, K-factors)
 - ELO change calculations (wins, losses, different tiers)
 - Pool correction (zero-sum property, mixed K-factors)

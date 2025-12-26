@@ -10,6 +10,7 @@ Implemented all 18 Next.js API route handlers for the Baby Foot ELO backend migr
 ## Architecture Approach
 
 Selected **Clean Architecture** approach with a shared `handleApiRequest` wrapper that:
+
 - Catches `ZodError` and returns 422 with formatted validation message
 - Catches `ApiError` and returns its status code with `toResponse()`
 - Catches unknown errors and returns 500 with generic message
@@ -68,6 +69,7 @@ export const GET = handleApiRequest(async (request: NextRequest) => {
 ### Rankings Filter
 
 Both player and team rankings implement the Python backend's `days_since_last_match` filter:
+
 - Default: 180 days
 - Filters out players/teams with no matches
 - Filters out inactive players/teams
@@ -102,6 +104,7 @@ export const GET = handleApiRequest(
 ### Existing Services
 
 All routes delegate to existing TypeScript services:
+
 - `lib/services/players.ts`
 - `lib/services/teams.ts`
 - `lib/services/matches.ts`
@@ -109,11 +112,13 @@ All routes delegate to existing TypeScript services:
 ### Existing Error Classes
 
 Routes catch and transform errors from:
+
 - `lib/errors/api-errors.ts`
 
 ### Existing Schemas
 
 Request bodies validated with:
+
 - `lib/types/schemas/player.ts`
 - `lib/types/schemas/team.ts`
 - `lib/types/schemas/match.ts`
@@ -128,6 +133,7 @@ Integration tests created at `frontend/tests/integration/api/routes.test.ts`:
 - Tests verify HTTP status codes and response shapes
 
 **Test coverage:**
+
 - Health endpoint: 1 test
 - Player endpoints: 6 tests (create, list, get, update, 404, validation)
 - Team endpoints: 4 tests (create, list, get, validation)

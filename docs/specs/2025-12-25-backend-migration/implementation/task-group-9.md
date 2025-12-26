@@ -14,6 +14,7 @@ Migrated frontend service files to use relative API URLs (`/api/v1`) instead of 
 The simplest approach was chosen since the new API routes were already implemented with identical contracts to the Python backend. Changes were limited to updating the API base URL in each service file from `process.env.NEXT_PUBLIC_API_URL` to `/api/v1`.
 
 **Why this approach:**
+
 - The new TypeScript API routes match the Python backend endpoints exactly
 - Frontend service function signatures remain unchanged
 - Error handling patterns already compatible
@@ -35,11 +36,13 @@ The simplest approach was chosen since the new API routes were already implement
 ### URL Changes
 
 All three service files now use:
+
 ```typescript
-const API_URL = '/api/v1';
+const API_URL = "/api/v1";
 ```
 
 Instead of:
+
 ```typescript
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 ```
@@ -47,6 +50,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 ### Removed Methods
 
 Two unused methods were removed from `matchService.ts`:
+
 - `getMatchWithPlayerDetailsById` — Called non-existent `/matches/{id}/player` endpoint
 - `getMatchWithTeamDetailsById` — Called non-existent `/matches/{id}/team` endpoint
 

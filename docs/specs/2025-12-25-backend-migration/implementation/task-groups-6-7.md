@@ -12,6 +12,7 @@ Implemented the complete data access layer (6 repositories) and business logic l
 **Chosen Approach: Minimal changes with throw-first repositories**
 
 Key decisions:
+
 1. **Throw-first pattern**: Repositories throw domain errors (e.g., `PlayerNotFoundError`) instead of returning null. This differs from Python but creates cleaner TypeScript service code.
 2. **Separate lookup functions**: `getPlayerById()` and `getPlayerByName()` as distinct functions (not combined with optional params like Python).
 3. **withRetry wrapper**: All repository functions wrapped at export level for automatic retry on transient failures.
@@ -34,7 +35,7 @@ Key decisions:
 - `teams.ts` — Team business logic: getTeam, getAllTeamsWithStats, getTeamsByPlayer, createNewTeam (with player validation), updateExistingTeam, deleteTeam
 - `matches.ts` — Match orchestration: getMatch, getMatches, getMatchesByPlayer, createNewMatch (orchestrates ELO updates), getMatchWithPlayerElo, getMatchWithTeamElo, deleteMatch
 
-### Tests (frontend/lib/__tests__/)
+### Tests (frontend/lib/**tests**/)
 
 - `repositories/players.test.ts` — 6 integration tests for player CRUD
 - `services/matches.test.ts` — 5 integration tests for match creation with ELO updates

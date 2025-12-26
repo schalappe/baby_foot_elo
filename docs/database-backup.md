@@ -42,12 +42,13 @@ GitHub Secrets store your Supabase credentials securely.
 
 Add the following secrets:
 
-| Secret Name | Value | Where to Find |
-|-------------|-------|---------------|
-| `SUPABASE_URL` | `https://rdjdjscjgozpvbtjjzrf.supabase.co` | Supabase Dashboard → Project Settings → API |
-| `SUPABASE_KEY` | Your anon/public key | Supabase Dashboard → Project Settings → API → `anon` `public` key |
+| Secret Name    | Value                                      | Where to Find                                                     |
+| -------------- | ------------------------------------------ | ----------------------------------------------------------------- |
+| `SUPABASE_URL` | `https://rdjdjscjgozpvbtjjzrf.supabase.co` | Supabase Dashboard → Project Settings → API                       |
+| `SUPABASE_KEY` | Your anon/public key                       | Supabase Dashboard → Project Settings → API → `anon` `public` key |
 
 **Steps**:
+
 1. Go to your GitHub repository
 2. Click **Settings** → **Secrets and variables** → **Actions**
 3. Click **New repository secret**
@@ -135,6 +136,7 @@ export SUPABASE_KEY="your-anon-key-here"
 ```
 
 **Output**:
+
 ```text
 [INFO] Starting backup to ./backups/20251226_143022
 [INFO] Backing up table: players
@@ -172,6 +174,7 @@ export DATABASE_URL="postgresql://postgres:password@db.xxx.supabase.co:5432/post
 ```
 
 **Key Changes from Previous Version:**
+
 - ✅ Now uses `DATABASE_URL` (not `SUPABASE_URL` + `SUPABASE_KEY`)
 - ✅ Requires `psql` installed
 - ✅ Automatically resets identity sequences
@@ -182,10 +185,12 @@ export DATABASE_URL="postgresql://postgres:password@db.xxx.supabase.co:5432/post
 ### Prerequisites
 
 **Required Tools:**
+
 - `psql` (PostgreSQL client)
 - `jq` (JSON processor)
 
 **Install on macOS:**
+
 ```bash
 brew install libpq jq
 brew link libpq --force
@@ -198,12 +203,14 @@ brew link libpq --force
 You need your direct PostgreSQL connection URL (not the REST API URL).
 
 **Get it from Supabase Dashboard:**
+
 1. Go to **Settings** → **Database**
 2. Scroll to **Connection string** section
 3. Select **URI** tab
 4. Copy the full connection string (format: `postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres`)
 
 **Example:**
+
 ```text
 postgresql://postgres:your-password@db.rdjdjscjgozpvbtjjzrf.supabase.co:5432/postgres
 ```
@@ -228,6 +235,7 @@ export DATABASE_URL="postgresql://postgres:your-password@db.xxx.supabase.co:5432
 ```
 
 **What happens:**
+
 1. Script tests database connection
 2. Extracts backup archive
 3. Prompts for confirmation:
@@ -241,6 +249,7 @@ export DATABASE_URL="postgresql://postgres:your-password@db.xxx.supabase.co:5432
 6. Cleans up temporary files
 
 **Expected Output:**
+
 ```text
 [INFO] Testing database connection...
 [INFO] Database connection successful.
@@ -278,6 +287,7 @@ Check that your data was restored correctly:
 **Problem**: You accidentally deleted all players.
 
 **Solution**:
+
 1. Find the most recent backup before deletion
 2. Download and restore it
 3. Reset sequences
@@ -288,6 +298,7 @@ Check that your data was restored correctly:
 **Problem**: Database is in an inconsistent state.
 
 **Solution**:
+
 1. Identify when the corruption occurred
 2. Restore from a backup before that time
 3. Reset sequences
@@ -298,6 +309,7 @@ Check that your data was restored correctly:
 **Problem**: Need a copy of production data for testing.
 
 **Solution**:
+
 1. Download latest backup
 2. Create a new Supabase project for testing
 3. Restore backup to the test project
@@ -305,12 +317,13 @@ Check that your data was restored correctly:
 
 ## Backup Retention Policy
 
-| Backup Type | Retention | Storage Location |
-|-------------|-----------|------------------|
-| GitHub Actions | 30 days | GitHub Artifacts |
-| Local Manual | Until deleted | `./backups/` directory |
+| Backup Type    | Retention     | Storage Location       |
+| -------------- | ------------- | ---------------------- |
+| GitHub Actions | 30 days       | GitHub Artifacts       |
+| Local Manual   | Until deleted | `./backups/` directory |
 
 **Notes**:
+
 - GitHub automatically deletes artifacts after 30 days
 - Local backups: Script keeps last 10, you can change this in the script
 - Download important backups for long-term storage
@@ -322,6 +335,7 @@ Check that your data was restored correctly:
 **Cause**: GitHub secrets are incorrect or expired.
 
 **Solution**:
+
 1. Go to Supabase Dashboard → Project Settings → API
 2. Copy the current `anon` `public` key
 3. Update the `SUPABASE_KEY` secret in GitHub
@@ -332,6 +346,7 @@ Check that your data was restored correctly:
 **Cause**: PostgreSQL client tools are not installed.
 
 **Solution**:
+
 ```bash
 # macOS
 brew install libpq
@@ -349,6 +364,7 @@ psql --version
 **Cause**: Invalid `DATABASE_URL` or network connectivity issue.
 
 **Solution**:
+
 1. Verify your DATABASE_URL format:
    ```text
    postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres
@@ -365,6 +381,7 @@ psql --version
 **Cause**: This error should not occur with the updated script, but if it does, the `OVERRIDING SYSTEM VALUE` clause may not be working.
 
 **Solution**:
+
 1. Verify you're using the latest version of the restore script
 2. Check that your PostgreSQL version supports `OVERRIDING SYSTEM VALUE` (9.6+)
 3. Manually verify the generated SQL in `/tmp/` if the error persists
@@ -374,6 +391,7 @@ psql --version
 **Cause**: Data already exists in the target tables with the same IDs.
 
 **Solution**:
+
 1. Delete existing data from tables (in reverse dependency order):
    ```sql
    DELETE FROM teams_elo_history;
@@ -393,6 +411,7 @@ psql --version
 **Cause**: Tables were empty at backup time.
 
 **Solution**:
+
 - This is expected if the backup ran when the database was empty
 - Use an earlier backup with actual data
 
@@ -402,6 +421,7 @@ psql --version
 
 **Solution**:
 The script should reset sequences automatically. If IDs are still wrong:
+
 1. Manually reset sequences in Supabase SQL Editor:
    ```sql
    SELECT setval(pg_get_serial_sequence('players', 'player_id'), COALESCE(MAX(player_id), 1)) FROM players;
@@ -421,6 +441,7 @@ The script should reset sequences automatically. If IDs are still wrong:
 **Cause**: Large dataset or slow network connection.
 
 **Solution**:
+
 1. The script runs all inserts in a single transaction per table, which can take time
 2. Monitor progress - check Supabase Dashboard → Database → Table Editor
 3. For very large restores (>10K records per table), consider breaking the backup into smaller chunks
@@ -430,15 +451,17 @@ The script should reset sequences automatically. If IDs are still wrong:
 ### Secrets Management
 
 **For Backups:**
+
 - ✅ **DO**: Store credentials in GitHub Secrets
 - ✅ **DO**: Use the `anon` public key (not service role) for REST API access
 - ❌ **DON'T**: Commit credentials to the repository
 - ❌ **DON'T**: Share backup files publicly (they contain your data)
 
 **For Restores:**
+
 - ✅ **DO**: Use `DATABASE_URL` from environment variables (never hardcode it)
 - ✅ **DO**: Protect your database password - it grants full database access
-- ⚠️  **CAUTION**: The `DATABASE_URL` contains your database password in plaintext
+- ⚠️ **CAUTION**: The `DATABASE_URL` contains your database password in plaintext
 - ❌ **DON'T**: Share your `DATABASE_URL` or commit it to version control
 - ❌ **DON'T**: Use the database connection string in production application code (use Supabase client instead)
 
@@ -483,7 +506,7 @@ Edit `.github/workflows/backup-database.yml`:
 on:
   schedule:
     # Run at 2 AM UTC daily
-    - cron: '0 2 * * *'
+    - cron: "0 2 * * *"
 
     # Run every 6 hours
     # - cron: '0 */6 * * *'
@@ -504,38 +527,40 @@ Edit `.github/workflows/backup-database.yml`:
   with:
     name: database-backup-${{ github.run_id }}
     path: backups/*.tar.gz
-    retention-days: 90  # Change from 30 to 90 days
+    retention-days: 90 # Change from 30 to 90 days
 ```
 
 **Note**: GitHub has storage limits - monitor your usage.
 
 ## Cost Analysis
 
-| Component | Cost |
-|-----------|------|
-| GitHub Actions | Free (2,000 min/month for private repos) |
-| Artifact Storage | Free (included in GitHub plan) |
-| Supabase API Calls | Free (within Supabase limits) |
-| **Total** | **$0/month** |
+| Component          | Cost                                     |
+| ------------------ | ---------------------------------------- |
+| GitHub Actions     | Free (2,000 min/month for private repos) |
+| Artifact Storage   | Free (included in GitHub plan)           |
+| Supabase API Calls | Free (within Supabase limits)            |
+| **Total**          | **$0/month**                             |
 
 **Usage estimates**:
+
 - Each backup run: ~1 minute
 - Daily backups: 30 runs/month
 - Well within free tier limits
 
 ## Comparison with Supabase Pro Backups
 
-| Feature | GitHub Backup (This System) | Supabase Pro PITR |
-|---------|----------------------------|-------------------|
-| **Cost** | Free | $25/month + $100/month (PITR addon) |
-| **Frequency** | Daily (customizable) | Continuous (2-min intervals) |
-| **Retention** | 30 days (customizable) | 7-14 days |
-| **Granularity** | Daily snapshots | Point-in-time (any second) |
-| **Recovery Time** | ~5 minutes | ~15 minutes - hours |
-| **Data Control** | You own the files | Supabase-managed |
-| **Storage** | GitHub (unlimited for artifacts) | Supabase servers |
+| Feature           | GitHub Backup (This System)      | Supabase Pro PITR                   |
+| ----------------- | -------------------------------- | ----------------------------------- |
+| **Cost**          | Free                             | $25/month + $100/month (PITR addon) |
+| **Frequency**     | Daily (customizable)             | Continuous (2-min intervals)        |
+| **Retention**     | 30 days (customizable)           | 7-14 days                           |
+| **Granularity**   | Daily snapshots                  | Point-in-time (any second)          |
+| **Recovery Time** | ~5 minutes                       | ~15 minutes - hours                 |
+| **Data Control**  | You own the files                | Supabase-managed                    |
+| **Storage**       | GitHub (unlimited for artifacts) | Supabase servers                    |
 
 **Recommendation**: Use both for maximum protection:
+
 - Supabase PITR: Quick recovery for recent issues
 - GitHub backups: Long-term archive and cost-effective fallback
 
@@ -545,25 +570,26 @@ Edit `.github/workflows/backup-database.yml`:
 
 The restore script uses `psql` (direct PostgreSQL connection) instead of the Supabase REST API because:
 
-| Feature | REST API | Direct PostgreSQL (`psql`) |
-|---------|----------|---------------------------|
+| Feature              | REST API                      | Direct PostgreSQL (`psql`)            |
+| -------------------- | ----------------------------- | ------------------------------------- |
 | **Identity Columns** | ❌ Cannot insert explicit IDs | ✅ Supports `OVERRIDING SYSTEM VALUE` |
-| **ID Preservation** | ❌ IDs get regenerated | ✅ Original IDs preserved |
-| **Foreign Keys** | ⚠️  May break relationships | ✅ Maintains all relationships |
-| **Sequence Reset** | ⚠️  Manual step required | ✅ Automatic in script |
-| **Authentication** | Requires API key | Requires database password |
-| **Use Case** | Read-only operations | Full database operations |
+| **ID Preservation**  | ❌ IDs get regenerated        | ✅ Original IDs preserved             |
+| **Foreign Keys**     | ⚠️ May break relationships    | ✅ Maintains all relationships        |
+| **Sequence Reset**   | ⚠️ Manual step required       | ✅ Automatic in script                |
+| **Authentication**   | Requires API key              | Requires database password            |
+| **Use Case**         | Read-only operations          | Full database operations              |
 
 **Why this matters**: When restoring data, preserving the original IDs is critical because:
+
 - Match records reference specific player and team IDs
 - ELO history records reference specific matches
 - Breaking these relationships would corrupt your data
 
 ### Backup vs Restore Methods
 
-| Operation | Method | Authentication | Why? |
-|-----------|--------|----------------|------|
-| **Backup** | Supabase REST API | `anon` key | Read-only, no special privileges needed |
+| Operation   | Method            | Authentication    | Why?                                                    |
+| ----------- | ----------------- | ----------------- | ------------------------------------------------------- |
+| **Backup**  | Supabase REST API | `anon` key        | Read-only, no special privileges needed                 |
 | **Restore** | Direct PostgreSQL | Database password | Requires `OVERRIDING SYSTEM VALUE` for identity columns |
 
 ## Alternative Backup Methods

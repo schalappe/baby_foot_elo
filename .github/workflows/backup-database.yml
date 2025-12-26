@@ -3,7 +3,7 @@ name: Database Backup
 on:
   # Run daily at 2:00 AM UTC
   schedule:
-    - cron: '0 2 * * *'
+    - cron: "0 2 * * *"
 
   # Allow manual trigger
   workflow_dispatch:

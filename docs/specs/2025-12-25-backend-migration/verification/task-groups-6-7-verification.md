@@ -71,32 +71,32 @@ None remaining.
 
 ### Test Files Created
 
-| File | Tests |
-|------|-------|
+| File                                         | Tests        |
+| -------------------------------------------- | ------------ |
 | `lib/__tests__/repositories/players.test.ts` | 6 test cases |
-| `lib/__tests__/services/matches.test.ts` | 5 test cases |
+| `lib/__tests__/services/matches.test.ts`     | 5 test cases |
 
 ## Files Modified/Created
 
 ### Created (10 files)
 
-| Path | Lines | Purpose |
-|------|-------|---------|
-| `lib/db/repositories/players.ts` | ~160 | Player CRUD operations |
-| `lib/db/repositories/teams.ts` | ~210 | Team CRUD with player ordering |
-| `lib/db/repositories/matches.ts` | ~210 | Match operations with RPC calls |
-| `lib/db/repositories/player-elo-history.ts` | ~165 | Player ELO history tracking |
-| `lib/db/repositories/team-elo-history.ts` | ~165 | Team ELO history tracking |
-| `lib/db/repositories/stats.ts` | ~90 | Stats RPC wrappers |
-| `lib/services/players.ts` | ~145 | Player business logic |
-| `lib/services/teams.ts` | ~135 | Team business logic |
-| `lib/services/matches.ts` | ~350 | Match orchestration with ELO |
-| `lib/mappers/entity-mappers.ts` | ~65 | Centralized data mappers |
+| Path                                        | Lines | Purpose                         |
+| ------------------------------------------- | ----- | ------------------------------- |
+| `lib/db/repositories/players.ts`            | ~160  | Player CRUD operations          |
+| `lib/db/repositories/teams.ts`              | ~210  | Team CRUD with player ordering  |
+| `lib/db/repositories/matches.ts`            | ~210  | Match operations with RPC calls |
+| `lib/db/repositories/player-elo-history.ts` | ~165  | Player ELO history tracking     |
+| `lib/db/repositories/team-elo-history.ts`   | ~165  | Team ELO history tracking       |
+| `lib/db/repositories/stats.ts`              | ~90   | Stats RPC wrappers              |
+| `lib/services/players.ts`                   | ~145  | Player business logic           |
+| `lib/services/teams.ts`                     | ~135  | Team business logic             |
+| `lib/services/matches.ts`                   | ~350  | Match orchestration with ELO    |
+| `lib/mappers/entity-mappers.ts`             | ~65   | Centralized data mappers        |
 
 ### Modified (1 file)
 
-| Path | Change |
-|------|--------|
+| Path                       | Change                            |
+| -------------------------- | --------------------------------- |
 | `lib/errors/api-errors.ts` | Added `MatchOperationError` class |
 
 ## Next Steps

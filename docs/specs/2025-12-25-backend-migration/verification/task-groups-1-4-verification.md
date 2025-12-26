@@ -65,13 +65,13 @@ All four foundation layer task groups completed successfully. The implementation
 
 ### Test Breakdown
 
-| File                                           | Tests | Status |
-| ---------------------------------------------- | ----- | ------ |
-| `tests/unit/db/retry.test.ts`                  | 3     | ✅     |
-| `tests/unit/errors/api-errors.test.ts`         | 10    | ✅     |
-| `tests/unit/types/schemas/player.test.ts`      | 5     | ✅     |
-| `tests/unit/types/schemas/team.test.ts`        | 5     | ✅     |
-| `tests/unit/types/schemas/match.test.ts`       | 4     | ✅     |
+| File                                      | Tests | Status |
+| ----------------------------------------- | ----- | ------ |
+| `tests/unit/db/retry.test.ts`             | 3     | ✅     |
+| `tests/unit/errors/api-errors.test.ts`    | 10    | ✅     |
+| `tests/unit/types/schemas/player.test.ts` | 5     | ✅     |
+| `tests/unit/types/schemas/team.test.ts`   | 5     | ✅     |
+| `tests/unit/types/schemas/match.test.ts`  | 4     | ✅     |
 
 ### Failed Tests
 
@@ -85,10 +85,10 @@ None
 
 ## Remaining Tasks
 
-| Task Group | Description                   | Status  |
-| ---------- | ----------------------------- | ------- |
-| 5          | ELO Service                   | Pending |
-| 6          | Repositories                  | Pending |
-| 7          | Business Logic Services       | Pending |
-| 8          | Route Handlers                | Pending |
+| Task Group | Description                    | Status  |
+| ---------- | ------------------------------ | ------- |
+| 5          | ELO Service                    | Pending |
+| 6          | Repositories                   | Pending |
+| 7          | Business Logic Services        | Pending |
+| 8          | Route Handlers                 | Pending |
 | 9          | Frontend Integration & Testing | Pending |

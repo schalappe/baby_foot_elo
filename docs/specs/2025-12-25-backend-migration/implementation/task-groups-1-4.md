@@ -64,13 +64,17 @@ The `TeamCreateSchema` enforces canonical order where `player1_id < player2_id`:
 ```typescript
 export const TeamCreateSchema = TeamBaseSchema.refine(
   (data) => data.player1_id !== data.player2_id,
-  { message: 'player1_id and player2_id cannot be the same' }
+  { message: "player1_id and player2_id cannot be the same" },
 ).transform((data) => {
   if (data.player1_id > data.player2_id) {
-    return { ...data, player1_id: data.player2_id, player2_id: data.player1_id }
+    return {
+      ...data,
+      player1_id: data.player2_id,
+      player2_id: data.player1_id,
+    };
   }
-  return data
-})
+  return data;
+});
 ```
 
 ### Error Hierarchy Pattern

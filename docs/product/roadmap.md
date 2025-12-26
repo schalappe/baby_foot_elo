@@ -20,10 +20,10 @@
 
 ## Effort Scale
 
-| Size | Duration   |
-|------|------------|
-| XS   | 1 day      |
-| S    | 2-3 days   |
-| M    | 1 week     |
-| L    | 2 weeks    |
-| XL   | 3+ weeks   |
+| Size | Duration |
+| ---- | -------- |
+| XS   | 1 day    |
+| S    | 2-3 days |
+| M    | 1 week   |
+| L    | 2 weeks  |
+| XL   | 3+ weeks |

@@ -61,16 +61,16 @@ None — all identified issues were addressed during implementation.
 
 ### ELO Service Test Breakdown
 
-| Test Suite | Tests | Status |
-|------------|-------|--------|
-| calculateTeamElo | 3 | ✅ Pass |
-| calculateWinProbability | 5 | ✅ Pass |
-| determineKFactor | 4 | ✅ Pass |
-| calculateEloChange | 4 | ✅ Pass |
-| calculateEloChangesWithPoolCorrection | 2 | ✅ Pass |
-| calculatePlayersEloChange | 3 | ✅ Pass |
-| processMatchResult | 4 | ✅ Pass |
-| **Total** | **25** | ✅ Pass |
+| Test Suite                            | Tests  | Status  |
+| ------------------------------------- | ------ | ------- |
+| calculateTeamElo                      | 3      | ✅ Pass |
+| calculateWinProbability               | 5      | ✅ Pass |
+| determineKFactor                      | 4      | ✅ Pass |
+| calculateEloChange                    | 4      | ✅ Pass |
+| calculateEloChangesWithPoolCorrection | 2      | ✅ Pass |
+| calculatePlayersEloChange             | 3      | ✅ Pass |
+| processMatchResult                    | 4      | ✅ Pass |
+| **Total**                             | **25** | ✅ Pass |
 
 ### Failed Tests
 
@@ -78,19 +78,20 @@ None
 
 ## Acceptance Criteria Verification
 
-| Criteria | Status |
-|----------|--------|
-| All 8 ELO functions implemented | ✅ |
-| K-factor tiers match Python exactly | ✅ |
-| Pool correction ensures zero-sum across 4 players | ✅ |
-| `Math.trunc()` used for int conversion | ✅ |
-| Tests pass with identical results to Python | ✅ |
+| Criteria                                          | Status |
+| ------------------------------------------------- | ------ |
+| All 8 ELO functions implemented                   | ✅     |
+| K-factor tiers match Python exactly               | ✅     |
+| Pool correction ensures zero-sum across 4 players | ✅     |
+| `Math.trunc()` used for int conversion            | ✅     |
+| Tests pass with identical results to Python       | ✅     |
 
 ## Next Steps
 
 Task Group 6: Repositories is the next logical step. It will use the ELO service to update player and team ratings after matches.
 
 **Remaining Task Groups:**
+
 - 6.0 Complete repository layer
 - 7.0 Complete service layer
 - 8.0 Complete API route handlers

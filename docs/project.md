@@ -74,14 +74,14 @@ Baby Foot ELO est une application web qui permet à un groupe d'individus (coll�
 - **Players**:
   - `player_id` (INTEGER PRIMARY KEY)
   - `name` (VARCHAR)
-  - `global_elo` (INTEGER) *(Note: ELO basé sur tous les matchs)*
+  - `global_elo` (INTEGER) _(Note: ELO basé sur tous les matchs)_
   - `created_at` (TIMESTAMP)
 
 - **Teams**:
   - `team_id` (INTEGER PRIMARY KEY)
   - `player1_id` (INTEGER REFERENCES Players)
   - `player2_id` (INTEGER REFERENCES Players)
-  - `global_elo` (FLOAT) *(Note: ELO basé sur tous les matchs)*
+  - `global_elo` (FLOAT) _(Note: ELO basé sur tous les matchs)_
   - `created_at` (TIMESTAMP)
   - `last_match` (TIMESTAMP)
 
@@ -294,9 +294,9 @@ Le système ELO hybride utilisé par Baby Foot ELO repose sur le principe que le
 
 4. **Ajustement d'ELO individuel**
    - Pour une victoire:
-     - Delta_ELO_i = K_i * (1 - P(équipe du joueur))
+     - Delta_ELO_i = K_i \* (1 - P(équipe du joueur))
    - Pour une défaite:
-     - Delta_ELO_i = K_i * (0 - P(équipe du joueur))
+     - Delta_ELO_i = K_i \* (0 - P(équipe du joueur))
 
 ### Exemple concret
 
@@ -305,12 +305,12 @@ Le système ELO hybride utilisé par Baby Foot ELO repose sur le principe que le
 - Probabilité de victoire pour A: P(A) = 0.71, pour B: P(B) = 1 - P(A) = 0.29
 - Facteurs K: A1: K=50, A2: K=100, B1: K=100, B2: K=100
 - A bat B 10-5
-- Points gagnés par A1: +14 ELO (K=50 * (1-0.71))
-- Points gagnés par A2: +29 ELO (K=100 * (1-0.71))
-- Points perdus par B1: -29 ELO (K=100 * (0-0.29))
-- Points perdus par B2: -29 ELO (K=100 * (0-0.29))
+- Points gagnés par A1: +14 ELO (K=50 \* (1-0.71))
+- Points gagnés par A2: +29 ELO (K=100 \* (1-0.71))
+- Points perdus par B1: -29 ELO (K=100 \* (0-0.29))
+- Points perdus par B2: -29 ELO (K=100 \* (0-0.29))
 
-> *Cette logique de calcul sera implémentée dans le backend FastAPI, probablement déclenchée lors de l'enregistrement d'un nouveau match via un endpoint API.*
+> _Cette logique de calcul sera implémentée dans le backend FastAPI, probablement déclenchée lors de l'enregistrement d'un nouveau match via un endpoint API._
 
 ## Implémentation et développement
 
@@ -318,33 +318,33 @@ Le système ELO hybride utilisé par Baby Foot ELO repose sur le principe que le
 
 ```markdown
 baby_foot_elo/
-├── frontend/               # Application Next.js
-│   ├── pages/              # Routes de l'application
-│   ├── components/         # Composants React réutilisables
-│   ├── hooks/              # Hooks personnalisés
-│   ├── styles/             # Styles CSS/Tailwind
-│   ├── services/           # Fonctions pour appeler l'API backend
-│   ├── utils/              # Utilitaires divers
-│   └── public/             # Assets statiques
+├── frontend/ # Application Next.js
+│ ├── pages/ # Routes de l'application
+│ ├── components/ # Composants React réutilisables
+│ ├── hooks/ # Hooks personnalisés
+│ ├── styles/ # Styles CSS/Tailwind
+│ ├── services/ # Fonctions pour appeler l'API backend
+│ ├── utils/ # Utilitaires divers
+│ └── public/ # Assets statiques
 │
-├── backend/                # Application FastAPI
-│   ├── app/                # Code source de l'application
-│   │   ├── main.py         # Point d'entrée FastAPI
-│   │   ├── routers/        # Fichiers de routes (endpoints API)
-│   │   ├── models/         # Modèles Pydantic (validation de données)
-│   │   ├── schemas/        # Schémas de base de données (si ORM utilisé)
-│   │   ├── crud/           # Fonctions d'accès aux données (CRUD)
-│   │   ├── core/           # Configuration, logique métier centrale
-│   │   └── db/             # Gestion de la base de données DuckDB
-│   ├── tests/              # Tests unitaires/intégration
-│   └── .env                # Variables d'environnement (ex: chemin DB)
+├── backend/ # Application FastAPI
+│ ├── app/ # Code source de l'application
+│ │ ├── main.py # Point d'entrée FastAPI
+│ │ ├── routers/ # Fichiers de routes (endpoints API)
+│ │ ├── models/ # Modèles Pydantic (validation de données)
+│ │ ├── schemas/ # Schémas de base de données (si ORM utilisé)
+│ │ ├── crud/ # Fonctions d'accès aux données (CRUD)
+│ │ ├── core/ # Configuration, logique métier centrale
+│ │ └── db/ # Gestion de la base de données DuckDB
+│ ├── tests/ # Tests unitaires/intégration
+│ └── .env # Variables d'environnement (ex: chemin DB)
 │
-├── data/                   # Données persistantes
-│   └── babyfoot_elo.duckdb # Fichier de base de données DuckDB
+├── data/ # Données persistantes
+│ └── babyfoot_elo.duckdb # Fichier de base de données DuckDB
 │
-└── docs/                   # Documentation
-    ├── capture/            # Captures d'écran et maquettes
-    └── project.md          # Ce document
+└── docs/ # Documentation
+├── capture/ # Captures d'écran et maquettes
+└── project.md # Ce document
 ```
 
 ### Interaction Frontend-Backend
