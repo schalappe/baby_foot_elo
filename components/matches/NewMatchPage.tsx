@@ -1,18 +1,12 @@
 /**
  * components/matches/NewMatchPage.tsx
  *
- * Enhanced component for creating a new match in the Baby Foot ELO app.
- *
- * - Provides a form to create and submit a new match.
- * - Fetches players and teams for match assignment.
- * - Uses react-hook-form and ShadCN UI components.
- * - Enhanced with better error handling and UX improvements.
- *
- * Usage: Used as a component, not a Next.js page.
+ * Championship Arena match creation form with VS battle layout.
+ * Features dramatic team confrontation design with gold accents and glow effects.
  */
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { Player } from "@/types/player.types";
 import type { BackendMatchCreatePayload } from "@/types/match.types";
@@ -25,11 +19,19 @@ import * as z from "zod";
 import { cn } from "../../lib/utils";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { CalendarIcon, AlertCircle, Loader2 } from "lucide-react";
+import {
+  CalendarIcon,
+  AlertCircle,
+  Loader2,
+  Swords,
+  Trophy,
+  Flame,
+  Users,
+  Info,
+} from "lucide-react";
 
 import { Button } from "../ui/button";
 import { Calendar } from "../ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Label } from "../ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popoverDialog";
 import {
@@ -44,9 +46,9 @@ import {
 import { Textarea } from "../ui/textarea";
 import { Skeleton } from "../ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
-import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Checkbox } from "../ui/checkbox";
 import { Badge } from "../ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 interface NewMatchPageProps {
   onMatchCreated?: () => void;
@@ -88,6 +90,208 @@ const matchFormSchema = z
 
 type MatchFormValues = z.infer<typeof matchFormSchema>;
 
+// [>]: Player select component with arena styling.
+function PlayerSelect({
+  value,
+  onChange,
+  availablePlayers,
+  placeholder,
+  isWinner,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  availablePlayers: Player[];
+  placeholder: string;
+  isWinner: boolean;
+}) {
+  const selectedPlayer = availablePlayers.find(
+    (p) => p.player_id.toString() === value,
+  );
+
+  return (
+    <Select onValueChange={onChange} value={value}>
+      <SelectTrigger
+        className={cn(
+          "w-full h-12 border-2 transition-all duration-300",
+          "border-border/50 hover:border-border focus:border-primary",
+          value && "bg-card/80",
+          isWinner && "border-primary/50",
+        )}
+      >
+        <SelectValue placeholder={placeholder}>
+          {selectedPlayer && (
+            <div className="flex items-center gap-2">
+              <span className="font-medium">{selectedPlayer.name}</span>
+              <Badge
+                variant="outline"
+                className={cn(
+                  "text-xs font-bold",
+                  isWinner
+                    ? "border-primary/50 text-primary"
+                    : "border-muted-foreground/30 text-muted-foreground",
+                )}
+              >
+                {selectedPlayer.global_elo}
+              </Badge>
+            </div>
+          )}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent className="border-2 border-border/50">
+        <SelectGroup>
+          <SelectLabel className="text-muted-foreground font-semibold">
+            Joueurs disponibles
+          </SelectLabel>
+          {availablePlayers.map((player) => (
+            <SelectItem
+              key={player.player_id}
+              value={player.player_id.toString()}
+              className="cursor-pointer"
+            >
+              <div className="flex items-center justify-between w-full gap-3">
+                <span className="font-medium">{player.name}</span>
+                <Badge variant="outline" className="text-xs font-bold">
+                  {player.global_elo} ELO
+                </Badge>
+              </div>
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
+  );
+}
+
+// [>]: Team panel component with winner glow effect.
+function TeamPanel({
+  teamName,
+  isWinner,
+  onSelectWinner,
+  player1Value,
+  player2Value,
+  onPlayer1Change,
+  onPlayer2Change,
+  availablePlayers,
+  allPlayers,
+  errors,
+}: {
+  teamName: string;
+  isWinner: boolean;
+  onSelectWinner: () => void;
+  player1Value: string;
+  player2Value: string;
+  onPlayer1Change: (value: string) => void;
+  onPlayer2Change: (value: string) => void;
+  availablePlayers: (currentValue?: string) => Player[];
+  allPlayers: Player[];
+  errors: {
+    player1?: { message?: string };
+    player2?: { message?: string };
+  };
+}) {
+  const getPlayerName = (playerId: string) =>
+    allPlayers.find((p) => p.player_id.toString() === playerId)?.name || "";
+
+  const hasPlayers = player1Value && player2Value;
+
+  return (
+    <div
+      className={cn(
+        "relative flex-1 p-4 sm:p-5 rounded-xl border-2 transition-all duration-300",
+        "bg-card/50",
+        // [>]: Neutral border by default, primary highlight when winner.
+        isWinner
+          ? "border-primary shadow-[0_0_20px_rgba(234,179,8,0.25)] scale-[1.02]"
+          : "border-border/50 hover:border-border",
+      )}
+    >
+      {/* Winner badge */}
+      {isWinner && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg bg-primary text-primary-foreground">
+          <Trophy className="w-3 h-3" />
+          VAINQUEUR
+        </div>
+      )}
+
+      {/* Team header - clickable to select winner */}
+      <button
+        type="button"
+        onClick={onSelectWinner}
+        className={cn(
+          "w-full flex flex-col items-center justify-center gap-1 mb-4 py-3 rounded-lg transition-all",
+          "border-2 border-dashed",
+          isWinner
+            ? "border-primary/50 bg-primary/10 text-primary"
+            : "border-border/50 hover:border-primary/50 hover:bg-primary/5 text-foreground hover:text-primary",
+        )}
+      >
+        <div className="flex items-center gap-2">
+          <Users className={cn("w-5 h-5", isWinner && "animate-bounce")} />
+          <span className="text-lg font-bold tracking-tight">{teamName}</span>
+        </div>
+        {!isWinner && (
+          <span className="text-xs text-muted-foreground">
+            Cliquer pour gagner
+          </span>
+        )}
+      </button>
+
+      {/* Player selects */}
+      <div className="space-y-3">
+        <div>
+          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
+            Joueur 1
+          </Label>
+          <PlayerSelect
+            value={player1Value}
+            onChange={onPlayer1Change}
+            availablePlayers={availablePlayers(player1Value)}
+            placeholder="Sélectionner..."
+            isWinner={isWinner}
+          />
+          {errors.player1 && (
+            <p className="text-destructive text-xs mt-1">
+              {errors.player1.message}
+            </p>
+          )}
+        </div>
+        <div>
+          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">
+            Joueur 2
+          </Label>
+          <PlayerSelect
+            value={player2Value}
+            onChange={onPlayer2Change}
+            availablePlayers={availablePlayers(player2Value)}
+            placeholder="Sélectionner..."
+            isWinner={isWinner}
+          />
+          {errors.player2 && (
+            <p className="text-destructive text-xs mt-1">
+              {errors.player2.message}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Team composition preview */}
+      {hasPlayers && (
+        <div
+          className={cn(
+            "mt-4 pt-3 border-t text-center text-sm font-medium",
+            isWinner
+              ? "border-primary/20 text-primary"
+              : "border-border/50 text-muted-foreground",
+          )}
+        >
+          <Users className="w-4 h-4 inline mr-1.5 opacity-70" />
+          {getPlayerName(player1Value)} & {getPlayerName(player2Value)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const NewMatchPage: React.FC<NewMatchPageProps> = ({
   onMatchCreated,
   isDialog,
@@ -121,6 +325,7 @@ const NewMatchPage: React.FC<NewMatchPageProps> = ({
     formState: { errors, isValid },
     reset,
     trigger,
+    setValue,
   } = form;
 
   const watchedValues = watch();
@@ -138,25 +343,6 @@ const NewMatchPage: React.FC<NewMatchPageProps> = ({
     watchedValues.teamBPlayer1,
     watchedValues.teamBPlayer2,
   ]);
-
-  // Memoized team compositions for better UX
-  const teamCompositions = useMemo(() => {
-    const getPlayerName = (playerId: string) =>
-      allPlayers.find((p) => p.player_id.toString() === playerId)?.name || "";
-
-    return {
-      teamA: {
-        player1: getPlayerName(watchedValues.teamAPlayer1),
-        player2: getPlayerName(watchedValues.teamAPlayer2),
-        complete: watchedValues.teamAPlayer1 && watchedValues.teamAPlayer2,
-      },
-      teamB: {
-        player1: getPlayerName(watchedValues.teamBPlayer1),
-        player2: getPlayerName(watchedValues.teamBPlayer2),
-        complete: watchedValues.teamBPlayer1 && watchedValues.teamBPlayer2,
-      },
-    };
-  }, [allPlayers, watchedValues]);
 
   useEffect(() => {
     const fetchPlayersList = async () => {
@@ -183,14 +369,12 @@ const NewMatchPage: React.FC<NewMatchPageProps> = ({
     fetchPlayersList();
   }, []);
 
-  // Auto-validate form when players change
   useEffect(() => {
     if (selectedPlayerIds().length > 0) {
       trigger();
     }
   }, [selectedPlayerIds, trigger]);
 
-  // Auto-validate winningTeam field when it changes
   useEffect(() => {
     if (watchedValues.winningTeam) {
       trigger("winningTeam");
@@ -202,7 +386,6 @@ const NewMatchPage: React.FC<NewMatchPageProps> = ({
     setSubmissionStatus(null);
 
     try {
-      // Validate all players are selected
       if (
         !data.teamAPlayer1 ||
         !data.teamAPlayer2 ||
@@ -217,12 +400,10 @@ const NewMatchPage: React.FC<NewMatchPageProps> = ({
       const p1B = Number.parseInt(data.teamBPlayer1, 10);
       const p2B = Number.parseInt(data.teamBPlayer2, 10);
 
-      // Validate player IDs
       if (isNaN(p1A) || isNaN(p2A) || isNaN(p1B) || isNaN(p2B)) {
         throw new Error("IDs de joueurs invalides.");
       }
 
-      // Find or create teams
       const [teamA, teamB] = await Promise.all([
         findOrCreateTeam(p1A, p2A),
         findOrCreateTeam(p1B, p2B),
@@ -261,7 +442,7 @@ const NewMatchPage: React.FC<NewMatchPageProps> = ({
       reset();
 
       if (isDialog && onMatchCreated) {
-        setTimeout(() => onMatchCreated(), 1000); // Small delay to show success message
+        setTimeout(() => onMatchCreated(), 1000);
       } else {
         setTimeout(() => router.push("/"), 1500);
       }
@@ -279,17 +460,17 @@ const NewMatchPage: React.FC<NewMatchPageProps> = ({
     }
   };
 
-  const getAvailablePlayers = (
-    allPlayersList: Player[],
-    currentSelectedIds: string[],
-    currentPlayerSlotValue?: string,
-  ): Player[] => {
-    return allPlayersList.filter(
-      (player) =>
-        player.player_id.toString() === currentPlayerSlotValue ||
-        !currentSelectedIds.includes(player.player_id.toString()),
-    );
-  };
+  const getAvailablePlayers = useCallback(
+    (currentPlayerSlotValue?: string): Player[] => {
+      const currentSelected = selectedPlayerIds();
+      return allPlayers.filter(
+        (player) =>
+          player.player_id.toString() === currentPlayerSlotValue ||
+          !currentSelected.includes(player.player_id.toString()),
+      );
+    },
+    [allPlayers, selectedPlayerIds],
+  );
 
   const clearForm = () => {
     reset();
@@ -298,35 +479,39 @@ const NewMatchPage: React.FC<NewMatchPageProps> = ({
 
   if (loadingPlayers) {
     return (
-      <div className="container mx-auto p-4 max-w-2xl space-y-6">
-        <Skeleton className="h-10 w-1/2" />
-        <Skeleton className="h-8 w-3/4 mb-6" />
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-8 w-1/3" />
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex space-x-4">
-              <Skeleton className="h-10 w-1/2" />
-              <Skeleton className="h-10 w-1/4" />
+      <div className="space-y-6 p-2">
+        {/* VS Battle skeleton */}
+        <div className="flex flex-col sm:flex-row gap-4 items-stretch">
+          <div className="flex-1 p-5 rounded-xl border-2 border-border/50">
+            <Skeleton className="h-10 w-1/2 mx-auto mb-4" />
+            <div className="space-y-3">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
             </div>
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-10 w-full" />
-            ))}
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-10 w-full mt-4" />
-          </CardContent>
-        </Card>
+          </div>
+          <div className="flex items-center justify-center py-4 sm:py-0">
+            <Skeleton className="h-12 w-12 rounded-full" />
+          </div>
+          <div className="flex-1 p-5 rounded-xl border-2 border-border/50">
+            <Skeleton className="h-10 w-1/2 mx-auto mb-4" />
+            <div className="space-y-3">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          </div>
+        </div>
+        <Skeleton className="h-32 w-full rounded-xl" />
+        <Skeleton className="h-12 w-full rounded-lg" />
       </div>
     );
   }
 
   if (pageError) {
     return (
-      <div className="container mx-auto p-4 max-w-md">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Erreur</AlertTitle>
+      <div className="p-4">
+        <Alert variant="destructive" className="border-2">
+          <AlertCircle className="h-5 w-5" />
+          <AlertTitle className="font-bold">Erreur</AlertTitle>
           <AlertDescription>{pageError}</AlertDescription>
         </Alert>
       </div>
@@ -334,248 +519,113 @@ const NewMatchPage: React.FC<NewMatchPageProps> = ({
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Team A Players */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Équipe A</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="teamAPlayer1">Joueur 1</Label>
-                <Controller
-                  control={control}
-                  name="teamAPlayer1"
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner le joueur 1" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>Joueurs disponibles</SelectLabel>
-                          {getAvailablePlayers(
-                            allPlayers,
-                            selectedPlayerIds(),
-                            field.value,
-                          ).map((player) => (
-                            <SelectItem
-                              key={player.player_id}
-                              value={player.player_id.toString()}
-                            >
-                              <div className="flex items-center justify-between w-full">
-                                <span>{player.name}</span>
-                                <Badge variant="outline" className="ml-2">
-                                  {player.global_elo} ELO
-                                </Badge>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.teamAPlayer1 && (
-                  <p className="text-red-500 text-sm">
-                    {errors.teamAPlayer1.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="teamAPlayer2">Joueur 2</Label>
+    <div className="p-2 sm:p-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+        {/* VS Battle Arena */}
+        <div className="relative">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch">
+            {/* Team A Panel */}
+            <Controller
+              control={control}
+              name="teamAPlayer1"
+              render={({ field: field1 }) => (
                 <Controller
                   control={control}
                   name="teamAPlayer2"
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner le joueur 2" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>Joueurs disponibles</SelectLabel>
-                          {getAvailablePlayers(
-                            allPlayers,
-                            selectedPlayerIds(),
-                            field.value,
-                          ).map((player) => (
-                            <SelectItem
-                              key={player.player_id}
-                              value={player.player_id.toString()}
-                            >
-                              <div className="flex items-center justify-between w-full">
-                                <span>{player.name}</span>
-                                <Badge variant="outline" className="ml-2">
-                                  {player.global_elo} ELO
-                                </Badge>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
+                  render={({ field: field2 }) => (
+                    <TeamPanel
+                      teamName="Équipe A"
+                      isWinner={watchedValues.winningTeam === "A"}
+                      onSelectWinner={() => setValue("winningTeam", "A")}
+                      player1Value={field1.value}
+                      player2Value={field2.value}
+                      onPlayer1Change={field1.onChange}
+                      onPlayer2Change={field2.onChange}
+                      availablePlayers={getAvailablePlayers}
+                      allPlayers={allPlayers}
+                      errors={{
+                        player1: errors.teamAPlayer1,
+                        player2: errors.teamAPlayer2,
+                      }}
+                    />
                   )}
                 />
-                {errors.teamAPlayer2 && (
-                  <p className="text-red-500 text-sm">
-                    {errors.teamAPlayer2.message}
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              )}
+            />
 
-        {/* Team B Players */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Équipe B</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="teamBPlayer1">Joueur 1</Label>
-                <Controller
-                  control={control}
-                  name="teamBPlayer1"
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner le joueur 1" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>Joueurs disponibles</SelectLabel>
-                          {getAvailablePlayers(
-                            allPlayers,
-                            selectedPlayerIds(),
-                            field.value,
-                          ).map((player) => (
-                            <SelectItem
-                              key={player.player_id}
-                              value={player.player_id.toString()}
-                            >
-                              <div className="flex items-center justify-between w-full">
-                                <span>{player.name}</span>
-                                <Badge variant="outline" className="ml-2">
-                                  {player.global_elo} ELO
-                                </Badge>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.teamBPlayer1 && (
-                  <p className="text-red-500 text-sm">
-                    {errors.teamBPlayer1.message}
-                  </p>
+            {/* VS Divider */}
+            <div className="flex sm:flex-col items-center justify-center gap-2 py-2 sm:py-0 sm:px-2">
+              <div className="flex-1 sm:flex-none h-px sm:h-full w-full sm:w-px bg-linear-to-r sm:bg-linear-to-b from-transparent via-border to-transparent" />
+              <div
+                className={cn(
+                  "relative flex items-center justify-center",
+                  "w-14 h-14 sm:w-16 sm:h-16 rounded-full",
+                  "bg-linear-to-br from-card via-card to-muted",
+                  "border-2 border-primary/30",
+                  "shadow-lg shadow-primary/20",
                 )}
+              >
+                <Swords className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
+                <div className="absolute inset-0 rounded-full bg-primary/5 animate-pulse" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="teamBPlayer2">Joueur 2</Label>
+              <div className="flex-1 sm:flex-none h-px sm:h-full w-full sm:w-px bg-linear-to-r sm:bg-linear-to-b from-transparent via-border to-transparent" />
+            </div>
+
+            {/* Team B Panel */}
+            <Controller
+              control={control}
+              name="teamBPlayer1"
+              render={({ field: field1 }) => (
                 <Controller
                   control={control}
                   name="teamBPlayer2"
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner le joueur 2" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>Joueurs disponibles</SelectLabel>
-                          {getAvailablePlayers(
-                            allPlayers,
-                            selectedPlayerIds(),
-                            field.value,
-                          ).map((player) => (
-                            <SelectItem
-                              key={player.player_id}
-                              value={player.player_id.toString()}
-                            >
-                              <div className="flex items-center justify-between w-full">
-                                <span>{player.name}</span>
-                                <Badge variant="outline" className="ml-2">
-                                  {player.global_elo} ELO
-                                </Badge>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
+                  render={({ field: field2 }) => (
+                    <TeamPanel
+                      teamName="Équipe B"
+                      isWinner={watchedValues.winningTeam === "B"}
+                      onSelectWinner={() => setValue("winningTeam", "B")}
+                      player1Value={field1.value}
+                      player2Value={field2.value}
+                      onPlayer1Change={field1.onChange}
+                      onPlayer2Change={field2.onChange}
+                      availablePlayers={getAvailablePlayers}
+                      allPlayers={allPlayers}
+                      errors={{
+                        player1: errors.teamBPlayer1,
+                        player2: errors.teamBPlayer2,
+                      }}
+                    />
                   )}
                 />
-                {errors.teamBPlayer2 && (
-                  <p className="text-red-500 text-sm">
-                    {errors.teamBPlayer2.message}
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Match Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Détails du Match</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Winning Team */}
-            <div className="space-y-2">
-              <Label htmlFor="winningTeam">Équipe gagnante</Label>
-              <Controller
-                control={control}
-                name="winningTeam"
-                render={({ field }) => (
-                  <RadioGroup
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    className="flex space-x-4"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="A" id="winningTeamA" />
-                      <Label htmlFor="winningTeamA" className="cursor-pointer">
-                        Équipe A
-                        {teamCompositions.teamA.complete && (
-                          <span className="text-sm text-muted-foreground ml-1">
-                            ({teamCompositions.teamA.player1} &{" "}
-                            {teamCompositions.teamA.player2})
-                          </span>
-                        )}
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="B" id="winningTeamB" />
-                      <Label htmlFor="winningTeamB" className="cursor-pointer">
-                        Équipe B
-                        {teamCompositions.teamB.complete && (
-                          <span className="text-sm text-muted-foreground ml-1">
-                            ({teamCompositions.teamB.player1} &{" "}
-                            {teamCompositions.teamB.player2})
-                          </span>
-                        )}
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                )}
-              />
-              {errors.winningTeam && (
-                <p className="text-red-500 text-sm">
-                  {errors.winningTeam.message}
-                </p>
               )}
-            </div>
+            />
+          </div>
 
-            {/* Is Fanny */}
-            <div className="flex items-center space-x-2">
+          {/* Winner selection error */}
+          {errors.winningTeam && (
+            <p className="text-destructive text-sm text-center mt-3">
+              {errors.winningTeam.message}
+            </p>
+          )}
+
+          {/* Hint to select winner */}
+          {!watchedValues.winningTeam && (
+            <p className="text-muted-foreground text-xs text-center mt-3 animate-pulse">
+              Cliquez sur une équipe pour la désigner vainqueur
+            </p>
+          )}
+        </div>
+
+        {/* Match Details Card */}
+        <div className="rounded-xl border-2 border-border/50 bg-card/50 p-4 space-y-4">
+          <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            <Swords className="w-4 h-4" />
+            Détails du Match
+          </div>
+
+          {/* Fanny Badge - Prominent */}
+          <div className="flex items-center justify-between p-3 rounded-lg bg-linear-to-r from-destructive/10 via-transparent to-transparent border border-destructive/20">
+            <div className="flex items-center gap-3">
               <Controller
                 control={control}
                 name="isFanny"
@@ -584,79 +634,104 @@ const NewMatchPage: React.FC<NewMatchPageProps> = ({
                     id="isFanny"
                     checked={field.value}
                     onCheckedChange={field.onChange}
+                    className="h-5 w-5 border-2 data-[state=checked]:bg-destructive data-[state=checked]:border-destructive"
                   />
                 )}
               />
-              <Label htmlFor="isFanny" className="cursor-pointer">
-                Fanny
+              <Label
+                htmlFor="isFanny"
+                className="cursor-pointer flex items-center gap-2"
+              >
+                <span className="font-bold text-destructive flex items-center gap-1.5">
+                  <Flame className="w-4 h-4" />
+                  FANNY
+                </span>
               </Label>
             </div>
-
-            {/* Match Date */}
-            <div className="space-y-2">
-              <Label htmlFor="matchDate">Date du match</Label>
-              <Controller
-                control={control}
-                name="matchDate"
-                render={({ field }) => (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !field.value && "text-muted-foreground",
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {field.value ? (
-                          format(field.value, "PPP", { locale: fr })
-                        ) : (
-                          <span>Choisir une date</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        locale={fr}
-                        onSelect={field.onChange}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                )}
-              />
-              {errors.matchDate && (
-                <p className="text-red-500 text-sm">
-                  {errors.matchDate.message}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="p-1.5 rounded-full hover:bg-muted transition-colors"
+                >
+                  <Info className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="left" className="`max-w-50">
+                <p>
+                  Une Fanny est une victoire écrasante où le perdant marque 0
+                  point. Multiplie les points ELO!
                 </p>
-              )}
-            </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
 
-            {/* Notes */}
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes (optionnel)</Label>
-              <Controller
-                control={control}
-                name="notes"
-                render={({ field }) => (
-                  <Textarea
-                    id="notes"
-                    placeholder="Ajouter des notes sur le match..."
-                    {...field}
-                    value={field.value || ""}
-                    rows={3}
-                  />
-                )}
-              />
-              {errors.notes && (
-                <p className="text-red-500 text-sm">{errors.notes.message}</p>
+          {/* Date Picker */}
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Date du match
+            </Label>
+            <Controller
+              control={control}
+              name="matchDate"
+              render={({ field }) => (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal h-11 border-2",
+                        !field.value && "text-muted-foreground",
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4 opacity-70" />
+                      {field.value ? (
+                        format(field.value, "PPP", { locale: fr })
+                      ) : (
+                        <span>Choisir une date</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value}
+                      locale={fr}
+                      onSelect={field.onChange}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               )}
-            </div>
-          </CardContent>
-        </Card>
+            />
+            {errors.matchDate && (
+              <p className="text-destructive text-xs">
+                {errors.matchDate.message}
+              </p>
+            )}
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Notes (optionnel)
+            </Label>
+            <Controller
+              control={control}
+              name="notes"
+              render={({ field }) => (
+                <Textarea
+                  id="notes"
+                  placeholder="Ajouter des notes sur le match..."
+                  {...field}
+                  value={field.value || ""}
+                  rows={2}
+                  className="resize-none border-2"
+                />
+              )}
+            />
+          </div>
+        </div>
 
         {/* Submission Status Alert */}
         {submissionStatus && (
@@ -664,15 +739,19 @@ const NewMatchPage: React.FC<NewMatchPageProps> = ({
             variant={
               submissionStatus.type === "success" ? "default" : "destructive"
             }
-            className={
-              submissionStatus.type === "success"
-                ? "bg-green-100 border-green-400 text-green-700"
-                : ""
-            }
+            className={cn(
+              "border-2",
+              submissionStatus.type === "success" &&
+                "bg-(--match-win-bg) border-(--match-win-border) text-(--win-text)",
+            )}
           >
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>
-              {submissionStatus.type === "success" ? "Succès" : "Erreur"}
+            {submissionStatus.type === "success" ? (
+              <Trophy className="h-4 w-4" />
+            ) : (
+              <AlertCircle className="h-4 w-4" />
+            )}
+            <AlertTitle className="font-bold">
+              {submissionStatus.type === "success" ? "Victoire!" : "Erreur"}
             </AlertTitle>
             <AlertDescription>{submissionStatus.message}</AlertDescription>
           </Alert>
@@ -682,17 +761,34 @@ const NewMatchPage: React.FC<NewMatchPageProps> = ({
         <div className="flex gap-3">
           <Button
             type="submit"
-            className="flex-1"
             disabled={isSubmitting || !isValid}
+            className={cn(
+              "flex-1 h-12 font-bold text-base transition-all duration-300",
+              "bg-linear-to-r from-yellow-500 via-amber-500 to-yellow-600",
+              "hover:from-yellow-400 hover:via-amber-400 hover:to-yellow-500",
+              "text-amber-950 shadow-lg shadow-amber-500/25",
+              "hover:shadow-amber-500/40 hover:scale-[1.02]",
+              "disabled:opacity-50 disabled:hover:scale-100 disabled:shadow-none",
+            )}
           >
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Créer le match
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Création...
+              </>
+            ) : (
+              <>
+                <Trophy className="mr-2 h-5 w-5" />
+                Créer le match
+              </>
+            )}
           </Button>
           <Button
             type="button"
             variant="outline"
             onClick={clearForm}
             disabled={isSubmitting}
+            className="h-12 px-6 border-2 font-medium hover:bg-muted"
           >
             Réinitialiser
           </Button>

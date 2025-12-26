@@ -12,7 +12,7 @@
  * Usage: Do not import directly. Used automatically by Next.js as the root layout.
  */
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Delius, Inter } from "next/font/google";
 import { Toaster } from "../components/ui/sonner";
 import { SidebarProvider, SidebarInset } from "../components/ui/sidebar";
 import { AppSidebar } from "../components/app-sidebar";
@@ -20,13 +20,16 @@ import { ThemeProvider } from "../components/ThemeProvider";
 import "./globals.css";
 import { SiteHeader } from "../components/Header";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// [>]: Delius for headers - playful, handwritten feel for championship app.
+const delius = Delius({
+  variable: "--font-delius",
+  weight: "400",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+// [>]: Inter as a clean, modern body font (replacing Google Sans Text which isn't available in next/font).
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -43,9 +46,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${delius.variable} ${inter.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <SidebarProvider>
             <AppSidebar variant="inset" />

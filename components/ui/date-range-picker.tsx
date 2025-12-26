@@ -2,8 +2,8 @@
 "use client";
 
 import * as React from "react";
-import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { format, subMonths } from "date-fns";
+import { Calendar as CalendarIcon, X } from "lucide-react";
 import { DateRange } from "react-day-picker";
 
 import { cn } from "../../lib/utils";
@@ -19,72 +19,90 @@ import { fr } from "date-fns/locale";
 import { Locale } from "date-fns";
 
 interface DateRangePickerProps extends React.HTMLAttributes<HTMLDivElement> {
-  initialDateRange?: DateRange;
+  value?: DateRange;
   onUpdateFilter: (range: DateRange | undefined) => void;
   align?: "start" | "center" | "end";
-  locale?: Locale; // Add locale prop for localization
+  locale?: Locale;
 }
 
 export function DateRangePicker({
   className,
-  initialDateRange,
+  value,
   onUpdateFilter,
   align = "start",
   locale = fr,
 }: DateRangePickerProps) {
-  const [date, setDate] = React.useState<DateRange | undefined>(
-    initialDateRange,
+  // [>]: Use internal state only for in-progress selection (first click before second).
+  // Once complete range is selected, parent's `value` prop is the source of truth.
+  const [pendingRange, setPendingRange] = React.useState<DateRange | undefined>(
+    undefined,
   );
-  const [isOpen, setIsOpen] = React.useState(false);
 
-  React.useEffect(() => {
-    // If an initial date range is provided, set it.
-    if (initialDateRange) {
-      setDate(initialDateRange);
-    }
-  }, [initialDateRange]);
+  // [>]: Display pending selection if in progress, otherwise show parent's value.
+  const displayedRange = pendingRange ?? value;
 
+  // [>]: Only call onUpdateFilter when range is complete (from AND to) or cleared.
   const handleSelect = (selectedRange: DateRange | undefined) => {
-    setDate(selectedRange);
-    onUpdateFilter(selectedRange);
-    // Optionally close popover on selection, or require explicit close
-    // setIsOpen(false);
+    // [>]: Trigger filter only when:
+    // 1. Range is cleared (undefined)
+    // 2. Complete range selected (both from and to are set)
+    if (!selectedRange || (selectedRange.from && selectedRange.to)) {
+      setPendingRange(undefined); // Clear pending, parent value takes over.
+      onUpdateFilter(selectedRange);
+    } else {
+      // [>]: First click only - store in pending state for display.
+      setPendingRange(selectedRange);
+    }
+  };
+
+  // [>]: Clear button handler to reset filter.
+  const handleClear = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPendingRange(undefined);
+    onUpdateFilter(undefined);
   };
 
   return (
     <div className={cn("grid gap-2", className)}>
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <Popover>
         <PopoverTrigger asChild>
           <Button
             id="date"
-            variant={"outline"}
+            variant="outline"
             className={cn(
-              "w-full justify-start text-left font-normal md:w-[300px]", // md:w-[300px] for a decent default width
-              !date && "text-muted-foreground",
+              "w-full justify-start text-left font-normal md:w-[300px]",
+              !displayedRange && "text-muted-foreground",
             )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {date?.from ? (
-              date.to ? (
+            {displayedRange?.from ? (
+              displayedRange.to ? (
                 <>
-                  {format(date.from, "LLL dd, y")} -{" "}
-                  {format(date.to, "LLL dd, y")}
+                  {format(displayedRange.from, "LLL dd, y")} -{" "}
+                  {format(displayedRange.to, "LLL dd, y")}
                 </>
               ) : (
-                format(date.from, "LLL dd, y")
+                format(displayedRange.from, "LLL dd, y")
               )
             ) : (
               <span>Sélectionnez une plage de dates</span>
+            )}
+            {displayedRange && (
+              <X
+                className="ml-auto h-4 w-4 opacity-50 hover:opacity-100"
+                onClick={handleClear}
+              />
             )}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align={align}>
           <Calendar
             mode="range"
-            selected={date}
+            defaultMonth={displayedRange?.from ?? subMonths(new Date(), 1)}
+            selected={displayedRange}
             onSelect={handleSelect}
             initialFocus
-            locale={locale} // Pass locale to Calendar
+            locale={locale}
             numberOfMonths={2}
           />
         </PopoverContent>

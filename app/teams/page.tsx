@@ -17,6 +17,7 @@ import { getTeamRankings } from "@/lib/api/client/teamService";
 import { TeamRankingsDisplay } from "../../components/rankings/TeamRankingsDisplay";
 import { toast } from "sonner";
 import { NewMatchDialog } from "../../components/matches/NewMatchDialog";
+import { Trophy } from "lucide-react";
 
 const TEAMS_API_ENDPOINT = "/api/v1/teams/rankings?limit=100";
 
@@ -39,11 +40,24 @@ export default function TeamRankingsPage() {
 
   return (
     <main className="container mx-auto p-4 md:p-8">
-      <div className="flex flex-col md:flex-row justify-between items-center mb-6 md:mb-10">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-4 md:mb-0">
-          Classement des Équipes
-        </h1>
-        <div className="flex space-x-2">
+      {/* Championship Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 md:mb-12 gap-4">
+        <div className="flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 shadow-lg">
+            <Trophy className="h-8 w-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl md:text-4xl font-black tracking-tight text-foreground">
+              Classement des Équipes
+            </h1>
+            <p className="text-muted-foreground text-sm md:text-base mt-1">
+              Championnat Baby Foot BMIF
+            </p>
+          </div>
+        </div>
+
+        {/* Action button */}
+        <div className="flex gap-3 w-full md:w-auto">
           <NewMatchDialog />
         </div>
       </div>

@@ -10,7 +10,10 @@
 
 CREATE OR REPLACE FUNCTION get_all_matches_with_details(
     p_limit INTEGER DEFAULT 100,
-    p_offset INTEGER DEFAULT 0
+    p_offset INTEGER DEFAULT 0,
+    p_start_date TIMESTAMPTZ DEFAULT NULL,
+    p_end_date TIMESTAMPTZ DEFAULT NULL,
+    p_is_fanny BOOLEAN DEFAULT NULL
 )
 RETURNS SETOF jsonb
 LANGUAGE sql
@@ -21,6 +24,9 @@ WITH
 target_matches AS (
   SELECT match_id, is_fanny, played_at, notes, winner_team_id, loser_team_id
   FROM matches
+  WHERE (p_start_date IS NULL OR played_at >= p_start_date)
+    AND (p_end_date IS NULL OR played_at <= p_end_date)
+    AND (p_is_fanny IS NULL OR is_fanny = p_is_fanny)
   ORDER BY played_at DESC
   LIMIT p_limit
   OFFSET p_offset
