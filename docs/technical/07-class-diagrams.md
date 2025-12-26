@@ -41,7 +41,8 @@ graph TB
         TeamRepo[Team Repository<br/>lib/db/repositories/teams.ts]
         MatchRepo[Match Repository<br/>lib/db/repositories/matches.ts]
         StatsRepo[Stats Repository<br/>lib/db/repositories/stats.ts]
-        HistoryRepo[History Repository<br/>lib/db/repositories/elo-history.ts]
+        PlayerEloHistory[Player ELO History<br/>lib/db/repositories/player-elo-history.ts]
+        TeamEloHistory[Team ELO History<br/>lib/db/repositories/team-elo-history.ts]
     end
 
     subgraph "Database Layer"
@@ -75,7 +76,8 @@ graph TB
     MatchService --> EloService
     MatchService --> PlayerRepo
     MatchService --> TeamRepo
-    MatchService --> HistoryRepo
+    MatchService --> PlayerEloHistory
+    MatchService --> TeamEloHistory
 
     %% Repository to Database
     PlayerRepo --> Players
@@ -85,8 +87,8 @@ graph TB
     MatchRepo --> Matches
     MatchRepo --> RPC
     StatsRepo --> RPC
-    HistoryRepo --> PlayerHistory
-    HistoryRepo --> TeamHistory
+    PlayerEloHistory --> PlayerHistory
+    TeamEloHistory --> TeamHistory
 
     %% Styling
     classDef frontend fill:#e1f5ff
@@ -98,7 +100,7 @@ graph TB
     class Pages,Components,Hooks,APIClient frontend
     class PlayersAPI,TeamsAPI,MatchesAPI backend
     class PlayerService,TeamService,MatchService,EloService service
-    class PlayerRepo,TeamRepo,MatchRepo,StatsRepo,HistoryRepo repo
+    class PlayerRepo,TeamRepo,MatchRepo,StatsRepo,PlayerEloHistory,TeamEloHistory repo
     class Players,Teams,Matches,PlayerHistory,TeamHistory,RPC db
 ```
 
@@ -206,9 +208,20 @@ classDiagram
         +getTeamStats(teamId: number): Promise~TeamStatsRow | null~
     }
 
-    class EloHistoryRepository {
-        +getPlayerEloHistory(playerId): Promise~PlayerEloHistoryRow[]~
-        +getTeamEloHistory(teamId): Promise~TeamEloHistoryRow[]~
+    class PlayerEloHistoryRepository {
+        +recordPlayerEloUpdate(data): Promise~number~
+        +batchRecordPlayerEloUpdates(updates[]): Promise~number[]~
+        +getPlayerEloHistory(playerId, options?): Promise~PlayerEloHistoryRow[]~
+        +getPlayersEloHistoryByMatchId(matchId): Promise~PlayerEloHistoryRow[]~
+        +deletePlayerEloHistoryByMatchId(matchId): Promise~void~
+    }
+
+    class TeamEloHistoryRepository {
+        +recordTeamEloUpdate(data): Promise~number~
+        +batchRecordTeamEloUpdates(updates[]): Promise~number[]~
+        +getTeamEloHistory(teamId, options?): Promise~TeamEloHistoryRow[]~
+        +getTeamsEloHistoryByMatchId(matchId): Promise~TeamEloHistoryRow[]~
+        +deleteTeamEloHistoryByMatchId(matchId): Promise~void~
     }
 
     class SupabaseClient {
@@ -222,7 +235,8 @@ classDiagram
     TeamRepository ..> SupabaseClient : uses
     MatchRepository ..> SupabaseClient : uses
     StatsRepository ..> SupabaseClient : uses
-    EloHistoryRepository ..> SupabaseClient : uses
+    PlayerEloHistoryRepository ..> SupabaseClient : uses
+    TeamEloHistoryRepository ..> SupabaseClient : uses
 ```
 
 ---
@@ -550,7 +564,8 @@ sequenceDiagram
     participant MR as Match Repo
     participant PR as Player Repo
     participant TR as Team Repo
-    participant HR as History Repo
+    participant PHR as Player ELO History
+    participant THR as Team ELO History
 
     U->>UI: Select 4 players, winner, date
     UI->>UI: Validate 4 distinct players
@@ -578,14 +593,14 @@ sequenceDiagram
     MS->>PR: batchUpdatePlayersElo(playerChanges)
     PR->>MS: Done
 
-    MS->>HR: recordPlayerEloHistory (4 records)
-    HR->>MS: Done
+    MS->>PHR: recordPlayerEloHistory (4 records)
+    PHR->>MS: Done
 
     MS->>TR: batchUpdateTeamsElo(teamChanges)
     TR->>MS: Done
 
-    MS->>HR: recordTeamEloHistory (2 records)
-    HR->>MS: Done
+    MS->>THR: recordTeamEloHistory (2 records)
+    THR->>MS: Done
 
     MS->>API: Return MatchWithEloResponse
     API->>UI: Return 201 + match data
