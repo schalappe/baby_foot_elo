@@ -186,7 +186,7 @@ VALUES (5, 3, FALSE, '2025-12-26 14:25:00+00', 'Championship final match');
 
 ---
 
-### `player_history`
+### `players_elo_history`
 
 **Purpose**: Audit trail of player ELO changes per match for historical analysis.
 
@@ -220,13 +220,13 @@ VALUES (5, 3, FALSE, '2025-12-26 14:25:00+00', 'Championship final match');
 
 **Example Row**:
 ```sql
-INSERT INTO player_history (player_id, match_id, old_elo, new_elo, date)
+INSERT INTO players_elo_history (player_id, match_id, old_elo, new_elo, date)
 VALUES (1, 42, 1600, 1620, '2025-12-26 14:25:00+00');
 ```
 
 ---
 
-### `team_history`
+### `teams_elo_history`
 
 **Purpose**: Audit trail of team ELO changes per match for historical analysis.
 
@@ -260,7 +260,7 @@ VALUES (1, 42, 1600, 1620, '2025-12-26 14:25:00+00');
 
 **Example Row**:
 ```sql
-INSERT INTO team_history (team_id, match_id, old_elo, new_elo, date)
+INSERT INTO teams_elo_history (team_id, match_id, old_elo, new_elo, date)
 VALUES (5, 42, 1500, 1514, '2025-12-26 14:25:00+00');
 ```
 
