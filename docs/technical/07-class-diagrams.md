@@ -112,53 +112,50 @@ graph TB
 classDiagram
     class EloService {
         <<pure functions>>
-        +determineKFactor(currentElo: number): number
-        +calculateTeamElo(p1Elo: number, p2Elo: number): number
-        +calculateWinProbability(eloA: number, eloB: number): number
-        +calculateEloChange(currentElo, expectedScore, actualScore): number
-        +calculateEloChangesWithPoolCorrection(changes[]): Map
-        +calculatePlayersEloChange(winnerTeam, loserTeam): Object
-        +calculateTeamEloChange(winnerTeam, loserTeam): Object
-        +processMatchResult(winnerTeam, loserTeam): ProcessedMatchResult
+        +determineKFactor(competitorElo: number): number
+        +calculateTeamElo(member1Elo: number, member2Elo: number): number
+        +calculateWinProbability(competitorAElo: number, competitorBElo: number): number
+        +calculateEloChange(competitorElo: number, winProbability: number, matchResult: 0 | 1): number
+        +calculateEloChangesWithPoolCorrection(competitorsData: CompetitorsDataMap): EloChangesMap
+        +calculatePlayersEloChange(winningTeam: TeamWithPlayers, losingTeam: TeamWithPlayers): EloChangesMap
+        +calculateTeamEloChange(winningTeam: TeamWithPlayers, losingTeam: TeamWithPlayers): EloChangesMap
+        +processMatchResult(winningTeam: TeamWithPlayers, losingTeam: TeamWithPlayers): [EloChangesMap, EloChangesMap]
     }
 
     class PlayerService {
         +createNewPlayer(data: PlayerCreate): Promise~PlayerResponse~
-        +getAllPlayersWithStats(limit?: number): Promise~PlayerResponse[]~
+        +getAllPlayersWithStats(): Promise~PlayerResponse[]~
         +getPlayer(playerId: number): Promise~PlayerResponse~
-        +updateExistingPlayer(playerId, data): Promise~PlayerResponse~
+        +updateExistingPlayer(playerId: number, data: PlayerUpdate): Promise~PlayerResponse~
         +deletePlayer(playerId: number): Promise~void~
-        +getPlayerEloHistory(playerId: number): Promise~EloHistoryResponse[]~
-        -validatePlayerExists(playerId: number): Promise~void~
-        -autoCreateTeams(newPlayerId: number): Promise~void~
+        +getPlayerEloHistory(playerId: number, options?: {limit?, offset?}): Promise~EloHistoryResponse[]~
     }
 
     class TeamService {
         +createNewTeam(data: TeamCreate): Promise~TeamResponse~
-        +getAllTeamsWithStats(limit?: number): Promise~TeamResponse[]~
-        +getActiveTeamRankings(limit?: number): Promise~TeamResponse[]~
+        +getAllTeamsWithStats(options?: {skip?, limit?}): Promise~TeamResponse[]~
+        +getActiveTeamRankings(options?: {daysSinceLastMatch?}): Promise~TeamResponse[]~
         +getTeam(teamId: number): Promise~TeamResponse~
         +getTeamsByPlayer(playerId: number): Promise~TeamResponse[]~
-        +updateExistingTeam(teamId, data): Promise~TeamResponse~
+        +updateExistingTeam(teamId: number, data: TeamUpdate): Promise~TeamResponse~
         +deleteTeam(teamId: number): Promise~void~
-        -normalizePlayerIds(p1: number, p2: number): [number, number]
     }
 
     class MatchService {
         +createNewMatch(data: MatchCreate): Promise~MatchWithEloResponse~
         +getMatch(matchId: number): Promise~MatchResponse~
-        +getMatches(options?): Promise~MatchResponse[]~
-        +getMatchesByPlayer(playerId, options?): Promise~Object~
-        +getMatchesWithTeamElo(teamId: number): Promise~TeamMatchHistory[]~
+        +getMatches(options?: MatchQueryOptions): Promise~MatchResponse[]~
+        +getMatchesByPlayer(playerId: number, options?: MatchQueryOptions): Promise~MatchWithEloResponse[]~
+        +getMatchesWithTeamElo(teamId: number, options?: MatchQueryOptions): Promise~MatchWithEloResponse[]~
+        +getMatchWithPlayerElo(matchId: number): Promise~MatchWithEloResponse~
+        +getMatchWithTeamElo(matchId: number): Promise~MatchWithEloResponse~
         +deleteMatch(matchId: number): Promise~void~
-        -validateMatchTeams(winnerId, loserId): void
-        -applyEloChanges(playerChanges, teamChanges): Promise~void~
     }
 
     %% Dependencies
     MatchService ..> EloService : uses
     MatchService ..> TeamService : uses (getTeam)
-    PlayerService ..> TeamService : uses (createTeam)
+    PlayerService ..> TeamService : uses (createTeamByPlayerIds)
 ```
 
 ---
