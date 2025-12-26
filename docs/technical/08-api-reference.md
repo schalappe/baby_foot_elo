@@ -847,7 +847,9 @@ GET /api/v1/teams/{teamId}/statistics
 }
 ```
 
-**Implementation**: `app/api/v1/teams/[teamId]/statistics/route.ts:11` → RPC: `get_all_teams_with_stats`
+**Implementation**: `app/api/v1/teams/[teamId]/statistics/route.ts:11` → RPC: `get_team_full_stats_optimized`
+
+**Note**: The RPC `get_all_teams_with_stats_optimized` is used only for multi-team queries (e.g., team rankings).
 
 ---
 
