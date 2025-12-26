@@ -48,11 +48,7 @@ import { Skeleton } from "../ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Checkbox } from "../ui/checkbox";
 import { Badge } from "../ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "../ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 interface NewMatchPageProps {
   onMatchCreated?: () => void;
@@ -168,7 +164,6 @@ function PlayerSelect({
 
 // [>]: Team panel component with winner glow effect.
 function TeamPanel({
-  team,
   teamName,
   isWinner,
   onSelectWinner,
@@ -180,7 +175,6 @@ function TeamPanel({
   allPlayers,
   errors,
 }: {
-  team: "A" | "B";
   teamName: string;
   isWinner: boolean;
   onSelectWinner: () => void;
@@ -540,7 +534,6 @@ const NewMatchPage: React.FC<NewMatchPageProps> = ({
                   name="teamAPlayer2"
                   render={({ field: field2 }) => (
                     <TeamPanel
-                      team="A"
                       teamName="Équipe A"
                       isWinner={watchedValues.winningTeam === "A"}
                       onSelectWinner={() => setValue("winningTeam", "A")}
@@ -562,12 +555,12 @@ const NewMatchPage: React.FC<NewMatchPageProps> = ({
 
             {/* VS Divider */}
             <div className="flex sm:flex-col items-center justify-center gap-2 py-2 sm:py-0 sm:px-2">
-              <div className="flex-1 sm:flex-none h-px sm:h-full w-full sm:w-px bg-gradient-to-r sm:bg-gradient-to-b from-transparent via-border to-transparent" />
+              <div className="flex-1 sm:flex-none h-px sm:h-full w-full sm:w-px bg-linear-to-r sm:bg-linear-to-b from-transparent via-border to-transparent" />
               <div
                 className={cn(
                   "relative flex items-center justify-center",
                   "w-14 h-14 sm:w-16 sm:h-16 rounded-full",
-                  "bg-gradient-to-br from-card via-card to-muted",
+                  "bg-linear-to-br from-card via-card to-muted",
                   "border-2 border-primary/30",
                   "shadow-lg shadow-primary/20",
                 )}
@@ -575,7 +568,7 @@ const NewMatchPage: React.FC<NewMatchPageProps> = ({
                 <Swords className="w-6 h-6 sm:w-7 sm:h-7 text-primary" />
                 <div className="absolute inset-0 rounded-full bg-primary/5 animate-pulse" />
               </div>
-              <div className="flex-1 sm:flex-none h-px sm:h-full w-full sm:w-px bg-gradient-to-r sm:bg-gradient-to-b from-transparent via-border to-transparent" />
+              <div className="flex-1 sm:flex-none h-px sm:h-full w-full sm:w-px bg-linear-to-r sm:bg-linear-to-b from-transparent via-border to-transparent" />
             </div>
 
             {/* Team B Panel */}
@@ -588,7 +581,6 @@ const NewMatchPage: React.FC<NewMatchPageProps> = ({
                   name="teamBPlayer2"
                   render={({ field: field2 }) => (
                     <TeamPanel
-                      team="B"
                       teamName="Équipe B"
                       isWinner={watchedValues.winningTeam === "B"}
                       onSelectWinner={() => setValue("winningTeam", "B")}
@@ -632,7 +624,7 @@ const NewMatchPage: React.FC<NewMatchPageProps> = ({
           </div>
 
           {/* Fanny Badge - Prominent */}
-          <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-destructive/10 via-transparent to-transparent border border-destructive/20">
+          <div className="flex items-center justify-between p-3 rounded-lg bg-linear-to-r from-destructive/10 via-transparent to-transparent border border-destructive/20">
             <div className="flex items-center gap-3">
               <Controller
                 control={control}
@@ -665,7 +657,7 @@ const NewMatchPage: React.FC<NewMatchPageProps> = ({
                   <Info className="w-4 h-4 text-muted-foreground" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="left" className="max-w-[200px]">
+              <TooltipContent side="left" className="`max-w-50">
                 <p>
                   Une Fanny est une victoire écrasante où le perdant marque 0
                   point. Multiplie les points ELO!
@@ -750,7 +742,7 @@ const NewMatchPage: React.FC<NewMatchPageProps> = ({
             className={cn(
               "border-2",
               submissionStatus.type === "success" &&
-                "bg-[var(--match-win-bg)] border-[var(--match-win-border)] text-[var(--win-text)]",
+                "bg-(--match-win-bg) border-(--match-win-border) text-(--win-text)",
             )}
           >
             {submissionStatus.type === "success" ? (
@@ -772,7 +764,7 @@ const NewMatchPage: React.FC<NewMatchPageProps> = ({
             disabled={isSubmitting || !isValid}
             className={cn(
               "flex-1 h-12 font-bold text-base transition-all duration-300",
-              "bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-600",
+              "bg-linear-to-r from-yellow-500 via-amber-500 to-yellow-600",
               "hover:from-yellow-400 hover:via-amber-400 hover:to-yellow-500",
               "text-amber-950 shadow-lg shadow-amber-500/25",
               "hover:shadow-amber-500/40 hover:scale-[1.02]",

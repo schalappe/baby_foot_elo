@@ -53,8 +53,7 @@ const MatchHistoryPage = () => {
     const params = new URLSearchParams();
     if (filterOptions.startDate)
       params.append("start_date", filterOptions.startDate);
-    if (filterOptions.endDate)
-      params.append("end_date", filterOptions.endDate);
+    if (filterOptions.endDate) params.append("end_date", filterOptions.endDate);
     const queryString = params.toString();
     return queryString ? `/api/v1/matches?${queryString}` : "/api/v1/matches";
   }, [filterOptions]);

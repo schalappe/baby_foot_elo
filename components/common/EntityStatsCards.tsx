@@ -287,8 +287,8 @@ const EntityStatsCards: React.FC<EntityStatsCardsProps> = ({ stats }) => {
           </div>
 
           <div className="text-xs text-muted-foreground font-medium">
-            {stats.recent?.matches_played ?? stats.matches_played ?? 0} dernières
-            parties
+            {stats.recent?.matches_played ?? stats.matches_played ?? 0}{" "}
+            dernières parties
           </div>
         </CardContent>
       </Card>

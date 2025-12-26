@@ -12,7 +12,7 @@
  * Usage: Do not import directly. Used automatically by Next.js as the root layout.
  */
 import type { Metadata } from "next";
-import { Delius } from "next/font/google";
+import { Delius, Inter } from "next/font/google";
 import { Toaster } from "../components/ui/sonner";
 import { SidebarProvider, SidebarInset } from "../components/ui/sidebar";
 import { AppSidebar } from "../components/app-sidebar";
@@ -24,6 +24,12 @@ import { SiteHeader } from "../components/Header";
 const delius = Delius({
   variable: "--font-delius",
   weight: "400",
+  subsets: ["latin"],
+});
+
+// [>]: Inter as a clean, modern body font (replacing Google Sans Text which isn't available in next/font).
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -40,20 +46,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <head>
-        {/* Google Sans Text font for body */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Google+Sans+Text:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className={`${delius.variable} antialiased`}>
+      <body className={`${delius.variable} ${inter.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <SidebarProvider>
             <AppSidebar variant="inset" />

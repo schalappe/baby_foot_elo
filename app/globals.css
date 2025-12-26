@@ -94,18 +94,48 @@
   /* Championship Podium Colors */
   --gold: hsl(45, 95%, 50%);
   --gold-light: hsl(45, 100%, 92%);
-  --gold-gradient: linear-gradient(135deg, hsl(50, 100%, 60%) 0%, hsl(40, 95%, 45%) 50%, hsl(35, 90%, 40%) 100%);
+  --gold-gradient: linear-gradient(
+    135deg,
+    hsl(50, 100%, 60%) 0%,
+    hsl(40, 95%, 45%) 50%,
+    hsl(35, 90%, 40%) 100%
+  );
   --silver: hsl(220, 15%, 60%);
   --silver-light: hsl(220, 20%, 92%);
-  --silver-gradient: linear-gradient(135deg, hsl(220, 20%, 78%) 0%, hsl(220, 15%, 58%) 50%, hsl(220, 10%, 48%) 100%);
+  --silver-gradient: linear-gradient(
+    135deg,
+    hsl(220, 20%, 78%) 0%,
+    hsl(220, 15%, 58%) 50%,
+    hsl(220, 10%, 48%) 100%
+  );
   --bronze: hsl(25, 70%, 48%);
   --bronze-light: hsl(25, 80%, 92%);
-  --bronze-gradient: linear-gradient(135deg, hsl(30, 80%, 58%) 0%, hsl(25, 70%, 43%) 50%, hsl(20, 65%, 36%) 100%);
+  --bronze-gradient: linear-gradient(
+    135deg,
+    hsl(30, 80%, 58%) 0%,
+    hsl(25, 70%, 43%) 50%,
+    hsl(20, 65%, 36%) 100%
+  );
 
   /* Podium card backgrounds - Subtle cold paper tones */
-  --podium-gold: linear-gradient(145deg, hsl(48, 50%, 97%) 0%, hsl(45, 45%, 94%) 50%, hsl(42, 40%, 91%) 100%);
-  --podium-silver: linear-gradient(145deg, hsl(220, 18%, 97%) 0%, hsl(220, 16%, 94%) 50%, hsl(220, 14%, 91%) 100%);
-  --podium-bronze: linear-gradient(145deg, hsl(28, 35%, 96%) 0%, hsl(25, 30%, 93%) 50%, hsl(22, 25%, 90%) 100%);
+  --podium-gold: linear-gradient(
+    145deg,
+    hsl(48, 50%, 97%) 0%,
+    hsl(45, 45%, 94%) 50%,
+    hsl(42, 40%, 91%) 100%
+  );
+  --podium-silver: linear-gradient(
+    145deg,
+    hsl(220, 18%, 97%) 0%,
+    hsl(220, 16%, 94%) 50%,
+    hsl(220, 14%, 91%) 100%
+  );
+  --podium-bronze: linear-gradient(
+    145deg,
+    hsl(28, 35%, 96%) 0%,
+    hsl(25, 30%, 93%) 50%,
+    hsl(22, 25%, 90%) 100%
+  );
   --podium-card: var(--podium-silver);
 
   /* Match colors */
@@ -165,18 +195,48 @@
   /* Championship Podium Colors - Dark */
   --gold: hsl(45, 100%, 55%);
   --gold-light: hsl(45, 50%, 20%);
-  --gold-gradient: linear-gradient(135deg, hsl(50, 100%, 65%) 0%, hsl(45, 95%, 50%) 50%, hsl(40, 90%, 45%) 100%);
+  --gold-gradient: linear-gradient(
+    135deg,
+    hsl(50, 100%, 65%) 0%,
+    hsl(45, 95%, 50%) 50%,
+    hsl(40, 90%, 45%) 100%
+  );
   --silver: hsl(220, 20%, 68%);
   --silver-light: hsl(220, 15%, 22%);
-  --silver-gradient: linear-gradient(135deg, hsl(220, 25%, 73%) 0%, hsl(220, 20%, 58%) 50%, hsl(220, 15%, 48%) 100%);
+  --silver-gradient: linear-gradient(
+    135deg,
+    hsl(220, 25%, 73%) 0%,
+    hsl(220, 20%, 58%) 50%,
+    hsl(220, 15%, 48%) 100%
+  );
   --bronze: hsl(25, 75%, 55%);
   --bronze-light: hsl(25, 40%, 22%);
-  --bronze-gradient: linear-gradient(135deg, hsl(30, 85%, 60%) 0%, hsl(25, 75%, 50%) 50%, hsl(20, 70%, 42%) 100%);
+  --bronze-gradient: linear-gradient(
+    135deg,
+    hsl(30, 85%, 60%) 0%,
+    hsl(25, 75%, 50%) 50%,
+    hsl(20, 70%, 42%) 100%
+  );
 
   /* Podium card backgrounds - Dark cold tones (gold stays warm as accent) */
-  --podium-gold: linear-gradient(145deg, hsl(42, 35%, 18%) 0%, hsl(40, 40%, 14%) 50%, hsl(38, 35%, 11%) 100%);
-  --podium-silver: linear-gradient(145deg, hsl(220, 18%, 18%) 0%, hsl(220, 16%, 14%) 50%, hsl(220, 14%, 11%) 100%);
-  --podium-bronze: linear-gradient(145deg, hsl(25, 32%, 18%) 0%, hsl(22, 35%, 14%) 50%, hsl(20, 30%, 11%) 100%);
+  --podium-gold: linear-gradient(
+    145deg,
+    hsl(42, 35%, 18%) 0%,
+    hsl(40, 40%, 14%) 50%,
+    hsl(38, 35%, 11%) 100%
+  );
+  --podium-silver: linear-gradient(
+    145deg,
+    hsl(220, 18%, 18%) 0%,
+    hsl(220, 16%, 14%) 50%,
+    hsl(220, 14%, 11%) 100%
+  );
+  --podium-bronze: linear-gradient(
+    145deg,
+    hsl(25, 32%, 18%) 0%,
+    hsl(22, 35%, 14%) 50%,
+    hsl(20, 30%, 11%) 100%
+  );
   --podium-card: var(--podium-silver);
 
   /* Match colors - Dark */
@@ -214,31 +274,58 @@ body {
     font-family: "Google Sans Text", var(--font-delius), system-ui, sans-serif;
   }
   /* Headers use Delius for playful championship feel */
-  h1, h2, h3, h4, h5, h6, .font-display {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .font-display {
     font-family: var(--font-delius), "Google Sans Text", system-ui, sans-serif;
   }
 }
 
 /* Championship Arena Animations */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: var(--glow-gold); }
-  50% { box-shadow: 0 0 45px hsla(45, 100%, 50%, 0.6); }
+  0%,
+  100% {
+    box-shadow: var(--glow-gold);
+  }
+  50% {
+    box-shadow: 0 0 45px hsla(45, 100%, 50%, 0.6);
+  }
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-4px); }
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
 }
 
 @keyframes trophy-bounce {
-  0%, 100% { transform: scale(1) rotate(0deg); }
-  25% { transform: scale(1.1) rotate(-3deg); }
-  75% { transform: scale(1.1) rotate(3deg); }
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.1) rotate(-3deg);
+  }
+  75% {
+    transform: scale(1.1) rotate(3deg);
+  }
 }
 
 /* Podium Card Styles */
@@ -249,7 +336,7 @@ body {
 }
 
 .podium-card::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -314,9 +401,18 @@ body {
 }
 
 /* Rank number styling */
-.rank-gold { color: var(--gold); text-shadow: 0 2px 8px hsla(45, 100%, 50%, 0.4); }
-.rank-silver { color: var(--silver); text-shadow: 0 2px 8px hsla(220, 20%, 60%, 0.3); }
-.rank-bronze { color: var(--bronze); text-shadow: 0 2px 8px hsla(25, 70%, 50%, 0.3); }
+.rank-gold {
+  color: var(--gold);
+  text-shadow: 0 2px 8px hsla(45, 100%, 50%, 0.4);
+}
+.rank-silver {
+  color: var(--silver);
+  text-shadow: 0 2px 8px hsla(220, 20%, 60%, 0.3);
+}
+.rank-bronze {
+  color: var(--bronze);
+  text-shadow: 0 2px 8px hsla(25, 70%, 50%, 0.3);
+}
 
 /* ELO Score styling */
 .elo-score {
@@ -374,7 +470,11 @@ body {
 
 /* Page title styling */
 .page-title {
-  background: linear-gradient(135deg, var(--foreground) 0%, var(--muted-foreground) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--foreground) 0%,
+    var(--muted-foreground) 100%
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -448,11 +548,21 @@ body {
 }
 
 /* Staggered animation delays */
-.delay-100 { animation-delay: 0.1s; }
-.delay-200 { animation-delay: 0.2s; }
-.delay-300 { animation-delay: 0.3s; }
-.delay-400 { animation-delay: 0.4s; }
-.delay-500 { animation-delay: 0.5s; }
+.delay-100 {
+  animation-delay: 0.1s;
+}
+.delay-200 {
+  animation-delay: 0.2s;
+}
+.delay-300 {
+  animation-delay: 0.3s;
+}
+.delay-400 {
+  animation-delay: 0.4s;
+}
+.delay-500 {
+  animation-delay: 0.5s;
+}
 
 /* Enhanced Match Cards */
 .match-card-enhanced {
@@ -466,7 +576,7 @@ body {
 }
 
 .match-card-enhanced::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 0;
@@ -487,4 +597,3 @@ body {
 .match-card-enhanced:hover::after {
   width: 6px;
 }
-

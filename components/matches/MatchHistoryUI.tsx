@@ -469,7 +469,8 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
                       style={{
                         background: "var(--match-win-bg)",
                         color: "var(--win)",
-                        boxShadow: "0 0 0 3px var(--match-win-bg), 0 0 12px var(--win)",
+                        boxShadow:
+                          "0 0 0 3px var(--match-win-bg), 0 0 12px var(--win)",
                       }}
                     >
                       <Crown className="h-5 w-5" />
@@ -522,8 +523,12 @@ const MatchHistoryUI: React.FC<MatchHistoryUIProps> = ({
                         isFanny ? "animate-pulse" : ""
                       }`}
                       style={{
-                        background: isFanny ? "var(--match-lose-bg)" : "var(--muted)",
-                        color: isFanny ? "var(--lose)" : "var(--muted-foreground)",
+                        background: isFanny
+                          ? "var(--match-lose-bg)"
+                          : "var(--muted)",
+                        color: isFanny
+                          ? "var(--lose)"
+                          : "var(--muted-foreground)",
                         boxShadow: isFanny
                           ? "0 0 0 3px var(--match-lose-bg), 0 0 12px var(--lose)"
                           : "none",
