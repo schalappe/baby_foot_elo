@@ -9,6 +9,9 @@ SUPABASE_URL="${SUPABASE_URL:-}"
 SUPABASE_KEY="${SUPABASE_KEY:-}"
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
 
+# ##>: Supabase REST API has a default limit of 1000 rows per request.
+PAGE_SIZE=1000
+
 # Tables to backup (in order for proper restoration due to foreign keys)
 TABLES=("players" "teams" "matches" "players_elo_history" "teams_elo_history")
 
@@ -30,6 +33,53 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Fetch all records from a table with pagination
+# ##>: Supabase REST API limits responses to 1000 rows by default.
+# ##>: This function paginates through all data using limit/offset.
+fetch_all_records() {
+    local table=$1
+    local offset=0
+    local all_records="[]"
+    local page_count=0
+
+    while true; do
+        # Fetch a page of records
+        response=$(curl -s -w "\n%{http_code}" \
+            "${SUPABASE_URL}/rest/v1/${table}?select=*&limit=${PAGE_SIZE}&offset=${offset}" \
+            -H "apikey: ${SUPABASE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_KEY}")
+
+        http_code=$(echo "$response" | tail -n1)
+        body=$(echo "$response" | sed '$d')
+
+        if [ "$http_code" -ne 200 ]; then
+            echo "ERROR:${http_code}:${body}"
+            return 1
+        fi
+
+        # Count records in this page
+        page_records=$(echo "$body" | jq 'length')
+
+        if [ "$page_records" -eq 0 ]; then
+            break
+        fi
+
+        # Merge this page into all_records
+        all_records=$(echo "$all_records" "$body" | jq -s 'add')
+        page_count=$((page_count + 1))
+
+        # If we got fewer records than PAGE_SIZE, we've reached the end
+        if [ "$page_records" -lt "$PAGE_SIZE" ]; then
+            break
+        fi
+
+        offset=$((offset + PAGE_SIZE))
+    done
+
+    # Output the combined records
+    echo "$all_records"
+}
+
 # Validate required environment variables
 if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
     log_error "SUPABASE_URL and SUPABASE_KEY environment variables are required"
@@ -48,23 +98,19 @@ log_info "Starting backup to ${BACKUP_PATH}"
 for table in "${TABLES[@]}"; do
     log_info "Backing up table: ${table}"
 
-    # Fetch all data from table using Supabase REST API
-    response=$(curl -s -w "\n%{http_code}" \
-        "${SUPABASE_URL}/rest/v1/${table}?select=*" \
-        -H "apikey: ${SUPABASE_KEY}" \
-        -H "Authorization: Bearer ${SUPABASE_KEY}")
+    # Fetch all data with pagination
+    result=$(fetch_all_records "$table")
 
-    # Extract HTTP status code and body
-    http_code=$(echo "$response" | tail -n1)
-    body=$(echo "$response" | sed '$d')
-
-    if [ "$http_code" -eq 200 ]; then
-        echo "$body" > "${BACKUP_PATH}/${table}.json"
-        record_count=$(echo "$body" | jq 'length')
-        log_info "  -> ${record_count} records saved"
-    else
+    # Check for errors (result starts with "ERROR:")
+    if [[ "$result" == ERROR:* ]]; then
+        http_code=$(echo "$result" | cut -d: -f2)
+        error_body=$(echo "$result" | cut -d: -f3-)
         log_error "Failed to backup ${table} (HTTP ${http_code})"
-        echo "$body" > "${BACKUP_PATH}/${table}_error.json"
+        echo "$error_body" > "${BACKUP_PATH}/${table}_error.json"
+    else
+        echo "$result" > "${BACKUP_PATH}/${table}.json"
+        record_count=$(echo "$result" | jq 'length')
+        log_info "  -> ${record_count} records saved"
     fi
 done
 
