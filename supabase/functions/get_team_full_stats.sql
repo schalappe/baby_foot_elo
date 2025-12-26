@@ -1,3 +1,7 @@
+CREATE OR REPLACE FUNCTION get_team_full_stats(p_team_id INTEGER)
+RETURNS jsonb
+LANGUAGE plpgsql
+AS $$
 DECLARE
   v_team_id INT;
   v_player1_id INT;
@@ -64,3 +68,4 @@ BEGIN
     'win_rate', ROUND(COALESCE(v_win_rate, 0), 4)
   );
 END;
+$$;

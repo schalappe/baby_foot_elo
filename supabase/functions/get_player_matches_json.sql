@@ -1,3 +1,14 @@
+CREATE OR REPLACE FUNCTION get_player_matches_json(
+    p_player_id BIGINT,
+    p_start_date TIMESTAMP DEFAULT NULL,
+    p_end_date TIMESTAMP DEFAULT NULL,
+    p_is_fanny BOOLEAN DEFAULT NULL,
+    p_limit INTEGER DEFAULT 10,
+    p_offset INTEGER DEFAULT 0
+)
+RETURNS JSON
+LANGUAGE plpgsql
+AS $$
 DECLARE
     result JSON;
 BEGIN
@@ -104,3 +115,4 @@ BEGIN
 
     RETURN result;
 END;
+$$;

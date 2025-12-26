@@ -1,4 +1,7 @@
-
+CREATE OR REPLACE FUNCTION get_player_full_stats(p_player_id INTEGER)
+RETURNS jsonb
+LANGUAGE plpgsql
+AS $$
 DECLARE
   v_player_name TEXT;
   v_global_elo INT;
@@ -68,5 +71,6 @@ BEGIN
     'losses', COALESCE(v_loss_count, 0),
     'last_match_at', v_last_match_date,
     'win_rate', ROUND(COALESCE(v_win_rate, 0), 4)
-  ) || get_player_comprehensive_stats(p_player_id);
+  );
 END;
+$$;
