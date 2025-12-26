@@ -24,21 +24,10 @@ import PlayerErrorAlert from "./PlayerErrorAlert";
 
 const ITEMS_PER_PAGE = 10;
 
-/**
- * Props for PlayerDetail component.
- * @property playerId - The ID of the player to display
- */
 interface PlayerDetailProps {
   playerId: number;
 }
 
-/**
- * Displays the detailed view for a single player, including stats and matches.
- * Handles data fetching, loading, and error states.
- *
- * @param playerId - The ID of the player to display
- * @returns The rendered player detail view
- */
 const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
   const [player, setPlayer] = useState<PlayerStats | null>(null);
   const [matches, setMatches] = useState<BackendMatchWithEloResponse[]>([]);
@@ -49,7 +38,6 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
   const [totalMatches, setTotalMatches] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Fetch player stats.
   useEffect(() => {
     if (playerId) {
       const fetchPlayer = async () => {
@@ -69,7 +57,6 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
     }
   }, [playerId]);
 
-  // Fetch player matches with pagination.
   useEffect(() => {
     if (playerId) {
       const fetchMatches = async () => {
@@ -100,7 +87,6 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
     }
   }, [playerId, currentPage, totalMatches]);
 
-  // Handle page change.
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
@@ -121,7 +107,7 @@ const PlayerDetail: React.FC<PlayerDetailProps> = ({ playerId }) => {
 
   return (
     <div className="w-full max-w-6xl mx-auto p-4 text-foreground space-y-8">
-      <h1 className="text-4xl sm:text-5xl font-bold text-center">
+      <h1 className="text-4xl sm:text-5xl font-bold text-center animate-hero-fade-in">
         {player.name}
       </h1>
       <PlayerStatsCards player={player} />

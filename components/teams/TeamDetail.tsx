@@ -28,21 +28,6 @@ interface TeamDetailProps {
 
 const ITEMS_PER_PAGE = 10;
 
-/**
- * TeamDetail component displays detailed information about a team.
- *
- * Uses mock data for demonstration. Replace with real data fetching logic as needed.
- *
- * Parameters
- * ----------
- * teamId : number
- *     The ID of the team to display details for.
- *
- * Returns
- * -------
- * JSX.Element
- *     The rendered team detail component.
- */
 const TeamDetail: React.FC<TeamDetailProps> = ({ teamId }) => {
   const [team, setTeam] = useState<Team | null>(null);
   const [stats, setStats] = useState<TeamStatistics | null>(null);
@@ -54,7 +39,6 @@ const TeamDetail: React.FC<TeamDetailProps> = ({ teamId }) => {
   const [totalMatches, setTotalMatches] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Fetch team statistics and team info
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
@@ -92,17 +76,16 @@ const TeamDetail: React.FC<TeamDetailProps> = ({ teamId }) => {
     };
   }, [teamId]);
 
-  // Fetch team matches (paginated)
   useEffect(() => {
     if (teamId) {
       const fetchTeamMatches = async () => {
         try {
           setMatchesLoading(true);
-          setError(null); // Reset error state at the beginning of fetch
+          setError(null);
           const offset = (currentPage - 1) * ITEMS_PER_PAGE;
           const matchesData = await getTeamMatches(teamId, {
             limit: ITEMS_PER_PAGE,
-            skip: offset, // Use 'skip' as per teamService.ts
+            skip: offset,
           });
 
           setMatches(matchesData);
@@ -113,19 +96,17 @@ const TeamDetail: React.FC<TeamDetailProps> = ({ teamId }) => {
                 : (currentPage - 1) * ITEMS_PER_PAGE + matchesData.length;
             return Math.max(prev, calculatedTotal);
           });
-          // totalMatches in the next line will be the state value from *before* this effect's setTotalMatches call.
-          // This is why totalMatches is in the dependency array, to re-run and correct totalPages.
           setTotalPages(Math.ceil(totalMatches / ITEMS_PER_PAGE) || 1);
         } catch (err) {
           console.error("Failed to fetch team matches:", err);
-          setError("Failed to fetch team matches."); // Set error state
+          setError("Failed to fetch team matches.");
         } finally {
           setMatchesLoading(false);
         }
       };
       fetchTeamMatches();
     }
-  }, [teamId, currentPage, totalMatches]); // Added totalMatches to dependency array
+  }, [teamId, currentPage, totalMatches]);
 
   const handlePageChange = (page: number) => {
     if (page >= 1 && page <= totalPages) {
@@ -147,7 +128,7 @@ const TeamDetail: React.FC<TeamDetailProps> = ({ teamId }) => {
 
   return (
     <div className="w-full max-w-6xl mx-auto p-4 text-foreground space-y-8">
-      <h1 className="text-4xl sm:text-5xl font-bold text-center">
+      <h1 className="text-4xl sm:text-5xl font-bold text-center animate-hero-fade-in">
         {team.player1.name} & {team.player2.name}
       </h1>
       {stats && <TeamStatsCards stats={stats} />}

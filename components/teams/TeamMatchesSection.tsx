@@ -111,7 +111,7 @@ const TeamMatchesSection: React.FC<TeamMatchesSectionProps> = ({
             {date}
           </div>
           <div className="flex flex-col gap-4">
-            {matchesForDate.map((match) => {
+            {matchesForDate.map((match, matchIndex) => {
               const isWinner = match.winner_team.team_id === teamId;
               const team = isWinner ? match.winner_team : match.loser_team;
               const opponentTeam = isWinner
@@ -119,20 +119,12 @@ const TeamMatchesSection: React.FC<TeamMatchesSectionProps> = ({
                 : match.winner_team;
               const eloChange = match.elo_changes[teamId]?.difference ?? 0;
               const isFanny = match.is_fanny;
-              const cardStyle = isWinner
-                ? {
-                    background: "var(--secondary)",
-                    borderColor: "var(--match-win-border)",
-                  }
-                : {
-                    background: "var(--secondary)",
-                    borderColor: "var(--match-lose-border)",
-                  };
+
               return (
                 <div
                   key={match.match_id}
-                  className="relative border-2 shadow-lg rounded-xl overflow-hidden transition-colors min-h-[72px] w-full"
-                  style={cardStyle}
+                  className={`match-card-enhanced ${isWinner ? "win" : "loss"} relative bg-secondary border border-border shadow-sm rounded-xl overflow-hidden min-h-[72px] w-full animate-card-entrance`}
+                  style={{ animationDelay: `${0.05 * matchIndex}s` }}
                 >
                   <div className="flex flex-row items-center justify-between gap-2 px-4 py-3">
                     {/* ELO Change */}

@@ -2,13 +2,13 @@
  * EntityStatsCards.tsx
  *
  * Displays championship-styled statistics cards for player/team entity pages.
- * Features enhanced visuals with glowing effects, improved charts, and better hierarchy.
+ * Features entrance animations and enhanced visual hierarchy.
  *
  * Exports:
  *   - EntityStatsCards: React.FC for entity statistics display.
  */
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent } from "../ui/card";
 import { TrendingUpIcon, TrendingDownIcon, Zap, Target } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "../ui/chart";
 import { LineChart, Line, YAxis, CartesianGrid } from "recharts";
@@ -19,11 +19,7 @@ interface EntityStatsCardsProps {
   stats: EntityStats;
 }
 
-/**
- * Championship-styled stats cards for player/team entity.
- */
 const EntityStatsCards: React.FC<EntityStatsCardsProps> = ({ stats }) => {
-  // Trending calculation based on last 5 results.
   const changes = stats.recent?.elo_changes?.slice(0, 5) || [];
   const sum = changes.reduce((acc: number, val: number) => acc + val, 0);
   const trendingUp = sum >= 0;
@@ -31,7 +27,7 @@ const EntityStatsCards: React.FC<EntityStatsCardsProps> = ({ stats }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* ELO Card - The Hero Card */}
-      <Card className="stats-card bg-card text-card-foreground shadow-lg rounded-xl overflow-hidden relative border-2">
+      <Card className="stats-card bg-card text-card-foreground shadow-lg rounded-xl overflow-hidden relative border-2 animate-card-entrance delay-100">
         {/* Top accent bar */}
         <div
           className="absolute top-0 left-0 right-0 h-1"
@@ -68,7 +64,7 @@ const EntityStatsCards: React.FC<EntityStatsCardsProps> = ({ stats }) => {
 
           {/* ELO Score - Hero number */}
           <div className="mt-4">
-            <div className="text-5xl sm:text-6xl font-black elo-score tracking-tight text-foreground">
+            <div className="text-5xl sm:text-6xl font-black elo-score tracking-tight text-foreground animate-stat-value">
               {stats.global_elo}
             </div>
             <div className="text-sm text-muted-foreground font-semibold tracking-widest uppercase mt-1">
@@ -102,13 +98,11 @@ const EntityStatsCards: React.FC<EntityStatsCardsProps> = ({ stats }) => {
       </Card>
 
       {/* ELO Evolution Chart */}
-      <Card className="stats-card bg-card text-card-foreground shadow-lg rounded-xl overflow-hidden border-2">
-        <CardHeader className="flex flex-col items-center gap-2 pt-6 pb-2 border-b bg-muted/30">
-          <CardTitle className="text-lg font-bold tracking-tight">
+      <Card className="stats-card bg-card text-card-foreground shadow-lg rounded-xl overflow-hidden border-2 animate-card-entrance delay-200">
+        <CardContent className="p-6">
+          <div className="text-lg font-bold tracking-tight text-center mb-4">
             Évolution ELO
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pb-6 pt-4 px-2">
+          </div>
           {stats.elo_values && stats.elo_values.length > 1 ? (
             <ChartContainer
               config={{ elo: { label: "ELO", color: "var(--chart-1)" } }}
@@ -203,7 +197,7 @@ const EntityStatsCards: React.FC<EntityStatsCardsProps> = ({ stats }) => {
       </Card>
 
       {/* Win Rate Donut Chart */}
-      <Card className="stats-card bg-card text-card-foreground shadow-lg rounded-xl overflow-hidden border-2">
+      <Card className="stats-card bg-card text-card-foreground shadow-lg rounded-xl overflow-hidden border-2 animate-card-entrance delay-300">
         <CardContent className="flex flex-col items-center justify-center p-6 h-full space-y-3 text-center">
           {/* Target icon */}
           <div className="flex items-center gap-2 text-muted-foreground">
